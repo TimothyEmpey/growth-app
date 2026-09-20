@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import { Image } from 'expo-image';
 import {
   ActivityIndicator,
   Pressable,
@@ -49,6 +50,14 @@ export type IconName =
   | 'link'
   | 'lock'
   | 'trash';
+
+const journalIconSources = {
+  lift: require('../../assets/images/journal-icons/lifting-icon.png'),
+  run: require('../../assets/images/journal-icons/running-icon.png'),
+  food: require('../../assets/images/journal-icons/diet-icon.png'),
+  link: require('../../assets/images/journal-icons/link-icon.png'),
+} as const;
+
 export function Icon({
   name,
   size = 22,
@@ -58,10 +67,18 @@ export function Icon({
   size?: number;
   color?: string;
 }) {
-  const paths: Record<IconName, string> = {
-    lift: 'M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12',
-    run: 'm13 8 3 4 4 1M13 8l-3 5-5 1m5-1 4 3-2 5M8 4 4 8M4 20l4-4',
-    food: 'M5 3v6a3 3 0 0 0 6 0V3M8 3v18M17 3v8h3M20 3v18',
+  if (name === 'lift' || name === 'run' || name === 'food' || name === 'link') {
+    return (
+      <Image
+        source={journalIconSources[name]}
+        style={{ width: size, height: size }}
+        contentFit="contain"
+        tintColor={color}
+      />
+    );
+  }
+
+  const paths: Record<Exclude<IconName, 'lift' | 'run' | 'food' | 'link'>, string> = {
     plus: 'M12 5v14M5 12h14',
     arrow: 'M5 12h14m-6-6 6 6-6 6',
     left: 'm14 6-6 6 6 6',
@@ -72,7 +89,6 @@ export function Icon({
     check: 'm5 12 4 4L19 6',
     settings: 'M4 7h16M4 17h16M8 4v6M16 14v6',
     search: 'm16 16 5 5',
-    link: 'm10 13 4-4m-6 7-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 1 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0',
     lock: 'M7 10V7a5 5 0 0 1 10 0v3M12 14v3',
     trash: 'M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',
   };
@@ -88,7 +104,6 @@ export function Icon({
       strokeLinejoin="round"
     >
       <Path d={paths[name]} />
-      {name === 'run' && <Circle cx={15} cy={4} r={2} />}
       {name === 'search' && <Circle cx={10.5} cy={10.5} r={6.5} />}
       {name === 'calendar' && <Rect x={3} y={4} width={18} height={18} rx={3} />}
       {name === 'lock' && <Rect x={5} y={10} width={14} height={11} rx={2} />}
