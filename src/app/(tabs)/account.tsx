@@ -22,6 +22,8 @@ import { useAccount, useAccountActions } from '@/services/account';
 import { api } from '@/services/api';
 import type { Connection } from '@/domain/types';
 import { useToday } from '@/hooks/use-today';
+import { useJournalSync } from '@/providers/journal-sync';
+import { requestJournalSync } from '@/services/journal-sync';
 
 export default function AccountPage() {
   const C = useColors();
@@ -30,6 +32,7 @@ export default function AccountPage() {
   const actions = useAccountActions();
   const action = useAction();
   const today = useToday();
+  const sync = useJournalSync();
   const connection = useQuery({
     queryKey: ['strava'],
     queryFn: ({ signal }) => api<Connection>('/api/strava/status', { signal }),
@@ -188,6 +191,33 @@ export default function AccountPage() {
           onPress={() => router.push('/account/preferences')}
         />
       </Card>
+      {account.data?.account && (
+        <Card style={{ gap: 12 }}>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, gap: 5 }}>
+              <Label>Cross-device sync</Label>
+              <Body>
+                {sync.state === 'syncing'
+                  ? 'Syncing your journal…'
+                  : sync.state === 'offline'
+                    ? 'Saved here. Growth will sync when you’re back online.'
+                    : sync.state === 'error'
+                      ? (sync.message ?? 'Your journal could not be synced.')
+                      : sync.updatedAt
+                        ? `Synced ${new Date(sync.updatedAt).toLocaleString()}`
+                        : 'Your journal will follow this account to your other devices.'}
+              </Body>
+            </View>
+            {sync.state === 'syncing' ? (
+              <ActivityIndicator color={C.blue} />
+            ) : (
+              <Button quiet onPress={requestJournalSync}>
+                Sync now
+              </Button>
+            )}
+          </Row>
+        </Card>
+      )}
       {account.error && (
         <Body>
           Account service unavailable. Your local profile and preferences are still available.
@@ -200,8 +230,9 @@ export default function AccountPage() {
         </Button>
       )}
       <Body>
-        Your journal and preferences stay on this device. Signing in saves your account profile; it
-        does not sync journals between devices.
+        {account.data?.account
+          ? 'Your meals, weights, lifts, goals, profile, and preferences are encrypted in transit and synced to your Growth account.'
+          : 'Your journal and preferences stay on this device until you sign in.'}
       </Body>
     </Page>
   );

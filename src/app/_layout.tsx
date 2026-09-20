@@ -11,6 +11,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { AppearanceProvider, useAppearance } from '@/providers/appearance';
+import { JournalSyncProvider } from '@/providers/journal-sync';
 import { useJournal } from '@/data/journal-store';
 import { ApiError } from '@/services/api';
 import '@/global.css';
@@ -29,7 +30,9 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={client}>
       <AppearanceProvider>
-        <AppNavigation />
+        <JournalSyncProvider>
+          <AppNavigation />
+        </JournalSyncProvider>
       </AppearanceProvider>
     </QueryClientProvider>
   );

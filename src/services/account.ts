@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Account } from '@/domain/account';
 import { api } from './api';
 import { clearAccountToken, setAccountToken } from './account-session';
+import { clearSyncedJournal } from './journal-sync';
 
 type AccountStatus = { account: Account | null; configured: boolean };
 type AccountResponse = { account: Account; token?: string };
@@ -31,6 +32,7 @@ export function useAccountActions() {
     signOut: async () => {
       await accountRequest('logout', {});
       await clearAccountToken();
+      await clearSyncedJournal();
       await client.cancelQueries({ queryKey: ['account'] });
       client.setQueryData<AccountStatus>(['account'], (previous) => ({
         configured: previous?.configured ?? true,

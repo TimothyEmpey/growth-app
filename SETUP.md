@@ -9,7 +9,7 @@ bun install --frozen-lockfile
 bunx expo start --go
 ```
 
-Use the existing Expo Go app for the lifting and diet interface. Press `w` for the browser. Weight, maxes, recent foods, food entries, and goals stay in SQLite on iPhone or IndexedDB in the browser. Each device/browser has its own journal. Clearing browser data or uninstalling the app can remove that journal; no cloud backup is included.
+Use the existing Expo Go app for the lifting and diet interface. Press `w` for the browser. Weight, maxes, recent foods, food entries, and goals stay in SQLite on iPhone or IndexedDB in the browser. Before sign-in, each device/browser has its own journal. Once a user signs in, Growth synchronizes the journal through the configured Worker and D1 database.
 
 To run the exported web app and API together, without any API credentials:
 
@@ -137,7 +137,11 @@ Check Worker logs, `connections.sync_error`, and the `growth-sync-failed` queue 
 
 ## Growth accounts and verification emails
 
-The fourth tab, **Account**, works locally for the profile, activity streak, appearance, and preferences. Email/password accounts use the existing Worker and new D1 migration `0003_accounts.sql`. They are separate from Strava authorization. Growth sign-in saves a profile on the server; it does not move or synchronize the device's existing meal/lifting journal. Appearance and unit preferences belong to the device. The existing owner-only Strava integration is unchanged.
+The fourth tab, **Account**, provides the profile, activity streak, appearance, preferences, and cross-device journal status. Email/password accounts use the existing Worker and D1 migrations. They remain separate from Strava authorization.
+
+On the first account sign-in on a device that has never synced, Growth imports that device's current journal into the account. After that, meals, saved foods, weights, lifts, goals, profile details, appearance, and preferences follow the account between devices. Changes sync after a local edit, when the app becomes active, and on a periodic check. Versioned writes and a three-way merge preserve independent edits made by two devices. Offline edits stay on the device and upload when connectivity returns. Signing out clears that account's cached journal from the device.
+
+The existing Strava integration is still configured for one owner athlete at the service level. Its runs are stored by Strava athlete rather than inside the new account journal. Supporting a separate Strava connection for every Growth account requires a later multi-user Strava migration and approval for the Strava app.
 
 To activate real account email delivery:
 
@@ -159,6 +163,9 @@ There is no development bypass or code shown in the app: if email credentials ar
 Additional live acceptance with two inboxes you control:
 
 - Register, receive the code, verify it, sign out, and sign back in on web and iPhone.
+- On device A, log a meal and weight while signed in. Sign in to the same account on device B and verify both appear. Make a different edit on each device, then bring both online and verify both edits remain.
+- Make an offline edit, restart, reconnect, and confirm the Account tab changes from a local/offline state to a current sync time.
+- Sign out and verify the previous account's cached journal is no longer visible. Sign in again and verify it downloads from the account.
 - Change email and verify that the old email remains active until both inbox codes succeed. Try an incorrect/expired code and cancel a change.
 - Change/recover the password and verify a second session is signed out.
 - Switch light/dark/system appearance, change the device's system theme, and restart the app.

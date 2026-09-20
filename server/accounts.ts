@@ -4,6 +4,8 @@ import {
   validateProfile,
   type Account,
 } from '../src/domain/account';
+import { migrateJournal } from '../src/domain/journal';
+import type { Journal } from '../src/domain/types';
 import { cookie, hash, randomToken, rateLimit, setCookie } from './security';
 import { passwordHash, passwordMatches } from './passwords';
 import { type Env, json, now, ServiceError } from './types';
@@ -29,6 +31,7 @@ type Challenge = {
   payload: string;
   security_version: number;
 };
+type JournalRow = { payload: string; revision: number; updated_at: string };
 export const accountsConfigured = (env: Env) => !!(env.RESEND_API_KEY && env.EMAIL_FROM);
 const publicAccount = (a: AccountRow): Account => ({
   id: a.id,
@@ -67,6 +70,74 @@ async function body(request: Request): Promise<Record<string, unknown>> {
   } catch {
     throw new ServiceError('Enter valid account details.');
   }
+}
+async function journalBody(request: Request): Promise<{ journal: Journal; baseRevision: number }> {
+  const text = await request.text();
+  if (text.length > 2_000_000) throw new ServiceError('Journal is too large to sync.', 413);
+  try {
+    const input = JSON.parse(text) as { journal?: unknown; baseRevision?: unknown };
+    if (!Number.isSafeInteger(input.baseRevision) || (input.baseRevision as number) < 0)
+      throw new Error('Invalid revision.');
+    return { journal: migrateJournal(input.journal), baseRevision: input.baseRevision as number };
+  } catch (error) {
+    throw new ServiceError(error instanceof Error ? error.message : 'Enter valid journal data.');
+  }
+}
+
+async function syncedJournal(request: Request, env: Env, account: AccountRow) {
+  if (request.method === 'GET') {
+    const row = await env.DB.prepare(
+      'SELECT payload,revision,updated_at FROM account_journals WHERE account_id=?',
+    )
+      .bind(account.id)
+      .first<JournalRow>();
+    return json(
+      row
+        ? {
+            journal: migrateJournal(JSON.parse(row.payload)),
+            revision: row.revision,
+            updatedAt: row.updated_at,
+          }
+        : { journal: null, revision: 0, updatedAt: null },
+      200,
+      { 'Cache-Control': 'no-store' },
+    );
+  }
+  if (request.method !== 'POST') throw new ServiceError('Endpoint not found.', 404);
+  await rateLimit(request, env, `journal:${account.id}`, 120);
+  const { journal, baseRevision } = await journalBody(request);
+  const payload = JSON.stringify(journal);
+  const updatedAt = new Date().toISOString();
+  if (baseRevision === 0) {
+    const result = await env.DB.prepare(
+      'INSERT OR IGNORE INTO account_journals (account_id,payload,revision,updated_at) VALUES (?,?,1,?)',
+    )
+      .bind(account.id, payload, updatedAt)
+      .run();
+    if (result.meta.changes === 1) return json({ journal, revision: 1, updatedAt });
+  } else {
+    const result = await env.DB.prepare(
+      'UPDATE account_journals SET payload=?,revision=revision+1,updated_at=? WHERE account_id=? AND revision=?',
+    )
+      .bind(payload, updatedAt, account.id, baseRevision)
+      .run();
+    if (result.meta.changes === 1) return json({ journal, revision: baseRevision + 1, updatedAt });
+  }
+  const latest = await env.DB.prepare(
+    'SELECT payload,revision,updated_at FROM account_journals WHERE account_id=?',
+  )
+    .bind(account.id)
+    .first<JournalRow>();
+  return json(
+    latest
+      ? {
+          journal: migrateJournal(JSON.parse(latest.payload)),
+          revision: latest.revision,
+          updatedAt: latest.updated_at,
+        }
+      : { journal: null, revision: 0, updatedAt: null },
+    409,
+  );
 }
 function validate<T>(fn: () => T): T {
   try {
@@ -279,6 +350,10 @@ export async function accountRoute(request: Request, env: Env): Promise<Response
       200,
       { 'Cache-Control': 'no-store' },
     );
+  }
+  if (path === '/api/account/journal') {
+    const account = await requireAccount(request, env);
+    return syncedJournal(request, env, account);
   }
   if (request.method !== 'POST') throw new ServiceError('Endpoint not found.', 404);
   const input = await body(request);

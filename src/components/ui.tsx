@@ -316,7 +316,7 @@ export function Page({
       )}
       <Row style={{ justifyContent: 'center' }}>
         <Icon name="lock" size={13} />
-        <Text style={{ color: C.muted, fontSize: 12 }}>Your journal. On your device.</Text>
+        <Text style={{ color: C.muted, fontSize: 12 }}>Your journal. Built around you.</Text>
       </Row>
     </ScrollView>
   );

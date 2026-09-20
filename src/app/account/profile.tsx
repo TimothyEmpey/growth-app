@@ -195,10 +195,9 @@ function ProfileForm({ account, unavailable }: { account: Account | null; unavai
               weightKg,
             });
             if (account) await actions.complete('profile', profile);
-            else
-              await updateJournal((journal) => {
-                journal.profile = profile;
-              });
+            await updateJournal((journal) => {
+              journal.profile = profile;
+            });
             setSaved(true);
           })
         }

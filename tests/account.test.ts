@@ -12,6 +12,7 @@ import {
   weightToPounds,
 } from '../src/domain/account';
 import { emptyJournal, migrateJournal, pace } from '../src/domain/journal';
+import { mergeJournals } from '../src/domain/journal-sync';
 import { loadJournal, saveJournal } from '../src/data/storage.web';
 import 'fake-indexeddb/auto';
 
@@ -189,6 +190,69 @@ test('profile edits persist; anonymous writes and wrong current passwords are re
     (await call('/email', { email: 'next@example.invalid', password: 'wrong' }, token)).response
       .status,
   ).toBe(403);
+});
+
+test('account journals sync by revision and reject stale device writes', async () => {
+  const { call, register } = setup();
+  const signedIn = await register();
+  const token = signedIn.data.token;
+  expect((await call('/journal')).response.status).toBe(401);
+  expect((await call('/journal', undefined, token)).data).toMatchObject({
+    journal: null,
+    revision: 0,
+  });
+  expect(
+    (await call('/journal', { journal: emptyJournal(), baseRevision: 0 })).response.status,
+  ).toBe(401);
+  const fromDeviceA = emptyJournal();
+  fromDeviceA.weights.push({ id: 'weight-a', date: '2025-01-01', pounds: 180 });
+  const created = await call('/journal', { journal: fromDeviceA, baseRevision: 0 }, token);
+  expect(created.response.status).toBe(200);
+  expect(created.data.revision).toBe(1);
+  expect((await call('/journal', undefined, token)).data.journal.weights).toEqual(
+    fromDeviceA.weights,
+  );
+
+  const fromDeviceB = emptyJournal();
+  fromDeviceB.meals.push({
+    id: 'meal-b',
+    date: '2025-01-02',
+    meal: 'breakfast',
+    food: {
+      id: 'food',
+      name: 'Oats',
+      per100g: { calories: 1, protein: 1, carbs: 1, fat: 1 },
+      portions: [],
+    },
+    portionId: 'portion',
+    quantity: 1,
+    nutrition: { calories: 1, protein: 1, carbs: 1, fat: 1 },
+  });
+  const stale = await call('/journal', { journal: fromDeviceB, baseRevision: 0 }, token);
+  expect(stale.response.status).toBe(409);
+  expect(stale.data.revision).toBe(1);
+
+  const merged = mergeJournals(emptyJournal(), fromDeviceA, fromDeviceB);
+  const updated = await call('/journal', { journal: merged, baseRevision: 1 }, token);
+  expect(updated.data.revision).toBe(2);
+  expect(updated.data.journal.weights).toHaveLength(1);
+  expect(updated.data.journal.meals).toHaveLength(1);
+});
+
+test('three-way journal merge keeps independent edits and resolves same-field conflicts locally', () => {
+  const base = emptyJournal();
+  base.weights.push({ id: 'shared', date: '2025-01-01', pounds: 180 });
+  const local = structuredClone(base);
+  const remote = structuredClone(base);
+  local.weights[0].pounds = 181;
+  remote.goals.protein = 150;
+  remote.weights.push({ id: 'remote', date: '2025-01-02', pounds: 179 });
+  const merged = mergeJournals(base, local, remote);
+  expect(merged.weights).toEqual([
+    { id: 'shared', date: '2025-01-01', pounds: 181 },
+    { id: 'remote', date: '2025-01-02', pounds: 179 },
+  ]);
+  expect(merged.goals.protein).toBe(150);
 });
 
 test('email changes require both inbox codes and invalidate older sessions', async () => {
