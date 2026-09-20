@@ -13,6 +13,7 @@ export default function DietPage() {
   const { journal } = useJournal();
   const [date, setDate] = useState(today());
   const [showCalendar, setShowCalendar] = useState(false);
+  // Both daily and meal totals use saved nutrition snapshots for this calendar date.
   const entries = journal.meals.filter((e) => e.date === date);
   const totals = sumNutrition(entries.map((e) => e.nutrition));
   const goal = journal.goals.calories;

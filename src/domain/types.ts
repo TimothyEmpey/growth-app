@@ -1,7 +1,9 @@
+// Local calendar date (YYYY-MM-DD), without a time or UTC offset.
 export type DateKey = string;
 export type Period = 'Week' | 'Month' | 'Year' | 'All';
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snacks';
 export const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snacks'];
+// Calories are kcal; macros are grams. Null means unavailable, not zero.
 export type Nutrition = {
   calories: number | null;
   protein: number | null;
@@ -34,6 +36,7 @@ export type MealEntry = {
   food: Food;
   portionId: string;
   quantity: number;
+  // Serving-scaled values saved with the entry, independent of later food database updates.
   nutrition: Nutrition;
 };
 export type Journal = {

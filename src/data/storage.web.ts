@@ -1,6 +1,7 @@
 import { migrateJournal } from '@/domain/journal';
 import type { Journal } from '@/domain/types';
 
+// Browser counterpart to storage.ts; uses the same load/save interface and journal format.
 let database: Promise<IDBDatabase> | undefined;
 function db(): Promise<IDBDatabase> {
   if (!database)
@@ -40,6 +41,7 @@ export async function saveJournal(journal: Journal): Promise<void> {
   return new Promise((resolve, reject) => {
     const transaction = database.transaction('journal', 'readwrite');
     transaction.objectStore('journal').put(journal, 'current');
+    // A successful put request is not durable until its transaction completes.
     transaction.oncomplete = () => resolve();
     transaction.onerror = () =>
       reject(new Error('Could not save your journal. Browser storage may be full.'));

@@ -21,6 +21,7 @@ import { WeightChart } from '@/components/weight-chart';
 export default function LiftingPage() {
   const { journal } = useJournal();
   const [period, setPeriod] = useState<Period>('Month');
+  // The chart and change use the selected period; the headline weight uses the full history.
   const entries = journal.weights.filter((w) => w.date >= periodStart(period) && w.date <= today());
   const latest = journal.weights.at(-1);
   const change = entries.length > 1 ? entries.at(-1)!.pounds - entries[0].pounds : null;

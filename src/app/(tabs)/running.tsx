@@ -49,6 +49,7 @@ export default function RunningPage() {
     refetchInterval: connection.data?.connected && !connection.data.complete ? 5000 : false,
   });
   const connected = connection.data?.connected;
+  // Server summaries cover the whole period, including run pages not yet loaded by the UI.
   const summary = connected ? runs.data?.pages[0]?.summary : undefined;
   const items = runs.data?.pages.flatMap((p) => p.runs) ?? [];
   return (

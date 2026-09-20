@@ -3,6 +3,7 @@ import { migrateJournal } from '@/domain/journal';
 import type { Journal } from '@/domain/types';
 import { migrateSQLite } from './sqlite-schema';
 
+// Native persistence: one versioned journal snapshot stored as JSON in SQLite.
 let database: Promise<SQLite.SQLiteDatabase> | undefined;
 async function db() {
   if (!database)

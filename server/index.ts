@@ -14,11 +14,13 @@ import {
 import { configured, type Env, json, now, ServiceError, type SyncJob } from './types';
 import type { Run } from '../src/domain/types';
 
+// Worker entry point: HTTP routes below, queue processing and scheduled reconciliation at the end.
 async function requestSync(env: Env, athleteId: string) {
   const connection = await getConnection(env, athleteId);
   if (!connection || connection.status !== 'connected')
     throw new ServiceError('Reconnect Strava to sync your runs.', 401);
   const generation = connection.generation;
+  // Resume unfinished imports at their saved page and cutoff; completed imports start a new pass.
   const before = connection.sync_complete ? now() : connection.sync_before;
   const page = connection.sync_complete ? 1 : connection.sync_cursor;
   if (connection.sync_complete)
@@ -191,6 +193,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       .all<{ data: string; local_date: string; id: string }>();
     const rows = result.results.slice(0, 30),
       last = rows.at(-1);
+    // Aggregate the full period so pace uses total moving time divided by total distance.
     const summary = await env.DB.prepare(
       'SELECT COUNT(*) AS count, COALESCE(SUM(distance),0) AS distanceMeters, COALESCE(SUM(moving_seconds),0) AS movingSeconds FROM runs WHERE athlete_id=? AND local_date>=? AND local_date<=?',
     )
@@ -320,6 +323,7 @@ export default {
       }
     }
   },
+  // Expire temporary records and reconcile history to catch missed activity edits or deletions.
   async scheduled(_event: ScheduledEvent, env: Env) {
     await env.DB.batch(
       ['sessions', 'oauth_attempts', 'native_exchanges', 'food_cache', 'rate_buckets'].map(

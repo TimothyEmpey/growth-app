@@ -1,5 +1,6 @@
 import { type Env, now, ServiceError } from './types';
 
+// Encrypt recoverable provider tokens for API calls; store only hashes of Growth session tokens.
 const encoder = new TextEncoder();
 export const randomToken = () =>
   [...crypto.getRandomValues(new Uint8Array(32))]

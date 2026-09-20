@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 
+// Web sheet shell: backdrop dismissal, Escape handling, and keyboard focus containment.
+// Native sheets are presented by the router; dialog.tsx simply passes through their content.
 export function Dialog({
   children,
   title,

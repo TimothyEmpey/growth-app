@@ -3,6 +3,7 @@ interface Database {
   execAsync(sql: string): Promise<void>;
 }
 
+// Versions the SQLite schema; the JSON payload version is checked separately by migrateJournal.
 export async function migrateSQLite(database: Database): Promise<void> {
   const row = await database.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
   const version = row?.user_version ?? 0;

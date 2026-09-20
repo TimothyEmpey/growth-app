@@ -2,6 +2,7 @@ import { cookie, createSession, encrypt, hash, randomToken, setCookie } from './
 import { getConnection, tokenRequest } from './strava';
 import { configured, type Env, json, now, ServiceError } from './types';
 
+// Strava token exchange runs here; callbacks return a web session cookie or a native exchange code.
 export async function authorize(request: Request, env: Env) {
   if (!configured(env))
     throw new ServiceError('Strava credentials have not been configured yet.', 503);
@@ -45,6 +46,7 @@ export async function oauthCallback(request: Request, env: Env) {
     throw new ServiceError(
       'This connection request expired or could not be verified. Please start again.',
     );
+  // Atomically consume validated state so a callback cannot be processed twice.
   const consumed = await env.DB.prepare(
     'DELETE FROM oauth_attempts WHERE state_hash=? RETURNING state_hash',
   )
@@ -130,6 +132,7 @@ export async function nativeExchange(request: Request, env: Env) {
   const { code, verifier } = (await request.json()) as { code?: string; verifier?: string };
   if (!code || !verifier || verifier.length > 200)
     throw new ServiceError('Invalid connection exchange.');
+  // Redemption requires the initiating device's verifier and consumes the code in the same query.
   const row = await env.DB.prepare(
     'DELETE FROM native_exchanges WHERE code_hash=? AND verifier_hash=? AND expires_at > ? RETURNING athlete_id',
   )

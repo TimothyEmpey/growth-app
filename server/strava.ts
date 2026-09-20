@@ -101,6 +101,7 @@ export async function accessToken(
     const token = await decrypt(connection.access_cipher, env);
     if (!rejectedToken || token !== rejectedToken) return token;
   }
+  // A database lease serializes rotating refresh tokens across Worker invocations.
   const lease = now() + 30;
   const lock = await env.DB.prepare(
     'UPDATE connections SET refresh_lock_until = ? WHERE athlete_id = ? AND generation = ? AND refresh_lock_until < ? RETURNING athlete_id',
@@ -193,6 +194,7 @@ export async function storeRun(
   detailed: boolean,
   importedBefore?: number,
 ) {
+  // seen_generation stores the import cutoff, distinct from the OAuth connection generation.
   const seenBefore = importedBefore ?? (await getConnection(env, athleteId))?.sync_before;
   if (seenBefore === undefined) return;
   // The connection generation prevents an old import from writing after disconnect/reconnect.
@@ -227,6 +229,7 @@ export async function removeConnection(env: Env, athleteId: string) {
     env.DB.prepare('DELETE FROM connections WHERE athlete_id=?').bind(athleteId),
   ]);
 }
+// Each delivery handles one import page or one webhook; persisted progress makes retries safe.
 export async function processJob(job: SyncJob, env: Env) {
   const connection = await getConnection(env, job.athleteId);
   if (!connection || connection.generation !== job.generation || connection.status !== 'connected')
@@ -257,6 +260,7 @@ export async function processJob(job: SyncJob, env: Env) {
         .bind(job.page + 1, job.athleteId, job.generation, job.before)
         .run();
     } else {
+      // Only the final page removes unseen runs older than this import's cutoff.
       await env.DB.batch([
         env.DB.prepare(
           'DELETE FROM runs WHERE athlete_id=? AND seen_generation != ? AND start_date < ? AND EXISTS (SELECT 1 FROM connections WHERE athlete_id=? AND generation=? AND sync_before=?)',

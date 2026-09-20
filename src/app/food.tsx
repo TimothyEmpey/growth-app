@@ -31,6 +31,7 @@ export default function FoodSheet() {
     </JournalReady>
   );
 }
+// One sheet handles food search, serving selection, and edits to an existing meal entry.
 function FoodForm() {
   const params = useLocalSearchParams<{ id?: string; meal?: Meal; date?: string }>();
   const { journal } = useJournal();
@@ -162,6 +163,7 @@ function FoodForm() {
                     nutrition: snapshot,
                   };
                   j.meals = [...j.meals.filter((e) => e.id !== entry.id), entry];
+                  // Keep recently logged foods locally so they can be reused offline.
                   j.foods = [selected, ...j.foods.filter((f) => f.id !== selected.id)].slice(
                     0,
                     100,

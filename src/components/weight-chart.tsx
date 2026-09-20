@@ -13,6 +13,7 @@ import type { WeightEntry } from '@/domain/types';
 import { formatDate, parseDate } from '@/domain/journal';
 import { C, Empty } from './ui';
 
+// Plot recorded weights at their actual date positions; no measurements are added for gaps.
 export function WeightChart({
   entries,
   onSelect,

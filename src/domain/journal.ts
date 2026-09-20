@@ -6,6 +6,7 @@ export function today(date = new Date()): DateKey {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 export function parseDate(value: DateKey): Date {
+  // Construct local noon explicitly; parsing YYYY-MM-DD directly would interpret it as UTC.
   const [year, month, day] = value.split('-').map(Number);
   return new Date(year, month - 1, day, 12);
 }
@@ -15,6 +16,7 @@ export function shiftDay(value: DateKey, days: number): DateKey {
   return today(d);
 }
 export function periodStart(period: Period, end = today()): DateKey {
+  // Rolling calendar-day windows include the selected end date.
   return period === 'All'
     ? '0001-01-01'
     : shiftDay(end, -({ Week: 7, Month: 30, Year: 365 }[period] - 1));
@@ -52,6 +54,7 @@ export function duration(seconds: number): string {
     ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
     : `${minutes}m ${Math.floor(seconds % 60)}s`;
 }
+// The newest performance date defines the current max, even when its weight is lower.
 export function sortLifts(records: LiftRecord[]): LiftRecord[] {
   return [...records].sort(
     (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt || b.id.localeCompare(a.id),
@@ -60,6 +63,7 @@ export function sortLifts(records: LiftRecord[]): LiftRecord[] {
 export function putWeight(weights: WeightEntry[], entry: WeightEntry): WeightEntry[] {
   if (!validDate(entry.date)) throw new Error('Choose a valid date, today or earlier.');
   positive(entry.pounds);
+  // Replace both the edited record and any record occupying its new date.
   return [...weights.filter((w) => w.id !== entry.id && w.date !== entry.date), entry].sort(
     (a, b) => a.date.localeCompare(b.date),
   );
@@ -69,6 +73,7 @@ export function nutritionFor(food: Food, portionId: string, quantity: number): N
   const portion = food.portions.find((p) => p.id === portionId);
   if (!portion || !Number.isFinite(portion.grams) || portion.grams <= 0)
     throw new Error('Select a serving size.');
+  // All portions have a known gram weight; preserve precision until the UI formats the result.
   const multiplier = (portion.grams * quantity) / 100;
   return Object.fromEntries(
     nutritionKeys.map((key) => [
@@ -78,6 +83,7 @@ export function nutritionFor(food: Food, portionId: string, quantity: number): N
   ) as Nutrition;
 }
 export function sumNutrition(items: Nutrition[]): Nutrition {
+  // An unknown nutrient makes that nutrient's total unknown, rather than understating it.
   const total = emptyNutrition();
   for (const item of items)
     for (const key of nutritionKeys)

@@ -3,6 +3,7 @@ import { emptyJournal } from '@/domain/journal';
 import type { Journal } from '@/domain/types';
 import { loadJournal, saveJournal } from './storage';
 
+// Shared local state for journal screens; storage.web.ts supplies the browser adapter.
 type Snapshot = { journal: Journal; ready: boolean; error: string | null };
 let snapshot: Snapshot = { journal: emptyJournal(), ready: false, error: null };
 const initial = snapshot;
@@ -35,6 +36,7 @@ export function useJournal() {
   return current;
 }
 export function updateJournal(change: (journal: Journal) => void): Promise<void> {
+  // Serialize edits within this app instance and publish only after storage confirms the save.
   const operation = writes
     .catch(() => {})
     .then(async () => {

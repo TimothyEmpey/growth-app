@@ -12,6 +12,7 @@ export class ApiError extends Error {
 export function apiOrigin() {
   return process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
 }
+// Worker requests use browser cookies or the native Growth session, never Strava tokens.
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const base = apiOrigin();
   if (process.env.EXPO_OS !== 'web' && !base)

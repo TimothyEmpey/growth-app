@@ -418,6 +418,7 @@ export function Sheet({
     </Dialog>
   );
 }
+// Mount forms after hydration so their initial fields reflect persisted entries on direct links.
 export function JournalReady({ children }: { children: ReactNode }) {
   const { ready, error } = useJournal();
   if (!ready)

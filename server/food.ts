@@ -28,6 +28,7 @@ type USDAFood = {
 };
 const numeric = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0;
+// Convert USDA records to per-100g nutrition and portions with known gram equivalents.
 export function normalizeFood(raw: USDAFood): Food {
   const nutrients = raw.foodNutrients ?? [];
   const get = (...ids: number[]) => {
@@ -47,6 +48,7 @@ export function normalizeFood(raw: USDAFood): Food {
   };
   const portions: FoodPortion[] = [{ id: 'grams', label: '1 gram', grams: 1 }];
   const unit = raw.servingSizeUnit?.toLowerCase();
+  // Volume servings need a supplied gram weight; no density is inferred for ml or fluid ounces.
   const factor = unit === 'g' || unit === 'grm' ? 1 : unit === 'oz' ? 28.349523125 : 0;
   if (numeric(raw.servingSize) && raw.servingSize > 0 && factor) {
     const grams = raw.servingSize * factor;

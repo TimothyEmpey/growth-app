@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { api } from './api';
 import { clearVerifier, getVerifier, setSessionToken, setVerifier } from './session';
 
+// The browser result and deep-link route can receive the same single-use exchange code.
 const exchanges = new Map<string, Promise<void>>();
 export function finishStrava(code: string): Promise<void> {
   const existing = exchanges.get(code);
@@ -21,6 +22,7 @@ export function finishStrava(code: string): Promise<void> {
   return exchange;
 }
 export async function linkStrava(): Promise<void> {
+  // Keep the verifier on this device; the server receives only its hash until session exchange.
   const verifier = `${Crypto.randomUUID()}${Crypto.randomUUID()}`;
   const challenge = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, verifier);
   await setVerifier(verifier);
