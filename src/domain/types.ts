@@ -1,0 +1,81 @@
+export type DateKey = string;
+export type Period = 'Week' | 'Month' | 'Year' | 'All';
+export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snacks';
+export const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snacks'];
+export type Nutrition = {
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+};
+export type Goals = Partial<Record<keyof Nutrition, number>>;
+export type WeightEntry = { id: string; date: DateKey; pounds: number };
+export type Exercise = { id: string; name: string };
+export type LiftRecord = {
+  id: string;
+  exerciseId: string;
+  date: DateKey;
+  pounds: number;
+  createdAt: number;
+};
+export type FoodPortion = { id: string; label: string; grams: number };
+export type Food = {
+  id: string;
+  name: string;
+  brand?: string;
+  per100g: Nutrition;
+  portions: FoodPortion[];
+};
+export type FoodSearchItem = { id: string; name: string; brand?: string };
+export type MealEntry = {
+  id: string;
+  date: DateKey;
+  meal: Meal;
+  food: Food;
+  portionId: string;
+  quantity: number;
+  nutrition: Nutrition;
+};
+export type Journal = {
+  version: 1;
+  weights: WeightEntry[];
+  exercises: Exercise[];
+  lifts: LiftRecord[];
+  meals: MealEntry[];
+  foods: Food[];
+  goals: Goals;
+};
+export type RunSplit = {
+  distanceMeters: number;
+  movingSeconds: number;
+  elevationDifference: number;
+};
+export type Run = {
+  id: string;
+  title: string;
+  date: string;
+  localDate: DateKey;
+  sport: string;
+  distanceMeters: number;
+  movingSeconds: number;
+  elapsedSeconds: number;
+  elevationMeters: number;
+  averageHeartRate: number | null;
+  splits?: RunSplit[];
+};
+export type Connection = {
+  configured: boolean;
+  connected: boolean;
+  athleteName?: string;
+  status?: 'connected' | 'reconnect';
+  complete?: boolean;
+  importedCount?: number;
+  lastSync?: string | null;
+  error?: string | null;
+};
+export type RunPage = {
+  runs: Run[];
+  nextCursor: string | null;
+  summary: { count: number; distanceMeters: number; movingSeconds: number };
+  complete: boolean;
+};

@@ -1,56 +1,40 @@
-# Welcome to your Expo app 👋
+# Growth
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A personal fitness journal for iPhone and web, built with Expo SDK 57, React Native, and TypeScript.
 
-## Get started
+- **Lifting:** dated weigh-ins, an interactive weight chart, and current lifting maxes with editable history.
+- **Running:** Strava authorization, automatic run imports, date-range summaries, run details, and mile splits.
+- **Diet:** daily meal journals, USDA food search, portion scaling, nutrition snapshots, and optional goals.
 
-1. Install dependencies
+The interface uses a dark charcoal theme with blue accents. Journals start empty. Local records stay in SQLite on iPhone and IndexedDB on web; phone and browser journals do not sync.
 
-   ```bash
-   npm install
-   ```
+## Start
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sh
+bun install --frozen-lockfile
+bunx expo start --go
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The local journal needs no account. Strava and online food search require the Cloudflare service and provider credentials. Follow [SETUP.md](./SETUP.md) for local API development, deployment, Strava/USDA configuration, and iOS development builds.
 
-### Other setup steps
+## Project structure
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+| Directory | Purpose |
+| --- | --- |
+| `src/app` | Three tab pages and shared logging/detail sheets |
+| `src/components` | Shared UI, chart, date controls, platform navigation |
+| `src/domain` | Types, date logic, nutrition calculations, journal validation |
+| `src/data` | SQLite/IndexedDB adapters and serialized local writes |
+| `src/services` | API client and secure platform-specific Strava sessions |
+| `server` | Cloudflare Worker, D1 migrations, OAuth, queue sync, USDA proxy |
+| `tests` | Domain, persistence, and integration tests using isolated data |
 
-## Learn more
+```sh
+bun run test
+bun run lint
+bun run typecheck
+bun run build:web
+bun run api:check
+```
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Local tests mock external providers. Live Strava/USDA acceptance and iOS OAuth must be completed with configured credentials and a development build as described in the setup guide.

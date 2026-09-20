@@ -1,31 +1,24 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
-
-import { Colors } from '@/constants/theme';
+import { C } from './ui';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
   return (
     <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
+      backgroundColor={C.surface}
+      tintColor={C.blue}
+      labelStyle={{ color: C.muted, selected: { color: C.blue } }}
+    >
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
+        <NativeTabs.Trigger.Label>Lifting</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="dumbbell" />
       </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
+      <NativeTabs.Trigger name="running">
+        <NativeTabs.Trigger.Label>Running</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="figure.run" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="diet">
+        <NativeTabs.Trigger.Label>Diet</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="fork.knife" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );
