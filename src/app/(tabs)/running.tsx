@@ -52,6 +52,7 @@ export default function RunningPage() {
   // Server summaries cover the whole period, including run pages not yet loaded by the UI.
   const summary = connected ? runs.data?.pages[0]?.summary : undefined;
   const items = runs.data?.pages.flatMap((p) => p.runs) ?? [];
+  const averagePace = summary ? pace(summary.movingSeconds, summary.distanceMeters) : '—';
   return (
     <Page
       title="Running"
@@ -73,6 +74,7 @@ export default function RunningPage() {
             value: summary?.count ?? (connected ? '—' : 0),
             unit: 'runs',
             color: C.blue,
+            accent: C.blue,
           },
           {
             label: 'Total miles',
@@ -83,12 +85,14 @@ export default function RunningPage() {
                 : '0.00',
             unit: 'mi',
             color: C.green,
+            accent: C.green,
           },
           {
             label: 'Average mile pace',
-            value: summary ? pace(summary.movingSeconds, summary.distanceMeters) : '—',
-            unit: '/ mi',
-            color: C.purple,
+            value: averagePace,
+            unit: '/mile',
+            color: averagePace === '—' ? C.text : C.purple,
+            accent: C.purple,
           },
         ].map((metric) => (
           <Card key={metric.label} style={{ flex: 1, minWidth: 170, gap: 23 }}>
@@ -104,10 +108,15 @@ export default function RunningPage() {
               }}
             >
               {metric.value}
-              <Text style={{ fontSize: 14, color: C.muted, letterSpacing: 0 }}> {metric.unit}</Text>
+              {metric.unit ? (
+                <Text style={{ fontSize: 14, color: C.muted, letterSpacing: 0 }}>
+                  {' '}
+                  {metric.unit}
+                </Text>
+              ) : null}
             </Text>
             <View
-              style={{ height: 3, borderRadius: 2, width: 32, backgroundColor: metric.color }}
+              style={{ height: 3, borderRadius: 2, width: 32, backgroundColor: metric.accent }}
             />
           </Card>
         ))}

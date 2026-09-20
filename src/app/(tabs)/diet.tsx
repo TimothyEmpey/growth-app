@@ -126,7 +126,7 @@ export default function DietPage() {
               {totals.calories === null ? '—' : Math.round(totals.calories)}
             </Text>
             <Text style={{ color: C.muted, fontSize: 13, marginTop: 5 }}>
-              {goal ? `of ${goal.toLocaleString()} kcal` : 'calories logged'}
+              {goal ? `${goal.toLocaleString()} kcal` : 'calories logged'}
             </Text>
           </View>
           <View style={{ flex: 1, minWidth: compact ? 115 : 210, gap: compact ? 18 : 25 }}>
