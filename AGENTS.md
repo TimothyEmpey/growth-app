@@ -23,6 +23,12 @@ npx expo install --fix      # fix incompatible package versions
 
 Run lint and typecheck before declaring any task done.
 
+## Code comments
+
+- Add concise, factual comments where they help a new engineer understand key components, feature entry points, and non-obvious behavior.
+- Explain intent, constraints, or important data flow; avoid restating clear code or commenting routine UI markup.
+- Keep comments selective and update or remove them when the associated behavior changes.
+
 ## Navigation & Routing
 
 - Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
