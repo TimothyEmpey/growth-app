@@ -1,8 +1,9 @@
+import { useAppearance, useColors } from '@/providers/appearance';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { formatDate, parseDate, today } from '@/domain/journal';
-import { C, Icon, Row } from './ui';
+import { Icon, Row } from './ui';
 
 export function DateField({
   value,
@@ -13,6 +14,8 @@ export function DateField({
   onChange: (date: string) => void;
   label?: string;
 }) {
+  const C = useColors();
+  const { scheme } = useAppearance();
   const [open, setOpen] = useState(false);
   return (
     <View style={{ gap: 8 }}>
@@ -42,7 +45,7 @@ export function DateField({
           minimumDate={new Date(1900, 0, 1)}
           mode="date"
           display="inline"
-          themeVariant="dark"
+          themeVariant={scheme}
           accentColor={C.blue}
           onChange={(_, date) => {
             if (date) onChange(today(date));

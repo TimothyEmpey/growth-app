@@ -1,3 +1,5 @@
+import { usePreferences } from '@/hooks/use-preferences';
+import { displayWeight, weightToPounds } from '@/domain/account';
 import { useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
@@ -23,11 +25,15 @@ export default function WeightSheet() {
   );
 }
 function WeightForm() {
+  const { units } = usePreferences();
+  const unit = units === 'metric' ? 'kg' : 'lb';
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { journal } = useJournal();
   const existing = journal.weights.find((w) => w.id === id);
   const [date, setDate] = useState(existing?.date ?? today());
-  const [weight, setWeight] = useState(existing ? String(existing.pounds) : '');
+  const [weight, setWeight] = useState(
+    existing ? String(displayWeight(existing.pounds, units)) : '',
+  );
   const action = useAction();
   const duplicate = journal.weights.find((w) => w.date === date && w.id !== id);
   return (
@@ -36,7 +42,7 @@ function WeightForm() {
       subtitle="Small check-ins. A bigger picture."
     >
       <Field
-        label="Weight (lb)"
+        label={`Weight (${unit})`}
         keyboardType="decimal-pad"
         autoFocus
         value={weight}
@@ -50,7 +56,7 @@ function WeightForm() {
           setDate(value);
           if (!id) {
             const entry = journal.weights.find((w) => w.date === value);
-            setWeight(entry ? String(entry.pounds) : '');
+            setWeight(entry ? String(displayWeight(entry.pounds, units)) : '');
           }
         }}
       />
@@ -60,7 +66,11 @@ function WeightForm() {
         loading={action.busy}
         onPress={() =>
           void action.run(async () => {
-            const pounds = positive(weight);
+            const source = existing ?? journal.weights.find((w) => w.date === date);
+            const pounds =
+              source && weight === String(displayWeight(source.pounds, units))
+                ? source.pounds
+                : weightToPounds(positive(weight), units);
             await updateJournal((j) => {
               j.weights = putWeight(j.weights, {
                 id: id ?? duplicate?.id ?? newId(),

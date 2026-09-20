@@ -1,7 +1,8 @@
+import { useColors } from '@/providers/appearance';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { C } from './ui';
 
 export default function AppTabs() {
+  const C = useColors();
   return (
     <NativeTabs
       backgroundColor={C.surface}
@@ -26,6 +27,13 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>Diet</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('../../assets/images/journal-icons/diet-icon.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="account">
+        <NativeTabs.Trigger.Label>Account</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={require('../../assets/images/journal-icons/account-icon.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>

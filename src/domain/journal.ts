@@ -1,3 +1,4 @@
+import { defaultPreferences, emptyProfile, normalizePreferences } from './account';
 import type { DateKey, Food, Journal, LiftRecord, Nutrition, Period, WeightEntry } from './types';
 
 export const nutritionKeys = ['calories', 'protein', 'carbs', 'fat'] as const;
@@ -43,9 +44,9 @@ export function formatDate(
 ): string {
   return parseDate(date.slice(0, 10)).toLocaleDateString('en-US', options);
 }
-export function pace(seconds: number, meters: number): string {
+export function pace(seconds: number, meters: number, units: 'us' | 'metric' = 'us'): string {
   if (meters <= 0 || seconds <= 0) return '—';
-  const sec = Math.round(seconds / (meters / 1609.344));
+  const sec = Math.round(seconds / (meters / (units === 'metric' ? 1000 : 1609.344)));
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 }
 export function duration(seconds: number): string {
@@ -98,6 +99,8 @@ export function emptyJournal(): Journal {
     meals: [],
     foods: [],
     goals: {},
+    preferences: { ...defaultPreferences },
+    profile: emptyProfile(),
     exercises: [
       { id: 'squat', name: 'Squat' },
       { id: 'bench', name: 'Bench press' },
@@ -121,5 +124,9 @@ export function migrateJournal(value: unknown): Journal {
     typeof journal.goals !== 'object'
   )
     throw new Error('Your journal could not be read. Your stored data has not been changed.');
-  return journal;
+  return {
+    ...journal,
+    preferences: normalizePreferences(journal.preferences),
+    profile: { ...emptyProfile(), ...journal.profile },
+  };
 }

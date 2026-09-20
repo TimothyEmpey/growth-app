@@ -1,3 +1,4 @@
+import { useColors } from '@/providers/appearance';
 import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -5,10 +6,11 @@ import { router } from 'expo-router';
 import { useJournal } from '@/data/journal-store';
 import { formatDate, shiftDay, sumNutrition, today } from '@/domain/journal';
 import { MEALS } from '@/domain/types';
-import { Body, Button, C, Card, Icon, Label, Page, Row, Title } from '@/components/ui';
+import { Body, Button, Card, Icon, Label, Page, Row, Title } from '@/components/ui';
 import { DateField } from '@/components/date-field';
 
 export default function DietPage() {
+  const C = useColors();
   const compact = useWindowDimensions().width < 600;
   const { journal } = useJournal();
   const [date, setDate] = useState(today());

@@ -1,5 +1,6 @@
+import { useColors } from '@/providers/appearance';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import {
   ActivityIndicator,
@@ -19,21 +20,10 @@ import type { Nutrition, Period } from '@/domain/types';
 import { useJournal } from '@/data/journal-store';
 import { Dialog } from './dialog';
 
-export const C = {
-  bg: '#101216',
-  surface: '#191c22',
-  elevated: '#20242d',
-  border: '#30353f',
-  text: '#f4f6fb',
-  muted: '#969fad',
-  blue: '#719bff',
-  blueDark: '#2b5be7',
-  green: '#71d7b1',
-  gold: '#e5bb73',
-  purple: '#b69bfa',
-  red: '#ff9696',
-};
 export type IconName =
+  | 'account'
+  | 'sun'
+  | 'flame'
   | 'lift'
   | 'run'
   | 'food'
@@ -52,6 +42,8 @@ export type IconName =
   | 'trash';
 
 const journalIconSources = {
+  flame: require('../../assets/images/journal-icons/fire-icon.png'),
+  account: require('../../assets/images/journal-icons/account-icon.png'),
   lift: require('../../assets/images/journal-icons/lifting-icon.png'),
   run: require('../../assets/images/journal-icons/running-icon.png'),
   food: require('../../assets/images/journal-icons/diet-icon.png'),
@@ -61,13 +53,22 @@ const journalIconSources = {
 export function Icon({
   name,
   size = 22,
-  color = C.muted,
+  color,
 }: {
   name: IconName;
   size?: number;
   color?: string;
 }) {
-  if (name === 'lift' || name === 'run' || name === 'food' || name === 'link') {
+  const C = useColors();
+  color ??= C.muted;
+  if (
+    name === 'flame' ||
+    name === 'account' ||
+    name === 'lift' ||
+    name === 'run' ||
+    name === 'food' ||
+    name === 'link'
+  ) {
     return (
       <Image
         source={journalIconSources[name]}
@@ -78,7 +79,11 @@ export function Icon({
     );
   }
 
-  const paths: Record<Exclude<IconName, 'lift' | 'run' | 'food' | 'link'>, string> = {
+  const paths: Record<
+    Exclude<IconName, 'flame' | 'account' | 'lift' | 'run' | 'food' | 'link'>,
+    string
+  > = {
+    sun: 'M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
     plus: 'M12 5v14M5 12h14',
     arrow: 'M5 12h14m-6-6 6 6-6 6',
     left: 'm14 6-6 6 6 6',
@@ -110,7 +115,9 @@ export function Icon({
     </Svg>
   );
 }
-export function Label({ children, color = C.muted }: { children: ReactNode; color?: string }) {
+export function Label({ children, color }: { children: ReactNode; color?: string }) {
+  const C = useColors();
+  color ??= C.muted;
   return (
     <Text
       style={{
@@ -125,7 +132,9 @@ export function Label({ children, color = C.muted }: { children: ReactNode; colo
     </Text>
   );
 }
-export function Body({ children, color = C.muted }: { children: ReactNode; color?: string }) {
+export function Body({ children, color }: { children: ReactNode; color?: string }) {
+  const C = useColors();
+  color ??= C.muted;
   return (
     <Text selectable style={{ color, fontSize: 14, lineHeight: 22 }}>
       {children}
@@ -133,6 +142,7 @@ export function Body({ children, color = C.muted }: { children: ReactNode; color
   );
 }
 export function Title({ children, size = 22 }: { children: ReactNode; size?: number }) {
+  const C = useColors();
   return (
     <Text
       selectable
@@ -148,6 +158,7 @@ export function Row({ children, style }: { children: ReactNode; style?: ViewStyl
   );
 }
 export function Card({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+  const C = useColors();
   return (
     <View
       style={[
@@ -186,6 +197,7 @@ export function Button({
   loading?: boolean;
   label?: string;
 }) {
+  const C = useColors();
   const color = danger ? C.red : quiet ? C.text : '#fff';
   return (
     <Pressable
@@ -224,6 +236,7 @@ export function PeriodControl({
   value: Period;
   onChange: (period: Period) => void;
 }) {
+  const C = useColors();
   return (
     <Row
       style={{
@@ -270,6 +283,7 @@ export function Page({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const C = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { ready, error } = useJournal();
@@ -318,6 +332,7 @@ export function Empty({
   children: ReactNode;
   action?: ReactNode;
 }) {
+  const C = useColors();
   return (
     <View style={{ alignItems: 'center', paddingVertical: 28, paddingHorizontal: 12, gap: 12 }}>
       <View
@@ -344,6 +359,7 @@ export function Empty({
   );
 }
 export function Notice({ message }: { message: string }) {
+  const C = useColors();
   return (
     <View
       accessibilityRole="alert"
@@ -360,6 +376,7 @@ export function Notice({ message }: { message: string }) {
   );
 }
 export function Field({ label, ...props }: TextInputProps & { label: string }) {
+  const C = useColors();
   return (
     <View style={{ gap: 8 }}>
       <Text style={{ color: C.muted, fontSize: 14 }}>{label}</Text>
@@ -385,8 +402,9 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
     </View>
   );
 }
-export function dismissSheet(fallback: '/' | '/diet' | '/running' = '/') {
-  if (router.canGoBack()) router.back();
+export function dismissSheet(fallback: '/' | '/diet' | '/running' | '/account' = '/') {
+  if (fallback === '/account') router.dismissTo('/account');
+  else if (router.canGoBack()) router.back();
   else router.replace(fallback);
 }
 export function Sheet({
@@ -398,9 +416,11 @@ export function Sheet({
   subtitle?: string;
   children: ReactNode;
 }) {
+  const C = useColors();
   const pathname = usePathname();
-  const fallback =
-    pathname === '/food' || pathname === '/goals'
+  const fallback = pathname.startsWith('/account/')
+    ? '/account'
+    : pathname === '/food' || pathname === '/goals'
       ? '/diet'
       : pathname === '/run' || pathname === '/strava'
         ? '/running'
@@ -435,6 +455,7 @@ export function Sheet({
 }
 // Mount forms after hydration so their initial fields reflect persisted entries on direct links.
 export function JournalReady({ children }: { children: ReactNode }) {
+  const C = useColors();
   const { ready, error } = useJournal();
   if (!ready)
     return (
@@ -445,6 +466,7 @@ export function JournalReady({ children }: { children: ReactNode }) {
   return children;
 }
 export function NutritionStrip({ nutrition }: { nutrition: Nutrition }) {
+  const C = useColors();
   return (
     <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 18 }}>
       {(['calories', 'protein', 'carbs', 'fat'] as const).map((key) => (
@@ -482,10 +504,12 @@ export function NutritionStrip({ nutrition }: { nutrition: Nutrition }) {
   );
 }
 export function useAction() {
+  const inFlight = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const run = async (action: () => Promise<void>) => {
-    if (busy) return;
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -493,6 +517,7 @@ export function useAction() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   };

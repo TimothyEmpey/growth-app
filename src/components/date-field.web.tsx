@@ -1,7 +1,7 @@
+import { useColors } from '@/providers/appearance';
 import { createElement } from 'react';
 import { Text, View } from 'react-native';
 import { today } from '@/domain/journal';
-import { C } from './ui';
 
 export function DateField({
   value,
@@ -12,6 +12,7 @@ export function DateField({
   onChange: (date: string) => void;
   label?: string;
 }) {
+  const C = useColors();
   return (
     <View style={{ gap: 8 }}>
       <Text style={{ color: C.muted, fontSize: 14 }}>{label}</Text>
@@ -25,7 +26,7 @@ export function DateField({
           if (event.target.value) onChange(event.target.value);
         },
         style: {
-          colorScheme: 'dark',
+          colorScheme: 'inherit',
           color: C.text,
           background: C.bg,
           border: `1px solid ${C.border}`,

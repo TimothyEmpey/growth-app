@@ -1,3 +1,4 @@
+import { useColors } from '@/providers/appearance';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -10,7 +11,6 @@ import {
   dismissSheet,
   Body,
   Button,
-  C,
   Card,
   Field,
   Icon,
@@ -33,6 +33,7 @@ export default function FoodSheet() {
 }
 // One sheet handles food search, serving selection, and edits to an existing meal entry.
 function FoodForm() {
+  const C = useColors();
   const params = useLocalSearchParams<{ id?: string; meal?: Meal; date?: string }>();
   const { journal } = useJournal();
   const existing = journal.meals.find((e) => e.id === params.id);
@@ -279,6 +280,7 @@ function FoodForm() {
   );
 }
 function FoodResult({ food, onPress }: { food: FoodSearchItem; onPress: () => void }) {
+  const C = useColors();
   return (
     <Pressable
       accessibilityRole="button"

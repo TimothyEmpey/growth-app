@@ -1,26 +1,19 @@
-import { useState } from 'react';
+import { usePreferences, useDefaultPeriod } from '@/hooks/use-preferences';
+import { displayWeight } from '@/domain/account';
+import { useColors } from '@/providers/appearance';
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useJournal } from '@/data/journal-store';
 import { formatDate, periodStart, sortLifts, today } from '@/domain/journal';
-import type { Period } from '@/domain/types';
-import {
-  Body,
-  Button,
-  C,
-  Card,
-  Icon,
-  Label,
-  Page,
-  PeriodControl,
-  Row,
-  Title,
-} from '@/components/ui';
+import { Body, Button, Card, Icon, Label, Page, PeriodControl, Row, Title } from '@/components/ui';
 import { WeightChart } from '@/components/weight-chart';
 
 export default function LiftingPage() {
+  const C = useColors();
   const { journal } = useJournal();
-  const [period, setPeriod] = useState<Period>('Month');
+  const [period, setPeriod] = useDefaultPeriod();
+  const { units } = usePreferences();
+  const weightUnit = units === 'metric' ? 'kg' : 'lb';
   // The chart and change use the selected period; the headline weight uses the full history.
   const entries = journal.weights.filter((w) => w.date >= periodStart(period) && w.date <= today());
   const latest = journal.weights.at(-1);
@@ -66,8 +59,8 @@ export default function LiftingPage() {
                 fontVariant: ['tabular-nums'],
               }}
             >
-              {latest?.pounds ?? '—'}
-              <Text style={{ color: C.muted, fontSize: 18, letterSpacing: 0 }}> lb</Text>
+              {latest ? displayWeight(latest.pounds, units) : '—'}
+              <Text style={{ color: C.muted, fontSize: 18, letterSpacing: 0 }}> {weightUnit}</Text>
             </Text>
             <Body>
               {latest
@@ -77,7 +70,9 @@ export default function LiftingPage() {
           </View>
           <View style={{ gap: 7, alignItems: 'flex-end' }}>
             <Text style={{ color: C.blue, fontSize: 18, fontWeight: '600' }}>
-              {change === null ? '—' : `${change > 0 ? '+' : ''}${Number(change.toFixed(2))} lb`}
+              {change === null
+                ? '—'
+                : `${change > 0 ? '+' : ''}${displayWeight(change, units)} ${weightUnit}`}
             </Text>
             <Body>
               {period === 'All'
@@ -107,7 +102,7 @@ export default function LiftingPage() {
               <Pressable
                 key={exercise.id}
                 accessibilityRole="button"
-                accessibilityLabel={`${exercise.name}, ${current ? current.pounds + ' pounds' : 'no max recorded'}`}
+                accessibilityLabel={`${exercise.name}, ${current ? displayWeight(current.pounds, units) + ' ' + weightUnit : 'no max recorded'}`}
                 onPress={() => router.push({ pathname: '/lift', params: { id: exercise.id } })}
                 style={({ pressed }) => ({
                   minWidth: 245,
@@ -149,8 +144,8 @@ export default function LiftingPage() {
                       fontVariant: ['tabular-nums'],
                     }}
                   >
-                    {current?.pounds ?? '—'}
-                    <Text style={{ fontSize: 14, color: C.muted }}> lb</Text>
+                    {current ? displayWeight(current.pounds, units) : '—'}
+                    <Text style={{ fontSize: 14, color: C.muted }}> {weightUnit}</Text>
                   </Text>
                   <Label>
                     {records.length

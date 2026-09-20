@@ -1,3 +1,4 @@
+import type { Preferences, Profile } from './account';
 // Local calendar date (YYYY-MM-DD), without a time or UTC offset.
 export type DateKey = string;
 export type Period = 'Week' | 'Month' | 'Year' | 'All';
@@ -47,6 +48,8 @@ export type Journal = {
   meals: MealEntry[];
   foods: Food[];
   goals: Goals;
+  preferences: Preferences;
+  profile: Profile;
 };
 export type RunSplit = {
   distanceMeters: number;
@@ -65,6 +68,7 @@ export type Run = {
   elevationMeters: number;
   averageHeartRate: number | null;
   splits?: RunSplit[];
+  metricSplits?: RunSplit[];
 };
 export type Connection = {
   configured: boolean;

@@ -1,19 +1,27 @@
+import { usePreferences } from '@/hooks/use-preferences';
+import { distanceValue } from '@/domain/account';
+import { useColors } from '@/providers/appearance';
 import { ActivityIndicator, Linking, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import type { Run } from '@/domain/types';
 import { duration, formatDate, pace } from '@/domain/journal';
-import { Body, Button, C, Card, Label, Notice, Row, Sheet, Title } from '@/components/ui';
+import { Body, Button, Card, Label, Notice, Row, Sheet, Title } from '@/components/ui';
 
 export default function RunSheet() {
+  const C = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const query = useQuery({
     queryKey: ['run', id],
     queryFn: ({ signal }) => api<Run>(`/api/runs/${id}`, { signal }),
     retry: false,
   });
+  const { units } = usePreferences();
+  const metric = units === 'metric';
+  const unit = metric ? 'km' : 'mi';
   const run = query.data;
+  const splits = metric ? run?.metricSplits : run?.splits;
   return (
     <Sheet
       title={run?.title ?? 'Run details'}
@@ -33,10 +41,19 @@ export default function RunSheet() {
           <Card style={{ backgroundColor: C.bg }}>
             <Row style={{ flexWrap: 'wrap', justifyContent: 'space-between', gap: 24 }}>
               {[
-                { label: 'Distance', value: `${(run.distanceMeters / 1609.344).toFixed(2)} mi` },
+                {
+                  label: 'Distance',
+                  value: `${distanceValue(run.distanceMeters, units).toFixed(2)} ${unit}`,
+                },
                 { label: 'Moving time', value: duration(run.movingSeconds) },
-                { label: 'Mile pace', value: `${pace(run.movingSeconds, run.distanceMeters)} /mi` },
-                { label: 'Elevation', value: `${Math.round(run.elevationMeters * 3.28084)} ft` },
+                {
+                  label: metric ? 'Kilometer pace' : 'Mile pace',
+                  value: `${pace(run.movingSeconds, run.distanceMeters, units)} /${unit}`,
+                },
+                {
+                  label: 'Elevation',
+                  value: `${Math.round(run.elevationMeters * (metric ? 1 : 3.28084))} ${metric ? 'm' : 'ft'}`,
+                },
                 { label: 'Elapsed time', value: duration(run.elapsedSeconds) },
                 {
                   label: 'Avg heart rate',
@@ -52,9 +69,9 @@ export default function RunSheet() {
               ))}
             </Row>
           </Card>
-          <Title size={18}>Mile splits</Title>
-          {run.splits?.length ? (
-            run.splits.map((split, i) => (
+          <Title size={18}>{metric ? 'Kilometer splits' : 'Mile splits'}</Title>
+          {splits?.length ? (
+            splits.map((split, i) => (
               <Row
                 key={i}
                 style={{
@@ -65,17 +82,17 @@ export default function RunSheet() {
                 }}
               >
                 <Body>
-                  {split.distanceMeters / 1609.344 < 0.95
-                    ? `Final ${(split.distanceMeters / 1609.344).toFixed(2)} mi`
-                    : `Mile ${i + 1}`}
+                  {distanceValue(split.distanceMeters, units) < 0.95
+                    ? `Final ${distanceValue(split.distanceMeters, units).toFixed(2)} ${unit}`
+                    : `${metric ? 'Kilometer' : 'Mile'} ${i + 1}`}
                 </Body>
                 <Text style={{ color: C.blue, fontSize: 16 }}>
-                  {pace(split.movingSeconds, split.distanceMeters)} / mi
+                  {pace(split.movingSeconds, split.distanceMeters, units)} / {unit}
                 </Text>
               </Row>
             ))
           ) : (
-            <Body>Strava hasn’t provided mile splits for this run.</Body>
+            <Body>Strava hasn’t provided {metric ? 'kilometer' : 'mile'} splits for this run.</Body>
           )}
           <Button
             quiet

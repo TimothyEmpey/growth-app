@@ -134,3 +134,35 @@ Automated tests use isolated local databases and mock Strava/USDA responses; the
 - Verify that empty/unavailable nutrients show `—`, and that nutrition snapshots do not change when foods are fetched again.
 
 Check Worker logs, `connections.sync_error`, and the `growth-sync-failed` queue if a sync stalls. The next daily reconciliation or Refresh runs resumes a pending import. Provider keys and a signed iOS development build are required for live acceptance; passing local tests alone does not verify those external connections.
+
+## Growth accounts and verification emails
+
+The fourth tab, **Account**, works locally for the profile, activity streak, appearance, and preferences. Email/password accounts use the existing Worker and new D1 migration `0003_accounts.sql`. They are separate from Strava authorization. Growth sign-in saves a profile on the server; it does not move or synchronize the device's existing meal/lifting journal. Appearance and unit preferences belong to the device. The existing owner-only Strava integration is unchanged.
+
+To activate real account email delivery:
+
+1. Set up a verified sender/domain in [Resend](https://resend.com/docs/dashboard/domains/introduction). Set `EMAIL_FROM` to a verified sender such as `Growth <accounts@your-domain.example>`.
+2. Add `RESEND_API_KEY` and `EMAIL_FROM` to the gitignored `server/.dev.vars` for local development. For production, use the commands below. Do not put either value in an `EXPO_PUBLIC_` variable.
+3. Apply all D1 migrations, rebuild the web app, and deploy the Worker using the existing deployment steps. Use an HTTPS `APP_ORIGIN` in production so account cookies are marked Secure. Password hashing uses Node-compatible scrypt in Workers; allow enough Worker CPU time for password operations on your chosen plan.
+
+```sh
+bunx wrangler secret put RESEND_API_KEY --config server/wrangler.jsonc
+bunx wrangler secret put EMAIL_FROM --config server/wrangler.jsonc
+bun run api:migrate
+# On the deployed database, run the --remote migration command in section 5.
+```
+
+Registration sends an expiring six-digit code before creating an account. Email changes require the current password and separate codes sent to the existing and proposed email addresses. Both must be verified while signed in to that account. Cancelling an email change invalidates its pending verification. Password changes require the current password; recovery sends a one-time code to the registered email. Codes expire after 10 minutes with at most five attempts. Password/email changes invalidate other sessions and outstanding challenges. Native sessions use SecureStore; browsers use a separate HttpOnly account cookie. Passwords use salted scrypt hashes, and session tokens and verification codes are hashed before storage.
+
+There is no development bypass or code shown in the app: if email credentials are missing or delivery fails, the request reports an error and the account email is not changed. Automated tests mock Resend and use isolated databases; they do not send real mail.
+
+Additional live acceptance with two inboxes you control:
+
+- Register, receive the code, verify it, sign out, and sign back in on web and iPhone.
+- Change email and verify that the old email remains active until both inbox codes succeed. Try an incorrect/expired code and cancel a change.
+- Change/recover the password and verify a second session is signed out.
+- Switch light/dark/system appearance, change the device's system theme, and restart the app.
+- Switch US/metric units and inspect weights, lift records, run distance/pace/elevation, and the provider's corresponding split data.
+- Verify the streak with meals only, runs only, combined days, a missed day, and a local midnight rollover. A meal entry qualifies; running days use Strava's recorded local date. Future dates are excluded, and a streak ending yesterday stays active during today. Run imports can increase the streak as history arrives.
+
+Changing `userInterfaceStyle` from dark to automatic requires a new native binary for already-installed development/production builds. Expo Go can be used for the shared UI; real Strava OAuth continues to require the configured development build.

@@ -1,3 +1,4 @@
+import { accountRoute, accountsConfigured } from './accounts';
 import { foodDetail, searchFoods } from './food';
 import { authorize, nativeExchange, oauthCallback } from './oauth';
 import { hash, rateLimit, requireAthlete, sessionAthlete, setCookie } from './security';
@@ -98,10 +99,13 @@ async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url),
     path = url.pathname,
     method = request.method;
+  if (path === '/api/account' || path.startsWith('/api/account/'))
+    return accountRoute(request, env);
   if (path.startsWith('/api/strava/webhook/')) return webhook(request, env);
   if (path === '/api/health')
     return json({
       ok: true,
+      accountsConfigured: accountsConfigured(env),
       stravaConfigured: configured(env),
       foodConfigured: !!env.USDA_API_KEY,
     });
@@ -160,6 +164,21 @@ async function route(request: Request, env: Env): Promise<Response> {
     await rateLimit(request, env, 'sync', 3);
     await requestSync(env, athleteId);
     return json({ queued: true }, 202);
+  }
+  if (path === '/api/run-days' && method === 'GET') {
+    const athleteId = await requireAthlete(request, env);
+    const connection = await getConnection(env, athleteId);
+    if (connection?.status !== 'connected')
+      throw new ServiceError('Reconnect Strava to include runs in your streak.', 401);
+    const days = await env.DB.prepare(
+      'SELECT DISTINCT local_date FROM runs WHERE athlete_id=? ORDER BY local_date',
+    )
+      .bind(athleteId)
+      .all<{ local_date: string }>();
+    return json({
+      dates: days.results.map((row) => row.local_date),
+      complete: !!connection.sync_complete,
+    });
   }
   if (path === '/api/runs' && method === 'GET') {
     const athleteId = await requireAthlete(request, env);
@@ -221,7 +240,8 @@ async function route(request: Request, env: Env): Promise<Response> {
       .bind(athleteId, id)
       .first<{ data: string; detailed: number }>();
     if (!cached) throw new ServiceError('Run not found.', 404);
-    if (cached.detailed) return json(JSON.parse(cached.data) as Run);
+    if (cached.detailed && 'metricSplits' in JSON.parse(cached.data))
+      return json(JSON.parse(cached.data) as Run);
     const run = normalizeRun(await stravaGet<StravaActivity>(`activities/${id}`, env, athleteId));
     if (!run) {
       await env.DB.prepare('DELETE FROM runs WHERE athlete_id=? AND id=?')
@@ -261,7 +281,7 @@ export default {
           ...(origin && accepted.includes(origin)
             ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Credentials': 'true' }
             : {}),
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Growth-Platform',
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
           Vary: 'Origin',
         },
@@ -298,6 +318,7 @@ export default {
       headers.set('Access-Control-Allow-Credentials', 'true');
       headers.set('Vary', 'Origin');
     }
+    if (path.startsWith('/api/account')) headers.set('Cache-Control', 'no-store');
     headers.set('X-Content-Type-Options', 'nosniff');
     headers.set('Referrer-Policy', 'no-referrer');
     return new Response(response.body, { status: response.status, headers });
@@ -326,9 +347,15 @@ export default {
   // Expire temporary records and reconcile history to catch missed activity edits or deletions.
   async scheduled(_event: ScheduledEvent, env: Env) {
     await env.DB.batch(
-      ['sessions', 'oauth_attempts', 'native_exchanges', 'food_cache', 'rate_buckets'].map(
-        (table) => env.DB.prepare(`DELETE FROM ${table} WHERE expires_at < ?`).bind(now()),
-      ),
+      [
+        'sessions',
+        'account_sessions',
+        'account_challenges',
+        'oauth_attempts',
+        'native_exchanges',
+        'food_cache',
+        'rate_buckets',
+      ].map((table) => env.DB.prepare(`DELETE FROM ${table} WHERE expires_at < ?`).bind(now())),
     );
     await env.DB.prepare('DELETE FROM events WHERE processed=1 AND created_at < ?')
       .bind(now() - 7 * 86400)

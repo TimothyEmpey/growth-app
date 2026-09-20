@@ -1,3 +1,6 @@
+import { usePreferences } from '@/hooks/use-preferences';
+import { displayWeight } from '@/domain/account';
+import { useColors } from '@/providers/appearance';
 import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Svg, {
@@ -11,7 +14,7 @@ import Svg, {
 } from 'react-native-svg';
 import type { WeightEntry } from '@/domain/types';
 import { formatDate, parseDate } from '@/domain/journal';
-import { C, Empty } from './ui';
+import { Empty } from './ui';
 
 // Plot recorded weights at their actual date positions; no measurements are added for gaps.
 export function WeightChart({
@@ -21,6 +24,9 @@ export function WeightChart({
   entries: WeightEntry[];
   onSelect: (entry: WeightEntry) => void;
 }) {
+  const C = useColors();
+  const { units } = usePreferences();
+  const unit = units === 'metric' ? 'kg' : 'lb';
   const [width, setWidth] = useState(600);
   const height = 250,
     left = 42,
@@ -62,7 +68,7 @@ export function WeightChart({
         width="100%"
         height={height}
         viewBox={`0 0 ${width} ${height}`}
-        accessibilityLabel={`Weight history, ${entries.length} entries. Latest ${entries.at(-1)?.pounds} pounds.`}
+        accessibilityLabel={`Weight history, ${entries.length} entries. Latest ${displayWeight(entries.at(-1)!.pounds, units)} ${unit}.`}
       >
         <Defs>
           <LinearGradient id="weight-fill" x1="0" y1="0" x2="0" y2="1">
@@ -73,7 +79,14 @@ export function WeightChart({
         {[0, 1, 2, 3].map((i) => {
           const value = low + ((high - low) * i) / 3,
             yy = bottom - ((bottom - top) * i) / 3;
-          return <ViewlessGrid key={i} y={yy} right={right} label={value.toFixed(0)} />;
+          return (
+            <ViewlessGrid
+              key={i}
+              y={yy}
+              right={right}
+              label={String(displayWeight(value, units))}
+            />
+          );
         })}
         {entries.length > 1 && (
           <Path
@@ -110,7 +123,7 @@ export function WeightChart({
           <Pressable
             key={entry.id}
             accessibilityRole="button"
-            accessibilityLabel={`Weigh-in ${entry.date}: ${entry.pounds} pounds`}
+            accessibilityLabel={`Weigh-in ${entry.date}: ${displayWeight(entry.pounds, units)} ${unit}`}
             onPress={() => onSelect(entry)}
             style={{
               position: 'absolute',
@@ -131,7 +144,7 @@ export function WeightChart({
             <Pressable
               key={entry.id}
               accessibilityRole="button"
-              accessibilityLabel={`Edit weight ${entry.pounds} pounds on ${entry.date}`}
+              accessibilityLabel={`Edit weight ${displayWeight(entry.pounds, units)} ${unit} on ${entry.date}`}
               onPress={() => onSelect(entry)}
               style={{
                 minHeight: 36,
@@ -143,7 +156,9 @@ export function WeightChart({
             >
               <Text style={{ color: C.muted, fontSize: 12 }}>
                 {formatDate(entry.date, { month: 'short', day: 'numeric' })} ·{' '}
-                <Text style={{ color: C.text }}>{entry.pounds} lb</Text>
+                <Text style={{ color: C.text }}>
+                  {displayWeight(entry.pounds, units)} {unit}
+                </Text>
               </Text>
             </Pressable>
           ))}
@@ -152,6 +167,7 @@ export function WeightChart({
   );
 }
 function ViewlessGrid({ y, right, label }: { y: number; right: number; label: string }) {
+  const C = useColors();
   return (
     <>
       <Line x1={42} x2={right} y1={y} y2={y} stroke={C.border} strokeDasharray="3 5" />

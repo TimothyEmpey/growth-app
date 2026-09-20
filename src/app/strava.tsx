@@ -1,3 +1,4 @@
+import { useColors } from '@/providers/appearance';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, View } from 'react-native';
@@ -5,9 +6,10 @@ import { api } from '@/services/api';
 import { linkStrava } from '@/services/auth';
 import { clearSession } from '@/services/session';
 import type { Connection } from '@/domain/types';
-import { Body, Button, C, Card, Icon, Notice, Sheet, Title, useAction } from '@/components/ui';
+import { Body, Button, Card, Icon, Notice, Sheet, Title, useAction } from '@/components/ui';
 
 export default function StravaSheet() {
+  const C = useColors();
   const client = useQueryClient();
   const action = useAction();
   const [confirm, setConfirm] = useState(false);
@@ -20,6 +22,7 @@ export default function StravaSheet() {
   const refresh = async () => {
     await client.invalidateQueries({ queryKey: ['strava'] });
     await client.invalidateQueries({ queryKey: ['runs'] });
+    await client.invalidateQueries({ queryKey: ['run-days'] });
   };
   return (
     <Sheet
@@ -100,6 +103,7 @@ export default function StravaSheet() {
                     await clearSession();
                     client.removeQueries({ queryKey: ['runs'] });
                     client.removeQueries({ queryKey: ['run'] });
+                    client.removeQueries({ queryKey: ['run-days'] });
                     setConfirm(false);
                     await refresh();
                   })

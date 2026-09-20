@@ -1,3 +1,6 @@
+import { usePreferences } from '@/hooks/use-preferences';
+import { displayWeight, weightToPounds } from '@/domain/account';
+import { useColors } from '@/providers/appearance';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -7,7 +10,6 @@ import {
   dismissSheet,
   Body,
   Button,
-  C,
   Card,
   Field,
   Icon,
@@ -29,6 +31,9 @@ export default function LiftSheet() {
   );
 }
 function LiftForm() {
+  const { units } = usePreferences();
+  const unit = units === 'metric' ? 'kg' : 'lb';
+  const C = useColors();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { journal } = useJournal();
   const exercise = journal.exercises.find((e) => e.id === id);
@@ -90,8 +95,8 @@ function LiftForm() {
           <Card style={{ backgroundColor: C.bg }}>
             <Label>Current max</Label>
             <Text selectable style={{ color: C.text, fontSize: 44, fontWeight: '600' }}>
-              {records[0]?.pounds ?? '—'}
-              <Text style={{ color: C.muted, fontSize: 18 }}> lb</Text>
+              {records[0] ? displayWeight(records[0].pounds, units) : '—'}
+              <Text style={{ color: C.muted, fontSize: 18 }}> {unit}</Text>
             </Text>
             <Body>{records[0] ? formatDate(records[0].date) : 'No max logged yet'}</Body>
             <Row>
@@ -115,7 +120,7 @@ function LiftForm() {
             <View style={{ gap: 16 }}>
               <Title size={18}>{editing ? 'Edit record' : 'New max'}</Title>
               <Field
-                label="Weight (lb)"
+                label={`Weight (${unit})`}
                 value={weight}
                 onChangeText={setWeight}
                 keyboardType="decimal-pad"
@@ -126,7 +131,11 @@ function LiftForm() {
                 loading={action.busy}
                 onPress={() =>
                   void action.run(async () => {
-                    const pounds = positive(weight);
+                    const source = records.find((record) => record.id === editing);
+                    const pounds =
+                      source && weight === String(displayWeight(source.pounds, units))
+                        ? source.pounds
+                        : weightToPounds(positive(weight), units);
                     if (!validDate(date)) throw new Error('Choose a valid date, today or earlier.');
                     await updateJournal((j) => {
                       if (!j.exercises.some((e) => e.id === id))
@@ -176,11 +185,11 @@ function LiftForm() {
                 <Pressable
                   key={record.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`Edit ${record.pounds} pounds on ${record.date}`}
+                  accessibilityLabel={`Edit ${displayWeight(record.pounds, units)} ${unit} on ${record.date}`}
                   onPress={() => {
                     setEditing(record.id);
                     setAdding(true);
-                    setWeight(String(record.pounds));
+                    setWeight(String(displayWeight(record.pounds, units)));
                     setDate(record.date);
                   }}
                   style={{ paddingVertical: 16, borderBottomWidth: 1, borderColor: C.border }}
@@ -188,7 +197,7 @@ function LiftForm() {
                   <Row>
                     <View style={{ flex: 1, gap: 6 }}>
                       <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>
-                        {record.pounds} lb{' '}
+                        {displayWeight(record.pounds, units)} {unit}{' '}
                         <Text style={{ fontSize: 12, color: C.blue }}>
                           {index === 0 ? 'CURRENT' : ''}
                         </Text>

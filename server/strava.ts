@@ -14,6 +14,7 @@ export interface StravaActivity {
   elapsed_time: number;
   total_elevation_gain: number;
   average_heartrate?: number;
+  splits_metric?: { distance: number; moving_time: number; elevation_difference: number }[];
   splits_standard?: { distance: number; moving_time: number; elevation_difference: number }[];
 }
 export function normalizeRun(activity: StravaActivity): Run | null {
@@ -30,6 +31,11 @@ export function normalizeRun(activity: StravaActivity): Run | null {
     elapsedSeconds: activity.elapsed_time,
     elevationMeters: activity.total_elevation_gain,
     averageHeartRate: activity.average_heartrate ?? null,
+    metricSplits: (activity.splits_metric ?? []).map((s) => ({
+      distanceMeters: s.distance,
+      movingSeconds: s.moving_time,
+      elevationDifference: s.elevation_difference,
+    })),
     ...(activity.splits_standard
       ? {
           splits: activity.splits_standard.map((s) => ({

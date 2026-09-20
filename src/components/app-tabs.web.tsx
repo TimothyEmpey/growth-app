@@ -1,6 +1,7 @@
+import { useColors } from '@/providers/appearance';
 import { Tabs, TabList, TabTrigger, TabSlot, type TabTriggerSlotProps } from 'expo-router/ui';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
-import { C, Icon, type IconName } from './ui';
+import { Icon, type IconName } from './ui';
 
 function TabButton({
   isFocused,
@@ -9,6 +10,7 @@ function TabButton({
   compact,
   ...props
 }: TabTriggerSlotProps & { icon: IconName; compact: boolean }) {
+  const C = useColors();
   return (
     <Pressable
       {...props}
@@ -17,7 +19,7 @@ function TabButton({
         alignItems: 'center',
         gap: compact ? 5 : 13,
         paddingVertical: compact ? 10 : 15,
-        paddingHorizontal: 16,
+        paddingHorizontal: compact ? 6 : 16,
         borderRadius: 12,
         backgroundColor: isFocused ? '#719bff17' : 'transparent',
         opacity: pressed ? 0.65 : 1,
@@ -51,6 +53,7 @@ function TabButton({
   );
 }
 export default function AppTabs() {
+  const C = useColors();
   const { width } = useWindowDimensions();
   const compact = width < 850;
   return (
@@ -76,7 +79,7 @@ export default function AppTabs() {
                   flexDirection: 'column',
                   gap: 8,
                   width: 228,
-                  backgroundColor: '#14171c',
+                  backgroundColor: C.surface,
                   borderRightWidth: 1,
                   borderColor: C.border,
                   padding: 22,
@@ -132,6 +135,11 @@ export default function AppTabs() {
           <TabTrigger name="diet" href="/diet" asChild>
             <TabButton compact={compact} icon="food">
               Diet
+            </TabButton>
+          </TabTrigger>
+          <TabTrigger name="account" href="/account" asChild>
+            <TabButton compact={compact} icon="account">
+              Account
             </TabButton>
           </TabTrigger>
           {!compact && (

@@ -1,12 +1,21 @@
-import { DarkTheme, ThemeProvider, Stack } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+  Stack,
+  router,
+  usePathname,
+  useRootNavigationState,
+} from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
-import { C } from '@/components/ui';
+import { AppearanceProvider, useAppearance } from '@/providers/appearance';
+import { useJournal } from '@/data/journal-store';
 import { ApiError } from '@/services/api';
 import '@/global.css';
 
 export const unstable_settings = { anchor: '(tabs)' };
-
 const client = new QueryClient({
   defaultOptions: {
     queries: {
@@ -16,47 +25,80 @@ const client = new QueryClient({
     },
   },
 });
-const modalOptions = {
-  headerShown: false,
-  presentation:
-    process.env.EXPO_OS === 'web' ? ('transparentModal' as const) : ('formSheet' as const),
-  sheetAllowedDetents: [0.85, 1],
-  sheetGrabberVisible: true,
-  contentStyle: { backgroundColor: process.env.EXPO_OS === 'web' ? 'transparent' : C.surface },
-  animation: process.env.EXPO_OS === 'web' ? ('none' as const) : undefined,
-};
 export default function RootLayout() {
   return (
     <QueryClientProvider client={client}>
-      <ThemeProvider
-        value={{
-          ...DarkTheme,
-          colors: {
-            ...DarkTheme.colors,
-            background: C.bg,
-            card: C.surface,
-            text: C.text,
-            primary: C.blue,
-            border: C.border,
-          },
+      <AppearanceProvider>
+        <AppNavigation />
+      </AppearanceProvider>
+    </QueryClientProvider>
+  );
+}
+function AppNavigation() {
+  const { colors: C, scheme } = useAppearance();
+  const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const { ready, journal } = useJournal();
+  const path = usePathname();
+  const navigation = useRootNavigationState();
+  const started = useRef(false);
+  useEffect(() => {
+    if (!ready || !navigation?.key || started.current) return;
+    started.current = true;
+    // A saved starting page applies only to a fresh launch at the journal root.
+    if (path === '/' && journal.preferences.startPage !== '/')
+      router.replace(journal.preferences.startPage);
+  }, [ready, navigation?.key, path, journal.preferences.startPage]);
+  const modalOptions = {
+    headerShown: false,
+    presentation:
+      process.env.EXPO_OS === 'web' ? ('transparentModal' as const) : ('formSheet' as const),
+    sheetAllowedDetents: [0.85, 1],
+    sheetGrabberVisible: true,
+    contentStyle: { backgroundColor: process.env.EXPO_OS === 'web' ? 'transparent' : C.surface },
+    animation: process.env.EXPO_OS === 'web' ? ('none' as const) : undefined,
+  };
+  return (
+    <ThemeProvider
+      value={{
+        ...theme,
+        colors: {
+          ...theme.colors,
+          background: C.bg,
+          card: C.surface,
+          text: C.text,
+          primary: C.blue,
+          border: C.border,
+        },
+      }}
+    >
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: C.bg },
+          headerTintColor: C.text,
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: C.bg },
         }}
       >
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: C.bg },
-            headerTintColor: C.text,
-            headerShadowVisible: false,
-            contentStyle: { backgroundColor: C.bg },
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          {['weight', 'lift', 'food', 'goals', 'strava', 'run'].map((name) => (
-            <Stack.Screen key={name} name={name} options={modalOptions} />
-          ))}
-          <Stack.Screen name="auth/strava" options={{ title: 'Connecting Strava' }} />
-        </Stack>
-      </ThemeProvider>
-    </QueryClientProvider>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {[
+          'weight',
+          'lift',
+          'food',
+          'goals',
+          'strava',
+          'run',
+          'account/profile',
+          'account/appearance',
+          'account/preferences',
+          'account/sign-in',
+          'account/email',
+          'account/password',
+        ].map((name) => (
+          <Stack.Screen key={name} name={name} options={modalOptions} />
+        ))}
+        <Stack.Screen name="auth/strava" options={{ title: 'Connecting Strava' }} />
+      </Stack>
+    </ThemeProvider>
   );
 }

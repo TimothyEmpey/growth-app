@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
+import { usePreferences, useDefaultPeriod } from '@/hooks/use-preferences';
+import { distanceValue } from '@/domain/account';
+import { useColors } from '@/providers/appearance';
+import { useEffect } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { duration, formatDate, pace, periodStart, today } from '@/domain/journal';
-import type { Connection, Period, RunPage } from '@/domain/types';
+import type { Connection, RunPage } from '@/domain/types';
 import {
   Body,
   Button,
-  C,
   Card,
   Empty,
   Icon,
@@ -21,7 +23,10 @@ import {
 } from '@/components/ui';
 
 export default function RunningPage() {
-  const [period, setPeriod] = useState<Period>('Month');
+  const C = useColors();
+  const [period, setPeriod] = useDefaultPeriod();
+  const { units } = usePreferences();
+  const distanceUnit = units === 'metric' ? 'km' : 'mi';
   const client = useQueryClient();
   const params = useLocalSearchParams<{ strava?: string; error?: string }>();
   const connection = useQuery({
@@ -34,6 +39,7 @@ export default function RunningPage() {
     if (params.strava === 'connected') {
       void client.invalidateQueries({ queryKey: ['strava'] });
       void client.invalidateQueries({ queryKey: ['runs'] });
+      void client.invalidateQueries({ queryKey: ['run-days'] });
     }
   }, [params.strava, client]);
   const runs = useInfiniteQuery({
@@ -52,7 +58,7 @@ export default function RunningPage() {
   // Server summaries cover the whole period, including run pages not yet loaded by the UI.
   const summary = connected ? runs.data?.pages[0]?.summary : undefined;
   const items = runs.data?.pages.flatMap((p) => p.runs) ?? [];
-  const averagePace = summary ? pace(summary.movingSeconds, summary.distanceMeters) : '—';
+  const averagePace = summary ? pace(summary.movingSeconds, summary.distanceMeters, units) : '—';
   return (
     <Page
       title="Running"
@@ -77,20 +83,20 @@ export default function RunningPage() {
             accent: C.blue,
           },
           {
-            label: 'Total miles',
+            label: units === 'metric' ? 'Total kilometers' : 'Total miles',
             value: summary
-              ? (summary.distanceMeters / 1609.344).toFixed(2)
+              ? distanceValue(summary.distanceMeters, units).toFixed(2)
               : connected
                 ? '—'
                 : '0.00',
-            unit: 'mi',
+            unit: distanceUnit,
             color: C.green,
             accent: C.green,
           },
           {
-            label: 'Average mile pace',
+            label: units === 'metric' ? 'Average kilometer pace' : 'Average mile pace',
             value: averagePace,
-            unit: '/mile',
+            unit: `/ ${distanceUnit}`,
             color: averagePace === '—' ? C.text : C.purple,
             accent: C.purple,
           },
@@ -201,13 +207,13 @@ export default function RunningPage() {
                     <Body>{formatDate(run.localDate)}</Body>
                     <Row style={{ flexWrap: 'wrap', gap: 18 }}>
                       <Text style={{ color: C.text, fontSize: 14 }}>
-                        {(run.distanceMeters / 1609.344).toFixed(2)} mi
+                        {distanceValue(run.distanceMeters, units).toFixed(2)} {distanceUnit}
                       </Text>
                       <Text style={{ color: C.muted, fontSize: 14 }}>
                         {duration(run.movingSeconds)}
                       </Text>
                       <Text style={{ color: C.blue, fontSize: 14 }}>
-                        {pace(run.movingSeconds, run.distanceMeters)} / mi
+                        {pace(run.movingSeconds, run.distanceMeters, units)} / {distanceUnit}
                       </Text>
                     </Row>
                   </View>

@@ -10,14 +10,14 @@
 }
 html,
 body {
-  background: #101216;
+  background: var(--growth-bg, #101216);
 }
 *:focus-visible {
   outline: 2px solid #719bff;
   outline-offset: 3px;
 }
 input {
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 .growth-dialog-overlay {
   position: fixed;
@@ -34,9 +34,9 @@ input {
   height: min(800px, 85dvh);
   min-height: 240px;
   overflow: hidden;
-  border: 1px solid #30353f;
+  border: 1px solid var(--growth-border, #30353f);
   border-radius: 22px;
-  background: #191c22;
+  background: var(--growth-surface, #191c22);
   box-shadow: 0 24px 100px #00000080;
 }
 @media (max-width: 640px) {

@@ -12,6 +12,8 @@ export interface Env {
   WEBHOOK_PATH_SECRET?: string;
   TOKEN_ENCRYPTION_KEY?: string;
   USDA_API_KEY?: string;
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
 }
 export interface ConnectionRow {
   athlete_id: string;

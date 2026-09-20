@@ -1,11 +1,13 @@
+import { useColors } from '@/providers/appearance';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { finishStrava } from '@/services/auth';
-import { Body, Button, C, Notice } from '@/components/ui';
+import { Body, Button, Notice } from '@/components/ui';
 
 export default function StravaCallback() {
+  const C = useColors();
   const { code, error } = useLocalSearchParams<{ code?: string; error?: string }>();
   const [message, setMessage] = useState(error);
   const client = useQueryClient();
