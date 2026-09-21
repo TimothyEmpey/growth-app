@@ -53,6 +53,14 @@ export default function AccountPage() {
   );
   const profile = account.data?.account ?? journal.profile;
   const appearance = journal.preferences.appearance;
+  const appearanceDetail = {
+    system: 'Match your system',
+    light: 'Light mode',
+    dark: 'Dark mode',
+    coffee: 'Coffee theme',
+    aqua: 'Aqua theme',
+    forest: 'Forest theme',
+  }[appearance];
   return (
     <Page title="Account" eyebrow="Make it yours">
       <View style={{ alignItems: 'center', gap: 9, paddingVertical: 12 }}>
@@ -176,11 +184,7 @@ export default function AccountPage() {
         <SettingsRow
           icon="sun"
           title="App appearance"
-          detail={
-            appearance === 'system'
-              ? 'Match your system'
-              : `${appearance === 'dark' ? 'Dark' : 'Light'} mode`
-          }
+          detail={appearanceDetail}
           onPress={() => router.push('/account/appearance')}
         />
         <View style={{ height: 1, backgroundColor: C.border }} />

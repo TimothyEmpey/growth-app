@@ -1,7 +1,7 @@
 import type { Period } from './types';
 import { parseDate, shiftDay, today } from './journal';
 
-export type Appearance = 'light' | 'dark' | 'system';
+export type Appearance = 'light' | 'dark' | 'system' | 'coffee' | 'aqua' | 'forest';
 export type Units = 'us' | 'metric';
 export type Preferences = {
   appearance: Appearance;
@@ -32,7 +32,9 @@ export const emptyProfile = (): Profile => ({
 });
 export function normalizePreferences(value: Partial<Preferences> = {}): Preferences {
   return {
-    appearance: ['light', 'dark', 'system'].includes(value.appearance ?? '')
+    appearance: ['light', 'dark', 'system', 'coffee', 'aqua', 'forest'].includes(
+      value.appearance ?? '',
+    )
       ? value.appearance!
       : 'dark',
     units: value.units === 'metric' ? 'metric' : 'us',

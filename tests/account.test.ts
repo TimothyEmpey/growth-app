@@ -8,6 +8,7 @@ import {
   displayWeight,
   distanceValue,
   normalizeEmail,
+  normalizePreferences,
   validateProfile,
   weightToPounds,
 } from '../src/domain/account';
@@ -104,6 +105,12 @@ test('profile validation, unit conversion and old journal migration preserve rea
   expect(() => validateProfile({ ...journal.profile, age: 21.5 })).toThrow();
   expect(() => validateProfile({ ...journal.profile, heightCm: NaN })).toThrow();
   expect(migrateJournal(legacy).weights[0].pounds).toBe(180.12345);
+});
+
+test('preserves every supported appearance theme', () => {
+  for (const appearance of ['light', 'dark', 'system', 'coffee', 'aqua', 'forest'] as const) {
+    expect(normalizePreferences({ appearance }).appearance).toBe(appearance);
+  }
 });
 
 test('registration requires email verification; sessions are HttpOnly and passwords are hashed', async () => {

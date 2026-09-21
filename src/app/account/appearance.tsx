@@ -14,6 +14,9 @@ export default function AppearanceSheet() {
             ['light', 'Light mode', 'A bright, clean canvas for your day.'],
             ['dark', 'Dark mode', 'The familiar charcoal look. Easy on the eyes.'],
             ['system', 'Match system', 'Follow your device’s light and dark setting.'],
+            ['coffee', 'Coffee', 'Warm cream, roasted brown, and a touch of caramel.'],
+            ['aqua', 'Aqua', 'Fresh sea-glass tones with a crisp teal accent.'],
+            ['forest', 'Forest', 'Quiet sage surfaces grounded by deep green.'],
           ] as [Appearance, string, string][]
         ).map(([value, title, detail]) => (
           <Choice
