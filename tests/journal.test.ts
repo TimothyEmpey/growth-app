@@ -15,7 +15,7 @@ import {
   validDate,
 } from '../src/domain/journal';
 import type { Food } from '../src/domain/types';
-import { normalizeFood } from '../server/food';
+import { hasMacroData, matchesSearchTerms, normalizeFood, searchTermScore } from '../server/food';
 
 const food: Food = {
   id: '123',
@@ -109,6 +109,46 @@ describe('nutrition calculations', () => {
     });
     expect(liquid.portions).toHaveLength(1);
     expect(liquid.per100g.calories).toBeNull();
+  });
+  test('keeps USDA search results with recorded macros, including true zero-calorie foods', () => {
+    expect(
+      hasMacroData({
+        fdcId: 1,
+        description: 'Protein powder',
+        foodNutrients: [
+          { nutrientId: 1003, value: 20 },
+          { nutrientId: 1004, value: 0 },
+          { nutrientId: 1005, value: 0 },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      hasMacroData({
+        fdcId: 2,
+        description: 'No macro data',
+        foodNutrients: [
+          { nutrientId: 1003, value: 0 },
+          { nutrientId: 1004, value: 0 },
+          { nutrientId: 1005, value: 0 },
+        ],
+      }),
+    ).toBe(true);
+    expect(hasMacroData({ fdcId: 3, description: 'Missing macros' })).toBe(false);
+  });
+  test('ranks food-search terms in any order and allows sensible partial matches', () => {
+    const result = {
+      fdcId: 1,
+      description: 'Milk, whole, with vitamin D',
+      brandName: 'Local Dairy',
+    };
+    expect(matchesSearchTerms(result, 'milk')).toBe(true);
+    expect(matchesSearchTerms(result, 'whole milk')).toBe(true);
+    expect(matchesSearchTerms(result, 'milk whole')).toBe(true);
+    expect(matchesSearchTerms(result, 'dairy whole')).toBe(true);
+    expect(matchesSearchTerms(result, 'skim milk')).toBe(true);
+    expect(matchesSearchTerms(result, 'skim oat milk')).toBe(false);
+    expect(searchTermScore(result, 'whole milk')).toBe(2);
+    expect(searchTermScore(result, 'skim milk')).toBe(1);
   });
   test('pace is based on total time over distance', () => {
     expect(pace(1800, 1609.344 * 3)).toBe('10:00');

@@ -87,6 +87,25 @@ export function normalizeFood(raw: USDAFood): Food {
     portions,
   };
 }
+export function hasMacroData(raw: USDAFood) {
+  const { protein, carbs, fat } = normalizeFood(raw).per100g;
+  return [protein, carbs, fat].some((value) => value !== null);
+}
+function searchTerms(query: string) {
+  return [...new Set(query.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])];
+}
+export function searchTermScore(raw: USDAFood, query: string) {
+  const terms = searchTerms(query);
+  const searchable = [raw.description, raw.brandName, raw.brandOwner]
+    .filter(Boolean)
+    .join(' ')
+    .toLocaleLowerCase();
+  return terms.filter((term) => searchable.includes(term)).length;
+}
+export function matchesSearchTerms(raw: USDAFood, query: string) {
+  const terms = searchTerms(query);
+  return searchTermScore(raw, query) >= Math.ceil(terms.length / 2);
+}
 export async function usda(path: string, env: Env) {
   if (!env.USDA_API_KEY)
     throw new ServiceError(
@@ -125,18 +144,44 @@ async function cached<T>(key: string, env: Env, load: () => Promise<T>): Promise
   return data;
 }
 export function searchFoods(query: string, page: number, env: Env) {
-  return cached(`search:${query.toLowerCase()}:${page}`, env, async () => {
-    const result = (await usda(
-      `foods/search?query=${encodeURIComponent(query)}&pageSize=20&pageNumber=${page}`,
-      env,
-    )) as { foods: USDAFood[]; totalPages: number };
+  return cached(`search:v6:${query.toLowerCase()}:${page}`, env, async () => {
+    const searchPath = `foods/search?query=${encodeURIComponent(query)}&pageSize=20&pageNumber=${page}`;
+    const [all, nutritionComplete] = (await Promise.all([
+      usda(searchPath, env),
+      usda(
+        `${searchPath}&dataType=${encodeURIComponent('Foundation,Survey (FNDDS),SR Legacy')}`,
+        env,
+      ),
+    ])) as { foods: USDAFood[]; totalPages: number }[];
+    const summaries = [
+      ...new Map(
+        [...all.foods, ...nutritionComplete.foods].map((food) => [food.fdcId, food]),
+      ).values(),
+    ];
+    const batches = Array.from({ length: Math.ceil(summaries.length / 20) }, (_, index) =>
+      summaries.slice(index * 20, index * 20 + 20).map((food) => food.fdcId),
+    );
+    const detailed = (
+      await Promise.all(
+        batches.map(
+          async (ids) =>
+            (await usda(`foods?fdcIds=${encodeURIComponent(ids.join(','))}`, env)) as USDAFood[],
+        ),
+      )
+    ).flat();
+    const minimumTermMatches = Math.ceil(searchTerms(query).length / 2);
     return {
-      foods: result.foods.map((food): FoodSearchItem => ({
-        id: String(food.fdcId),
-        name: food.description,
-        brand: food.brandName ?? food.brandOwner,
-      })),
-      hasMore: result.totalPages > page,
+      foods: detailed
+        .map((food) => ({ food, score: searchTermScore(food, query) }))
+        .filter(({ food, score }) => hasMacroData(food) && score >= minimumTermMatches)
+        .sort((a, b) => b.score - a.score)
+        .map(({ food }): FoodSearchItem => ({
+          id: String(food.fdcId),
+          name: food.description,
+          brand: food.brandName ?? food.brandOwner,
+        }))
+        .slice(0, 20),
+      hasMore: all.totalPages > page || nutritionComplete.totalPages > page,
     };
   });
 }
