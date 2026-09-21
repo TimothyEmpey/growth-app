@@ -85,6 +85,11 @@ export default function LiftingPage() {
           entries={entries}
           onSelect={(entry) => router.push({ pathname: '/weight', params: { id: entry.id } })}
         />
+        <Row style={{ justifyContent: 'flex-end' }}>
+          <Button quiet onPress={() => router.push('/weight-history')}>
+            History
+          </Button>
+        </Row>
       </Card>
       <View style={{ gap: 18 }}>
         <Row style={{ justifyContent: 'space-between' }}>

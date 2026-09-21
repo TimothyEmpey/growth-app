@@ -86,6 +86,7 @@ function AppNavigation() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {[
           'weight',
+          'weight-history',
           'lift',
           'food',
           'goals',

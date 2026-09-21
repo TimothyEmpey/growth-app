@@ -2,7 +2,7 @@ import { usePreferences } from '@/hooks/use-preferences';
 import { displayWeight } from '@/domain/account';
 import { useColors } from '@/providers/appearance';
 import { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Pressable } from 'react-native';
 import Svg, {
   Circle,
   Defs,
@@ -135,33 +135,6 @@ export function WeightChart({
             }}
           />
         ))}
-      </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-        {entries
-          .slice(-5)
-          .reverse()
-          .map((entry) => (
-            <Pressable
-              key={entry.id}
-              accessibilityRole="button"
-              accessibilityLabel={`Edit weight ${displayWeight(entry.pounds, units)} ${unit} on ${entry.date}`}
-              onPress={() => onSelect(entry)}
-              style={{
-                minHeight: 36,
-                paddingHorizontal: 10,
-                justifyContent: 'center',
-                backgroundColor: C.elevated,
-                borderRadius: 8,
-              }}
-            >
-              <Text style={{ color: C.muted, fontSize: 12 }}>
-                {formatDate(entry.date, { month: 'short', day: 'numeric' })} ·{' '}
-                <Text style={{ color: C.text }}>
-                  {displayWeight(entry.pounds, units)} {unit}
-                </Text>
-              </Text>
-            </Pressable>
-          ))}
       </View>
     </View>
   );
