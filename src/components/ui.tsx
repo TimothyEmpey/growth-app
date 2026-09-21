@@ -232,17 +232,19 @@ export function Button({
 export function PeriodControl({
   value,
   onChange,
+  compact = false,
 }: {
   value: Period;
   onChange: (period: Period) => void;
+  compact?: boolean;
 }) {
   const C = useColors();
   return (
     <Row
       style={{
         backgroundColor: C.bg,
-        padding: 4,
-        borderRadius: 12,
+        padding: compact ? 3 : 4,
+        borderRadius: compact ? 10 : 12,
         gap: 2,
         alignSelf: 'flex-start',
         flexWrap: 'wrap',
@@ -255,15 +257,19 @@ export function PeriodControl({
           accessibilityState={{ selected: period === value }}
           onPress={() => onChange(period)}
           style={{
-            paddingHorizontal: 15,
-            minHeight: 38,
+            paddingHorizontal: compact ? 11 : 15,
+            minHeight: compact ? 32 : 38,
             justifyContent: 'center',
             backgroundColor: period === value ? C.elevated : 'transparent',
-            borderRadius: 9,
+            borderRadius: compact ? 7 : 9,
           }}
         >
           <Text
-            style={{ fontSize: 13, fontWeight: '600', color: period === value ? C.text : C.muted }}
+            style={{
+              fontSize: compact ? 12 : 13,
+              fontWeight: '600',
+              color: period === value ? C.text : C.muted,
+            }}
           >
             {period}
           </Text>

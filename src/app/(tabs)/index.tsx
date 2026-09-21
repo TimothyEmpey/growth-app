@@ -47,7 +47,7 @@ export default function LiftingPage() {
             </View>
             <Title size={18}>Body weight</Title>
           </Row>
-          <PeriodControl value={period} onChange={setPeriod} />
+          <PeriodControl compact value={period} onChange={setPeriod} />
         </Row>
         <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <View style={{ gap: compact ? 4 : 7 }}>
