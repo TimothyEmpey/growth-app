@@ -2,7 +2,7 @@ import { usePreferences } from '@/hooks/use-preferences';
 import { displayWeight } from '@/domain/account';
 import { useColors } from '@/providers/appearance';
 import { useState } from 'react';
-import { View, Pressable } from 'react-native';
+import { View, Pressable, useWindowDimensions } from 'react-native';
 import Svg, {
   Circle,
   Defs,
@@ -26,18 +26,20 @@ export function WeightChart({
 }) {
   const C = useColors();
   const { units } = usePreferences();
+  const { width: viewportWidth } = useWindowDimensions();
+  const compact = viewportWidth < 600;
   const unit = units === 'metric' ? 'kg' : 'lb';
   const [width, setWidth] = useState(600);
-  const height = 250,
+  const height = compact ? 140 : 250,
     left = 42,
     right = width - 16,
-    top = 16,
-    bottom = height - 32;
+    top = compact ? 10 : 16,
+    bottom = height - (compact ? 24 : 32);
   if (!entries.length)
     return (
       <View
         style={{
-          minHeight: 240,
+          minHeight: compact ? 135 : 240,
           justifyContent: 'center',
           borderTopWidth: 1,
           borderBottomWidth: 1,

@@ -74,14 +74,33 @@ export const forestColors: typeof darkColors = {
   purple: '#6f557f',
   red: '#a23e42',
 };
+export const skintyColors: typeof darkColors = {
+  bg: '#fff0f7',
+  surface: '#fffafd',
+  elevated: '#f9dcea',
+  border: '#eebbd2',
+  text: '#4a1830',
+  muted: '#86576e',
+  blue: '#d82f87',
+  blueDark: '#ad1d67',
+  green: '#307a5e',
+  gold: '#9b641c',
+  purple: '#8d49a8',
+  red: '#c73355',
+};
 
 const customColors: Partial<Record<AppearancePreference, typeof darkColors>> = {
   coffee: coffeeColors,
   aqua: aquaColors,
   forest: forestColors,
+  skinty: skintyColors,
 };
 
-const Context = createContext({ colors: darkColors, scheme: 'dark' as 'light' | 'dark' });
+const Context = createContext({
+  colors: darkColors,
+  scheme: 'dark' as 'light' | 'dark',
+  preference: 'dark' as AppearancePreference,
+});
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
   const { journal } = useJournal();
@@ -110,7 +129,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       void SystemUI.setBackgroundColorAsync(colors.bg);
     }
   }, [colors, scheme]);
-  return <Context value={{ colors, scheme }}>{children}</Context>;
+  return <Context value={{ colors, scheme, preference }}>{children}</Context>;
 }
 export const useAppearance = () => use(Context);
 export const useColors = () => useAppearance().colors;

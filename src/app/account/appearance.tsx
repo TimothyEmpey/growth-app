@@ -13,6 +13,7 @@ const themeOptions: [Appearance, string, string][] = [
   ['coffee', 'Coffee', 'Warm cream, roasted brown, and a touch of caramel.'],
   ['aqua', 'Aqua', 'Fresh sea-glass tones with a crisp teal accent.'],
   ['forest', 'Forest', 'Quiet sage surfaces grounded by deep green.'],
+  ['skinty', 'Skinty', 'Playful pink with a cheetah-print tab bar.'],
 ];
 
 export default function AppearanceSheet() {

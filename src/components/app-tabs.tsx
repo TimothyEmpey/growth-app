@@ -1,8 +1,12 @@
-import { useColors } from '@/providers/appearance';
+import { useAppearance, useColors } from '@/providers/appearance';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import SkintyTabs from './skinty-tabs';
 
 export default function AppTabs() {
   const C = useColors();
+  const { preference } = useAppearance();
+  const skinty = preference === 'skinty';
+  if (skinty) return <SkintyTabs />;
   return (
     <NativeTabs
       backgroundColor={C.surface}

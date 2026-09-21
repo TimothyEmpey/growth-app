@@ -1,7 +1,7 @@
 import { usePreferences, useDefaultPeriod } from '@/hooks/use-preferences';
 import { displayWeight } from '@/domain/account';
 import { useColors } from '@/providers/appearance';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useJournal } from '@/data/journal-store';
 import { formatDate, periodStart, sortLifts, today } from '@/domain/journal';
@@ -10,6 +10,8 @@ import { WeightChart } from '@/components/weight-chart';
 
 export default function LiftingPage() {
   const C = useColors();
+  const { width } = useWindowDimensions();
+  const compact = width < 600;
   const { journal } = useJournal();
   const [period, setPeriod] = useDefaultPeriod();
   const { units } = usePreferences();
@@ -28,7 +30,7 @@ export default function LiftingPage() {
         </Button>
       }
     >
-      <Card>
+      <Card style={compact ? { padding: 16, gap: 12 } : undefined}>
         <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <Row>
             <View
@@ -48,19 +50,22 @@ export default function LiftingPage() {
           <PeriodControl value={period} onChange={setPeriod} />
         </Row>
         <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <View style={{ gap: 7 }}>
+          <View style={{ gap: compact ? 4 : 7 }}>
             <Text
               selectable
               style={{
                 color: C.text,
-                fontSize: 48,
+                fontSize: compact ? 40 : 48,
                 fontWeight: '600',
                 letterSpacing: -2,
                 fontVariant: ['tabular-nums'],
               }}
             >
               {latest ? displayWeight(latest.pounds, units) : '—'}
-              <Text style={{ color: C.muted, fontSize: 18, letterSpacing: 0 }}> {weightUnit}</Text>
+              <Text style={{ color: C.muted, fontSize: compact ? 16 : 18, letterSpacing: 0 }}>
+                {' '}
+                {weightUnit}
+              </Text>
             </Text>
             <Body>
               {latest
@@ -68,7 +73,7 @@ export default function LiftingPage() {
                 : 'Your latest weigh-in'}
             </Body>
           </View>
-          <View style={{ gap: 7, alignItems: 'flex-end' }}>
+          <View style={{ gap: compact ? 4 : 7, alignItems: 'flex-end' }}>
             <Text style={{ color: C.blue, fontSize: 18, fontWeight: '600' }}>
               {change === null
                 ? '—'

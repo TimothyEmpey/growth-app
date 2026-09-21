@@ -108,7 +108,15 @@ test('profile validation, unit conversion and old journal migration preserve rea
 });
 
 test('preserves every supported appearance theme', () => {
-  for (const appearance of ['light', 'dark', 'system', 'coffee', 'aqua', 'forest'] as const) {
+  for (const appearance of [
+    'light',
+    'dark',
+    'system',
+    'coffee',
+    'aqua',
+    'forest',
+    'skinty',
+  ] as const) {
     expect(normalizePreferences({ appearance }).appearance).toBe(appearance);
   }
 });

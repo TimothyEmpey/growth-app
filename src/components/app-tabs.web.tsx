@@ -1,4 +1,5 @@
-import { useColors } from '@/providers/appearance';
+import { useAppearance, useColors } from '@/providers/appearance';
+import { Image } from 'expo-image';
 import { Tabs, TabList, TabTrigger, TabSlot, type TabTriggerSlotProps } from 'expo-router/ui';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { Icon, type IconName } from './ui';
@@ -8,9 +9,12 @@ function TabButton({
   icon,
   children,
   compact,
+  skinty,
   ...props
-}: TabTriggerSlotProps & { icon: IconName; compact: boolean }) {
+}: TabTriggerSlotProps & { icon: IconName; compact: boolean; skinty: boolean }) {
   const C = useColors();
+  const iconColor =
+    skinty && compact ? (isFocused ? C.blueDark : C.text) : isFocused ? C.blue : C.muted;
   return (
     <Pressable
       {...props}
@@ -21,17 +25,31 @@ function TabButton({
         paddingVertical: compact ? 10 : 15,
         paddingHorizontal: compact ? 6 : 16,
         borderRadius: 12,
-        backgroundColor: isFocused ? '#719bff17' : 'transparent',
+        backgroundColor:
+          skinty && compact
+            ? isFocused
+              ? 'rgba(255, 247, 251, 0.94)'
+              : 'rgba(255, 232, 244, 0.76)'
+            : isFocused
+              ? `${C.blue}17`
+              : 'transparent',
         opacity: pressed ? 0.65 : 1,
         flex: compact ? 1 : undefined,
         borderWidth: 1,
-        borderColor: isFocused ? '#719bff26' : 'transparent',
+        borderColor:
+          skinty && compact
+            ? isFocused
+              ? 'rgba(255, 255, 255, 0.96)'
+              : 'rgba(255, 255, 255, 0.48)'
+            : isFocused
+              ? `${C.blue}26`
+              : 'transparent',
       })}
     >
-      <Icon name={icon} size={21} color={isFocused ? C.blue : C.muted} />
+      <Icon name={icon} size={21} color={iconColor} />
       <Text
         style={{
-          color: isFocused ? C.text : C.muted,
+          color: skinty && compact ? C.text : isFocused ? C.text : C.muted,
           fontWeight: '600',
           fontSize: compact ? 12 : 15,
         }}
@@ -54,8 +72,10 @@ function TabButton({
 }
 export default function AppTabs() {
   const C = useColors();
+  const { preference } = useAppearance();
   const { width } = useWindowDimensions();
   const compact = width < 850;
+  const skinty = preference === 'skinty';
   return (
     <Tabs style={{ flex: 1, flexDirection: compact ? 'column' : 'row', backgroundColor: C.bg }}>
       <TabList asChild>
@@ -87,6 +107,22 @@ export default function AppTabs() {
                 }
           }
         >
+          {compact && skinty && (
+            <>
+              <Image
+                source={require('../../assets/images/cheetah-print.jpg')}
+                contentFit="cover"
+                style={{ position: 'absolute', inset: 0 }}
+              />
+              <View
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: 'rgba(236, 63, 145, 0.48)',
+                }}
+              />
+            </>
+          )}
           {!compact && (
             <>
               <View
@@ -123,22 +159,22 @@ export default function AppTabs() {
             </>
           )}
           <TabTrigger name="lifting" href="/" asChild>
-            <TabButton compact={compact} icon="lift">
+            <TabButton compact={compact} icon="lift" skinty={skinty}>
               Lifting
             </TabButton>
           </TabTrigger>
           <TabTrigger name="running" href="/running" asChild>
-            <TabButton compact={compact} icon="run">
+            <TabButton compact={compact} icon="run" skinty={skinty}>
               Running
             </TabButton>
           </TabTrigger>
           <TabTrigger name="diet" href="/diet" asChild>
-            <TabButton compact={compact} icon="food">
+            <TabButton compact={compact} icon="food" skinty={skinty}>
               Diet
             </TabButton>
           </TabTrigger>
           <TabTrigger name="account" href="/account" asChild>
-            <TabButton compact={compact} icon="account">
+            <TabButton compact={compact} icon="account" skinty={skinty}>
               Account
             </TabButton>
           </TabTrigger>

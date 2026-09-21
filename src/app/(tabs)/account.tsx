@@ -60,6 +60,7 @@ export default function AccountPage() {
     coffee: 'Coffee theme',
     aqua: 'Aqua theme',
     forest: 'Forest theme',
+    skinty: 'Skinty theme',
   }[appearance];
   return (
     <Page title="Account" eyebrow="Make it yours">
