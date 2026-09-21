@@ -70,7 +70,7 @@ export default function LiftingPage() {
             <Body>
               {latest
                 ? `Last recorded ${formatDate(latest.date, { month: 'short', day: 'numeric' })}`
-                : 'Your latest weigh-in'}
+                : 'No history'}
             </Body>
           </View>
           <View style={{ gap: compact ? 4 : 7, alignItems: 'flex-end' }}>
@@ -82,7 +82,7 @@ export default function LiftingPage() {
             <Body>
               {period === 'All'
                 ? 'Across all history'
-                : `Over the last ${period === 'Week' ? '7' : period === 'Month' ? '30' : '365'} days`}
+                : `Last ${period === 'Week' ? '7' : period === 'Month' ? '30' : '365'} days`}
             </Body>
           </View>
         </Row>
