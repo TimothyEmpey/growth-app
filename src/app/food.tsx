@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useJournal, updateJournal } from '@/data/journal-store';
-import { newId, nutritionFor, positive, today, validDate } from '@/domain/journal';
+import { formatFoodLabel, newId, nutritionFor, positive, today, validDate } from '@/domain/journal';
 import { MEALS, type Food, type FoodSearchItem, type Meal } from '@/domain/types';
 import { api } from '@/services/api';
 import {
@@ -82,13 +82,13 @@ function FoodForm() {
       title={existing ? 'Food details' : `Log ${meal}`}
       subtitle={
         selected
-          ? (selected.brand ?? 'USDA FoodData Central')
+          ? formatFoodLabel(selected.brand ?? 'USDA FoodData Central')
           : 'Find a food, choose a serving, make it yours.'
       }
     >
       {selected ? (
         <>
-          <Title size={22}>{selected.name}</Title>
+          <Title size={22}>{formatFoodLabel(selected.name)}</Title>
           {!existing && (
             <Button
               quiet
@@ -289,8 +289,10 @@ function FoodResult({ food, onPress }: { food: FoodSearchItem; onPress: () => vo
     >
       <Row>
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={{ color: C.text, fontSize: 15, lineHeight: 22 }}>{food.name}</Text>
-          {food.brand && <Body>{food.brand}</Body>}
+          <Text style={{ color: C.text, fontSize: 15, lineHeight: 22 }}>
+            {formatFoodLabel(food.name)}
+          </Text>
+          {food.brand && <Body>{formatFoodLabel(food.brand)}</Body>}
         </View>
         <Icon name="right" size={18} />
       </Row>

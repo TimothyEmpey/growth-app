@@ -4,7 +4,7 @@ import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { router } from 'expo-router';
 import { useJournal } from '@/data/journal-store';
-import { formatDate, shiftDay, sumNutrition, today } from '@/domain/journal';
+import { formatDate, formatFoodLabel, shiftDay, sumNutrition, today } from '@/domain/journal';
 import { MEALS } from '@/domain/types';
 import { Body, Button, Card, Icon, Label, Page, Row, Title } from '@/components/ui';
 import { DateField } from '@/components/date-field';
@@ -239,7 +239,9 @@ export default function DietPage() {
                   >
                     <Row>
                       <View style={{ flex: 1, gap: 5 }}>
-                        <Text style={{ color: C.text, fontSize: 15 }}>{entry.food.name}</Text>
+                        <Text style={{ color: C.text, fontSize: 15 }}>
+                          {formatFoodLabel(entry.food.name)}
+                        </Text>
                         <Body>
                           {entry.quantity} ×{' '}
                           {entry.food.portions.find((p) => p.id === entry.portionId)?.label}

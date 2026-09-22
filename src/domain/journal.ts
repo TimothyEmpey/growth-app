@@ -3,6 +3,12 @@ import type { DateKey, Food, Journal, LiftRecord, Nutrition, Period, WeightEntry
 
 export const nutritionKeys = ['calories', 'protein', 'carbs', 'fat'] as const;
 export const emptyNutrition = (): Nutrition => ({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+export function formatFoodLabel(value: string) {
+  const letters = value.match(/\p{L}/gu);
+  if (!letters?.length || letters.some((letter) => letter !== letter.toLocaleUpperCase()))
+    return value;
+  return value.toLocaleLowerCase().replace(/\p{L}/u, (letter) => letter.toLocaleUpperCase());
+}
 export function today(date = new Date()): DateKey {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }

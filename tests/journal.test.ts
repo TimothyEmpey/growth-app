@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   emptyJournal,
+  formatFoodLabel,
   formatDate,
   migrateJournal,
   nutritionFor,
@@ -68,6 +69,11 @@ describe('journal dates and records', () => {
   });
 });
 describe('nutrition calculations', () => {
+  test('formats all-caps food labels without changing existing capitalization', () => {
+    expect(formatFoodLabel(`DOMINO'S 14\" CHEESE PIZZA`)).toBe(`Domino's 14\" cheese pizza`);
+    expect(formatFoodLabel('WHOLE MILK')).toBe('Whole milk');
+    expect(formatFoodLabel('McDonald’s grilled chicken')).toBe('McDonald’s grilled chicken');
+  });
   test('fractional portions and grams give consistent unrounded totals', () => {
     expect(nutritionFor(food, 'cup', 0.5)).toEqual(nutritionFor(food, 'grams', 40));
     expect(nutritionFor(food, 'cup', 0.5).calories).toBe(152);
