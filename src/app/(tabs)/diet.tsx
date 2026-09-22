@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { router } from 'expo-router';
-import { useJournal } from '@/data/journal-store';
+import { useJournal, updateJournal } from '@/data/journal-store';
 import {
   formatDate,
   formatFoodLabel,
@@ -15,6 +15,7 @@ import {
 import { MEALS } from '@/domain/types';
 import { Body, Button, Card, Icon, Label, Page, Row, Title } from '@/components/ui';
 import { DateField } from '@/components/date-field';
+import { SwipeToDelete } from '@/components/gestures';
 
 export default function DietPage() {
   const C = useColors();
@@ -238,34 +239,45 @@ export default function DietPage() {
               </Row>
               {foods.length ? (
                 foods.map((entry) => (
-                  <Pressable
+                  <SwipeToDelete
                     key={entry.id}
-                    accessibilityRole="button"
-                    onPress={() => router.push({ pathname: '/food', params: { id: entry.id } })}
-                    style={{ paddingTop: 14, borderTopWidth: 1, borderColor: C.border }}
+                    accessibilityLabel={`Swipe left to delete ${formatFoodLabel(entry.food.name)}`}
+                    onDelete={() => {
+                      void updateJournal((journal) => {
+                        journal.meals = journal.meals.filter(
+                          (mealEntry) => mealEntry.id !== entry.id,
+                        );
+                      });
+                    }}
                   >
-                    <Row>
-                      <View style={{ flex: 1, gap: 5 }}>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => router.push({ pathname: '/food', params: { id: entry.id } })}
+                      style={{ paddingTop: 14, borderTopWidth: 1, borderColor: C.border }}
+                    >
+                      <Row>
+                        <View style={{ flex: 1, gap: 5 }}>
+                          <Text style={{ color: C.muted, fontSize: 14 }}>
+                            {formatFoodLabel(entry.food.name)}
+                          </Text>
+                          <Text style={{ color: C.muted, fontSize: 12 }}>
+                            {formatServingAmount(
+                              entry.quantity,
+                              entry.food.portions.find((p) => p.id === entry.portionId)?.label ??
+                                'serving',
+                            )}
+                          </Text>
+                        </View>
                         <Text style={{ color: C.muted, fontSize: 14 }}>
-                          {formatFoodLabel(entry.food.name)}
+                          {entry.nutrition.calories === null
+                            ? '—'
+                            : Math.round(entry.nutrition.calories)}{' '}
+                          <Text style={{ fontSize: 11, color: C.muted }}>cal</Text>
                         </Text>
-                        <Text style={{ color: C.muted, fontSize: 12 }}>
-                          {formatServingAmount(
-                            entry.quantity,
-                            entry.food.portions.find((p) => p.id === entry.portionId)?.label ??
-                              'serving',
-                          )}
-                        </Text>
-                      </View>
-                      <Text style={{ color: C.muted, fontSize: 14 }}>
-                        {entry.nutrition.calories === null
-                          ? '—'
-                          : Math.round(entry.nutrition.calories)}{' '}
-                        <Text style={{ fontSize: 11, color: C.muted }}>cal</Text>
-                      </Text>
-                      <Icon name="right" size={16} />
-                    </Row>
-                  </Pressable>
+                        <Icon name="right" size={16} />
+                      </Row>
+                    </Pressable>
+                  </SwipeToDelete>
                 ))
               ) : (
                 <Text style={{ color: '#737e8d', fontSize: 14, paddingVertical: 3 }}>

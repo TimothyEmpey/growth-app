@@ -22,6 +22,7 @@ import {
   useAction,
 } from '@/components/ui';
 import { DateField } from '@/components/date-field';
+import { SwipeToDelete } from '@/components/gestures';
 
 export default function LiftSheet() {
   return (
@@ -182,31 +183,40 @@ function LiftForm() {
               <Body>Your lifting milestones will appear here.</Body>
             ) : (
               records.map((record, index) => (
-                <Pressable
+                <SwipeToDelete
                   key={record.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Edit ${displayWeight(record.pounds, units)} ${unit} on ${record.date}`}
-                  onPress={() => {
-                    setEditing(record.id);
-                    setAdding(true);
-                    setWeight(String(displayWeight(record.pounds, units)));
-                    setDate(record.date);
+                  accessibilityLabel={`Swipe left to delete ${displayWeight(record.pounds, units)} ${unit}`}
+                  onDelete={() => {
+                    void updateJournal((journal) => {
+                      journal.lifts = journal.lifts.filter((entry) => entry.id !== record.id);
+                    });
                   }}
-                  style={{ paddingVertical: 16, borderBottomWidth: 1, borderColor: C.border }}
                 >
-                  <Row>
-                    <View style={{ flex: 1, gap: 6 }}>
-                      <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>
-                        {displayWeight(record.pounds, units)} {unit}{' '}
-                        <Text style={{ fontSize: 12, color: C.blue }}>
-                          {index === 0 ? 'CURRENT' : ''}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Edit ${displayWeight(record.pounds, units)} ${unit} on ${record.date}`}
+                    onPress={() => {
+                      setEditing(record.id);
+                      setAdding(true);
+                      setWeight(String(displayWeight(record.pounds, units)));
+                      setDate(record.date);
+                    }}
+                    style={{ paddingVertical: 16, borderBottomWidth: 1, borderColor: C.border }}
+                  >
+                    <Row>
+                      <View style={{ flex: 1, gap: 6 }}>
+                        <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>
+                          {displayWeight(record.pounds, units)} {unit}{' '}
+                          <Text style={{ fontSize: 12, color: C.blue }}>
+                            {index === 0 ? 'CURRENT' : ''}
+                          </Text>
                         </Text>
-                      </Text>
-                      <Body>{formatDate(record.date)}</Body>
-                    </View>
-                    <Icon name="right" size={18} />
-                  </Row>
-                </Pressable>
+                        <Body>{formatDate(record.date)}</Body>
+                      </View>
+                      <Icon name="right" size={18} />
+                    </Row>
+                  </Pressable>
+                </SwipeToDelete>
               ))
             )}
           </View>

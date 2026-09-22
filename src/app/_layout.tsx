@@ -10,6 +10,7 @@ import {
 } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppearanceProvider, useAppearance } from '@/providers/appearance';
 import { JournalSyncProvider } from '@/providers/journal-sync';
 import { useJournal } from '@/data/journal-store';
@@ -28,13 +29,15 @@ const client = new QueryClient({
 });
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={client}>
-      <AppearanceProvider>
-        <JournalSyncProvider>
-          <AppNavigation />
-        </JournalSyncProvider>
-      </AppearanceProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={client}>
+        <AppearanceProvider>
+          <JournalSyncProvider>
+            <AppNavigation />
+          </JournalSyncProvider>
+        </AppearanceProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
 function AppNavigation() {
@@ -57,6 +60,7 @@ function AppNavigation() {
       process.env.EXPO_OS === 'web' ? ('transparentModal' as const) : ('formSheet' as const),
     sheetAllowedDetents: [0.85, 1],
     sheetGrabberVisible: true,
+    gestureEnabled: true,
     contentStyle: { backgroundColor: process.env.EXPO_OS === 'web' ? 'transparent' : C.surface },
     animation: process.env.EXPO_OS === 'web' ? ('none' as const) : undefined,
   };

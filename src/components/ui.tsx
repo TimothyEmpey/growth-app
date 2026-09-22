@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Nutrition, Period } from '@/domain/types';
 import { useJournal } from '@/data/journal-store';
 import { Dialog } from './dialog';
+import { MainPageSwipe } from './gestures';
 
 export type IconName =
   | 'account'
@@ -294,37 +295,39 @@ export function Page({
   const { width } = useWindowDimensions();
   const { ready, error } = useJournal();
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: C.bg }}
-      contentContainerStyle={{
-        padding: process.env.EXPO_OS === 'web' && width >= 600 ? 28 : 20,
-        paddingBottom: 110 + insets.bottom,
-        gap: 26,
-        width: '100%',
-        maxWidth: 1200,
-        alignSelf: 'center',
-      }}
-    >
-      <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-        <View style={{ gap: 9 }}>
-          <Label>{eyebrow}</Label>
-          {process.env.EXPO_OS === 'web' && <Title size={34}>{title}</Title>}
-        </View>
-        {action}
-      </Row>
-      {error ? (
-        <Notice message={error} />
-      ) : !ready ? (
-        <ActivityIndicator color={C.blue} />
-      ) : (
-        children
-      )}
-      <Row style={{ justifyContent: 'center' }}>
-        <Icon name="lock" size={13} />
-        <Text style={{ color: C.muted, fontSize: 12 }}>Your journal. Built around you.</Text>
-      </Row>
-    </ScrollView>
+    <MainPageSwipe>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ flex: 1, backgroundColor: C.bg }}
+        contentContainerStyle={{
+          padding: process.env.EXPO_OS === 'web' && width >= 600 ? 28 : 20,
+          paddingBottom: 110 + insets.bottom,
+          gap: 26,
+          width: '100%',
+          maxWidth: 1200,
+          alignSelf: 'center',
+        }}
+      >
+        <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <View style={{ gap: 9 }}>
+            <Label>{eyebrow}</Label>
+            {process.env.EXPO_OS === 'web' && <Title size={34}>{title}</Title>}
+          </View>
+          {action}
+        </Row>
+        {error ? (
+          <Notice message={error} />
+        ) : !ready ? (
+          <ActivityIndicator color={C.blue} />
+        ) : (
+          children
+        )}
+        <Row style={{ justifyContent: 'center' }}>
+          <Icon name="lock" size={13} />
+          <Text style={{ color: C.muted, fontSize: 12 }}>Your journal. Built around you.</Text>
+        </Row>
+      </ScrollView>
+    </MainPageSwipe>
   );
 }
 export function Empty({
