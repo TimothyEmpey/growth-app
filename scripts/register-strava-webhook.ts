@@ -37,10 +37,12 @@ if (existing.length) {
       verify_token: process.env.STRAVA_VERIFY_TOKEN!,
     }),
   });
-  if (!response.ok)
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 500);
     throw new Error(
-      `Strava webhook registration failed (${response.status}). Check your callback and verification token.`,
+      `Strava webhook registration failed (${response.status}): ${detail || 'no response details'}`,
     );
+  }
   const result = (await response.json()) as { id: number };
   console.log(`Created subscription ID: ${result.id}. Set STRAVA_SUBSCRIPTION_ID to this value.`);
 }
