@@ -431,7 +431,7 @@ export function Sheet({
     ? '/account'
     : pathname === '/food' || pathname === '/goals'
       ? '/diet'
-      : pathname === '/run' || pathname === '/strava'
+      : pathname === '/run' || pathname === '/run-history' || pathname === '/strava'
         ? '/running'
         : '/';
   return (

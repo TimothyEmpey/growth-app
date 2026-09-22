@@ -2,18 +2,17 @@ import { usePreferences, useDefaultPeriod } from '@/hooks/use-preferences';
 import { distanceValue } from '@/domain/account';
 import { useColors } from '@/providers/appearance';
 import { useEffect } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
-import { duration, formatDate, pace, periodStart, today } from '@/domain/journal';
+import { pace, periodStart, today } from '@/domain/journal';
 import type { Connection, RunPage } from '@/domain/types';
 import {
   Body,
   Button,
   Card,
   Empty,
-  Icon,
   Label,
   Notice,
   Page,
@@ -21,6 +20,7 @@ import {
   Row,
   Title,
 } from '@/components/ui';
+import { RunHistoryRow } from '@/components/run-history-row';
 
 export default function RunningPage() {
   const C = useColors();
@@ -180,53 +180,20 @@ export default function RunningPage() {
           </Empty>
         ) : (
           <View>
-            {items.map((run) => (
-              <Pressable
-                accessibilityRole="button"
-                key={run.id}
-                onPress={() => router.push({ pathname: '/run', params: { id: run.id } })}
-                style={{ borderBottomWidth: 1, borderColor: C.border, paddingVertical: 20 }}
-              >
-                <Row>
-                  <View
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 12,
-                      backgroundColor: '#71d7b112',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon name="run" color={C.green} size={21} />
-                  </View>
-                  <View style={{ flex: 1, gap: 7 }}>
-                    <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
-                      {run.title}
-                    </Text>
-                    <Body>{formatDate(run.localDate)}</Body>
-                    <Row style={{ flexWrap: 'wrap', gap: 18 }}>
-                      <Text style={{ color: C.text, fontSize: 14 }}>
-                        {distanceValue(run.distanceMeters, units).toFixed(2)} {distanceUnit}
-                      </Text>
-                      <Text style={{ color: C.muted, fontSize: 14 }}>
-                        {duration(run.movingSeconds)}
-                      </Text>
-                      <Text style={{ color: C.blue, fontSize: 14 }}>
-                        {pace(run.movingSeconds, run.distanceMeters, units)} / {distanceUnit}
-                      </Text>
-                    </Row>
-                  </View>
-                  <Icon name="right" size={18} />
-                </Row>
-              </Pressable>
+            {items.slice(0, 5).map((run) => (
+              <RunHistoryRow key={run.id} run={run} units={units} />
             ))}
           </View>
         )}
-        {runs.hasNextPage && (
-          <Button quiet loading={runs.isFetchingNextPage} onPress={() => void runs.fetchNextPage()}>
-            Load more runs
-          </Button>
+        {items.length > 0 && (
+          <Row style={{ justifyContent: 'flex-end' }}>
+            <Button
+              quiet
+              onPress={() => router.push({ pathname: '/run-history', params: { period } })}
+            >
+              History
+            </Button>
+          </Row>
         )}
         {connected && connection.data?.lastSync && (
           <Body>Last synced {new Date(connection.data.lastSync).toLocaleString()}</Body>

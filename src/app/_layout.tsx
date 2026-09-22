@@ -96,6 +96,7 @@ function AppNavigation() {
           'goals',
           'strava',
           'run',
+          'run-history',
           'account/profile',
           'account/appearance',
           'account/preferences',
