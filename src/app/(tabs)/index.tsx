@@ -86,10 +86,7 @@ export default function LiftingPage() {
             </Body>
           </View>
         </Row>
-        <WeightChart
-          entries={entries}
-          onSelect={(entry) => router.push({ pathname: '/weight', params: { id: entry.id } })}
-        />
+        <WeightChart entries={entries} />
         <Row style={{ justifyContent: 'flex-end' }}>
           <Button quiet onPress={() => router.push('/weight-history')}>
             History
