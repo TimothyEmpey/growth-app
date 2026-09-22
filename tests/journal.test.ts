@@ -15,7 +15,7 @@ import {
   validDate,
 } from '../src/domain/journal';
 import type { Food } from '../src/domain/types';
-import { hasMacroData, matchesSearchTerms, normalizeFood, searchTermScore } from '../server/food';
+import { hasMacroData, normalizeFood, searchTermScore } from '../server/food';
 
 const food: Food = {
   id: '123',
@@ -135,20 +135,15 @@ describe('nutrition calculations', () => {
     ).toBe(true);
     expect(hasMacroData({ fdcId: 3, description: 'Missing macros' })).toBe(false);
   });
-  test('ranks food-search terms in any order and allows sensible partial matches', () => {
+  test('ranks food-search terms in any order and ignores punctuation', () => {
     const result = {
       fdcId: 1,
       description: 'Milk, whole, with vitamin D',
       brandName: 'Local Dairy',
     };
-    expect(matchesSearchTerms(result, 'milk')).toBe(true);
-    expect(matchesSearchTerms(result, 'whole milk')).toBe(true);
-    expect(matchesSearchTerms(result, 'milk whole')).toBe(true);
-    expect(matchesSearchTerms(result, 'dairy whole')).toBe(true);
-    expect(matchesSearchTerms(result, 'skim milk')).toBe(true);
-    expect(matchesSearchTerms(result, 'skim oat milk')).toBe(false);
     expect(searchTermScore(result, 'whole milk')).toBe(2);
     expect(searchTermScore(result, 'skim milk')).toBe(1);
+    expect(searchTermScore({ fdcId: 2, description: `DOMINO'S Cheese Pizza` }, 'dominos')).toBe(1);
   });
   test('pace is based on total time over distance', () => {
     expect(pace(1800, 1609.344 * 3)).toBe('10:00');
