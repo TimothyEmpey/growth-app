@@ -50,6 +50,16 @@ export function formatDate(
 ): string {
   return parseDate(date.slice(0, 10)).toLocaleDateString('en-US', options);
 }
+export function formatServingAmount(quantity: number, label: string): string {
+  const concise = label.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const match = concise.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+  if (!match) return `${quantity} ${concise}`;
+  const amount = Number((quantity * Number(match[1])).toFixed(2));
+  let description = match[2];
+  if (amount !== 1 && /^(gram|ounce|cup|tablespoon|teaspoon)$/i.test(description))
+    description += 's';
+  return `${amount} ${description}`;
+}
 export function pace(seconds: number, meters: number, units: 'us' | 'metric' = 'us'): string {
   if (meters <= 0 || seconds <= 0) return '—';
   const sec = Math.round(seconds / (meters / (units === 'metric' ? 1000 : 1609.344)));

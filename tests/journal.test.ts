@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   emptyJournal,
   formatFoodLabel,
+  formatServingAmount,
   formatDate,
   migrateJournal,
   nutritionFor,
@@ -73,6 +74,12 @@ describe('journal dates and records', () => {
   });
 });
 describe('nutrition calculations', () => {
+  test('condenses serving quantities into readable portions', () => {
+    expect(formatServingAmount(1.5, '1 medium banana (118 g)')).toBe('1.5 medium banana');
+    expect(formatServingAmount(100, '1 gram')).toBe('100 grams');
+    expect(formatServingAmount(2, '0.5 cup (80 g)')).toBe('1 cup');
+  });
+
   test('formats all-caps food labels without changing existing capitalization', () => {
     expect(formatFoodLabel(`DOMINO'S 14\" CHEESE PIZZA`)).toBe(`Domino's 14\" cheese pizza`);
     expect(formatFoodLabel('WHOLE MILK')).toBe('Whole milk');

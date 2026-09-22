@@ -45,8 +45,10 @@ function FoodForm() {
   const [selected, setSelected] = useState<Food | null>(existing?.food ?? null);
   const queryClient = useQueryClient();
   const [portionId, setPortionId] = useState(existing?.portionId ?? 'grams');
+  const [portionMenuOpen, setPortionMenuOpen] = useState(false);
   const [quantity, setQuantity] = useState(existing?.quantity.toString() ?? '100');
   const action = useAction();
+  const currentPortion = selected?.portions.find((portion) => portion.id === portionId);
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounced(query.trim());
@@ -102,30 +104,69 @@ function FoodForm() {
           )}
           <View style={{ gap: 10 }}>
             <Label>Serving size</Label>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {selected.portions.map((portion) => (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: portionId === portion.id }}
-                  key={portion.id}
-                  onPress={() => {
-                    setPortionId(portion.id);
-                    setQuantity(portion.id === 'grams' ? '100' : '1');
-                  }}
-                  style={{
-                    padding: 13,
-                    borderWidth: 1,
-                    borderColor: portionId === portion.id ? C.blue : C.border,
-                    backgroundColor: portionId === portion.id ? '#719bff17' : C.bg,
-                    borderRadius: 10,
-                  }}
-                >
-                  <Text style={{ color: portionId === portion.id ? C.blue : C.text, fontSize: 14 }}>
-                    {portion.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Choose serving size"
+              accessibilityState={{ expanded: portionMenuOpen }}
+              onPress={() => setPortionMenuOpen((open) => !open)}
+              style={({ pressed }) => ({
+                minHeight: 50,
+                paddingHorizontal: 14,
+                borderWidth: 1,
+                borderColor: portionMenuOpen ? C.blue : C.border,
+                backgroundColor: C.bg,
+                borderRadius: 10,
+                opacity: pressed ? 0.7 : 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              })}
+            >
+              <Text style={{ color: C.text, fontSize: 15, flex: 1 }}>
+                {currentPortion?.label ?? 'Choose a serving'}
+              </Text>
+              <Text style={{ color: C.muted, fontSize: 18 }}>{portionMenuOpen ? '⌃' : '⌄'}</Text>
+            </Pressable>
+            {portionMenuOpen && (
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: C.border,
+                  backgroundColor: C.bg,
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                }}
+              >
+                {selected.portions.map((portion, index) => {
+                  const active = portionId === portion.id;
+                  return (
+                    <Pressable
+                      accessibilityRole="menuitem"
+                      accessibilityState={{ selected: active }}
+                      key={portion.id}
+                      onPress={() => {
+                        setPortionId(portion.id);
+                        setQuantity(portion.id === 'grams' ? '100' : '1');
+                        setPortionMenuOpen(false);
+                      }}
+                      style={({ pressed }) => ({
+                        minHeight: 48,
+                        paddingHorizontal: 14,
+                        justifyContent: 'center',
+                        backgroundColor: active ? '#719bff17' : pressed ? C.elevated : C.bg,
+                        borderTopWidth: index ? 1 : 0,
+                        borderColor: C.border,
+                      })}
+                    >
+                      <Text style={{ color: active ? C.blue : C.text, fontSize: 14 }}>
+                        {portion.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
           </View>
           <Field
             label={portionId === 'grams' ? 'Grams' : 'Number of servings'}
