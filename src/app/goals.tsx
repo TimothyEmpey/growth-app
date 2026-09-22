@@ -31,7 +31,7 @@ function GoalsForm() {
       {nutritionKeys.map((key) => (
         <Field
           key={key}
-          label={`${key[0].toUpperCase()}${key.slice(1)} (${key === 'calories' ? 'kcal' : 'g'})`}
+          label={`${key[0].toUpperCase()}${key.slice(1)} (${key === 'calories' ? 'cal' : 'g'})`}
           value={values[key]}
           onChangeText={(value) => setValues({ ...values, [key]: value })}
           keyboardType="decimal-pad"

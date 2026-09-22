@@ -4,7 +4,7 @@ export type DateKey = string;
 export type Period = 'Week' | 'Month' | 'Year' | 'All';
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snacks';
 export const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snacks'];
-// Calories are kcal; macros are grams. Null means unavailable, not zero.
+// Calories are displayed as cal; macros are grams. Null means unavailable, not zero.
 export type Nutrition = {
   calories: number | null;
   protein: number | null;

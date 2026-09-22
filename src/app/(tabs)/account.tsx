@@ -149,13 +149,7 @@ export default function AccountPage() {
                   justifyContent: 'center',
                 }}
               >
-                {day.active ? (
-                  <Icon name="check" color="#fff" size={18} />
-                ) : (
-                  <View
-                    style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: C.muted }}
-                  />
-                )}
+                {day.active && <Icon name="check" color="#fff" size={18} />}
               </View>
             </View>
           ))}

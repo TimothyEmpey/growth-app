@@ -128,7 +128,7 @@ export default function DietPage() {
               {totals.calories === null ? '—' : Math.round(totals.calories)}
             </Text>
             <Text style={{ color: C.muted, fontSize: 13, marginTop: 5 }}>
-              {goal ? `${goal.toLocaleString()} kcal` : 'calories logged'}
+              {goal ? `${goal.toLocaleString()} cal` : 'No goal'}
             </Text>
           </View>
           <View style={{ flex: 1, minWidth: compact ? 115 : 210, gap: compact ? 18 : 25 }}>
@@ -216,7 +216,7 @@ export default function DietPage() {
                     <Text style={{ color: C.muted, fontSize: 12 }}>
                       {nutrition.calories === null
                         ? 'Incomplete'
-                        : `${Math.round(nutrition.calories)} kcal`}
+                        : `${Math.round(nutrition.calories)} cal`}
                     </Text>
                   </View>
                 </Row>
@@ -239,7 +239,7 @@ export default function DietPage() {
                   >
                     <Row>
                       <View style={{ flex: 1, gap: 5 }}>
-                        <Text style={{ color: C.text, fontSize: 15 }}>
+                        <Text style={{ color: C.muted, fontSize: 14 }}>
                           {formatFoodLabel(entry.food.name)}
                         </Text>
                         <Body>
@@ -247,11 +247,11 @@ export default function DietPage() {
                           {entry.food.portions.find((p) => p.id === entry.portionId)?.label}
                         </Body>
                       </View>
-                      <Text style={{ color: C.text, fontSize: 15 }}>
+                      <Text style={{ color: C.muted, fontSize: 14 }}>
                         {entry.nutrition.calories === null
                           ? '—'
                           : Math.round(entry.nutrition.calories)}{' '}
-                        <Text style={{ fontSize: 12, color: C.muted }}>kcal</Text>
+                        <Text style={{ fontSize: 11, color: C.muted }}>cal</Text>
                       </Text>
                       <Icon name="right" size={16} />
                     </Row>

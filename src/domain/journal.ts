@@ -104,7 +104,7 @@ export function emptyJournal(): Journal {
     lifts: [],
     meals: [],
     foods: [],
-    goals: {},
+    goals: { protein: 100, carbs: 100, fat: 100 },
     preferences: { ...defaultPreferences },
     profile: emptyProfile(),
     exercises: [

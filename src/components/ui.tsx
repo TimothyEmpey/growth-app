@@ -501,7 +501,7 @@ export function NutritionStrip({ nutrition }: { nutrition: Nutrition }) {
                 : Number(nutrition[key]!.toFixed(1))}
             <Text style={{ fontSize: 12, color: C.muted }}>
               {' '}
-              {key === 'calories' ? 'kcal' : 'g'}
+              {key === 'calories' ? 'cal' : 'g'}
             </Text>
           </Text>
         </View>

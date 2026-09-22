@@ -28,6 +28,10 @@ const food: Food = {
   ],
 };
 describe('journal dates and records', () => {
+  test('new journals start with 100 gram macro goals and no calorie goal', () => {
+    expect(emptyJournal().goals).toEqual({ protein: 100, carbs: 100, fat: 100 });
+  });
+
   test('calendar days survive leap days, month boundaries, and local parsing', () => {
     expect(shiftDay('2024-03-01', -1)).toBe('2024-02-29');
     expect(shiftDay('2024-12-31', 1)).toBe('2025-01-01');
