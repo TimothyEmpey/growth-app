@@ -33,7 +33,7 @@ export function DateField({
           borderRadius: 12,
           padding: 14,
           fontSize: 16,
-          fontFamily: 'inherit',
+          fontFamily: 'var(--font-display)',
           minHeight: 22,
           width: '100%',
           boxSizing: 'border-box',
