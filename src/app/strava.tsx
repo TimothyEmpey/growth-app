@@ -1,7 +1,7 @@
 import { useColors } from '@/providers/appearance';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Linking, View } from 'react-native';
 import { api } from '@/services/api';
 import { linkStrava } from '@/services/auth';
 import type { Connection } from '@/domain/types';
@@ -13,6 +13,7 @@ export default function StravaSheet() {
   const action = useAction();
   const [confirm, setConfirm] = useState(false);
   const [synced, setSynced] = useState(false);
+  const [justDisconnected, setJustDisconnected] = useState(false);
   const connection = useQuery({
     queryKey: ['strava'],
     queryFn: ({ signal }) => api<Connection>('/api/strava/status', { signal }),
@@ -103,6 +104,7 @@ export default function StravaSheet() {
                     client.removeQueries({ queryKey: ['run'] });
                     client.removeQueries({ queryKey: ['run-days'] });
                     setConfirm(false);
+                    setJustDisconnected(true);
                     await refresh();
                   })
                 }
@@ -120,17 +122,27 @@ export default function StravaSheet() {
           )}
         </>
       ) : connection.data?.configured ? (
-        <Button
-          loading={action.busy}
-          onPress={() =>
-            void action.run(async () => {
-              await linkStrava();
-              await refresh();
-            })
-          }
-        >
-          Connect with Strava
-        </Button>
+        <>
+          {justDisconnected && (
+            <>
+              <Notice message="Growth is disconnected. Strava may still be signed in on this browser. Before linking a different account, open Strava and sign out there first." />
+              <Button quiet onPress={() => void Linking.openURL('https://www.strava.com/')}>
+                Open Strava to sign out
+              </Button>
+            </>
+          )}
+          <Button
+            loading={action.busy}
+            onPress={() =>
+              void action.run(async () => {
+                await linkStrava();
+                await refresh();
+              })
+            }
+          >
+            {justDisconnected ? 'Continue to Strava' : 'Connect with Strava'}
+          </Button>
+        </>
       ) : (
         connection.data && (
           <Notice message="Strava is ready to configure. Add your app credentials and callback address using the setup guide, then come back to connect." />

@@ -29,7 +29,11 @@ export async function linkStrava(): Promise<void> {
     method: 'POST',
     body: JSON.stringify({ platform: 'native', challenge }),
   });
-  const result = await WebBrowser.openAuthSessionAsync(url, 'growth://auth/strava');
+  const result = await WebBrowser.openAuthSessionAsync(url, 'growth://auth/strava', {
+    // Ask iOS for a private OAuth session so a prior Strava website login is not reused.
+    // The browser ultimately decides whether to honor this request.
+    preferEphemeralSession: true,
+  });
   if (result.type !== 'success') {
     await clearVerifier();
     throw new Error('Connection cancelled. You can link Strava whenever you’re ready.');
