@@ -18,6 +18,8 @@ bunx expo start --go
 
 The local journal needs no account. Strava, online food search, account verification, and cross-device sync require the Cloudflare service and the relevant provider credentials. Account verification uses Resend. Follow [SETUP.md](./SETUP.md) for local API development, deployment, Strava/USDA configuration, and iOS development builds.
 
+See [docs/DATABASE.md](./docs/DATABASE.md) for the current D1 relationship chart, table reference, migration policy, and expansion path.
+
 ## Project structure
 
 | Directory        | Purpose                                                                     |

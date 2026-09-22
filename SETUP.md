@@ -136,11 +136,11 @@ Check Worker logs, `connections.sync_error`, and the `growth-sync-failed` queue 
 
 ## Growth accounts and verification emails
 
-The fourth tab, **Account**, provides the profile, activity streak, appearance, preferences, and cross-device journal status. Email/password accounts use the existing Worker and D1 migrations. They remain separate from Strava authorization.
+The fourth tab, **Account**, provides the profile, activity streak, appearance, preferences, and cross-device journal status. Email/password accounts and per-account Strava connections use the existing Worker and D1 migrations. Growth authentication remains separate from Strava OAuth, while the resulting connection is owned by the signed-in Growth account.
 
 On the first account sign-in on a device that has never synced, Growth imports that device's current journal into the account. After that, meals, saved foods, weights, lifts, goals, profile details, appearance, and preferences follow the account between devices. Changes sync after a local edit, when the app becomes active, and on a periodic check. Versioned writes and a three-way merge preserve independent edits made by two devices. Offline edits stay on the device and upload when connectivity returns. Signing out clears that account's cached journal from the device.
 
-The existing Strava integration is still configured for one owner athlete at the service level. Its runs are stored by Strava athlete rather than inside the new account journal. Supporting a separate Strava connection for every Growth account requires a later multi-user Strava migration and approval for the Strava app.
+Each Growth account can link one personal Strava account. Runs are stored by Strava athlete outside the synchronized journal and are accessible only through the owning Growth account. Signing out preserves the link; manual disconnect or provider deauthorization removes the encrypted tokens and cached runs. Strava controls how many athletes may authorize the API application.
 
 To activate real account email delivery:
 
