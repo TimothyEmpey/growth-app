@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, View } from 'react-native';
 import { api } from '@/services/api';
 import { linkStrava } from '@/services/auth';
-import { clearSession } from '@/services/session';
 import type { Connection } from '@/domain/types';
 import { Body, Button, Card, Icon, Notice, Sheet, Title, useAction } from '@/components/ui';
 
@@ -91,7 +90,7 @@ export default function StravaSheet() {
             <>
               <Body>
                 Disconnect Strava and remove its cached runs from Growth? Your lifting and food
-                journals stay on this device.
+                journals remain unchanged.
               </Body>
               <Button
                 quiet
@@ -100,7 +99,6 @@ export default function StravaSheet() {
                 onPress={() =>
                   void action.run(async () => {
                     await api('/api/strava/disconnect', { method: 'POST', body: '{}' });
-                    await clearSession();
                     client.removeQueries({ queryKey: ['runs'] });
                     client.removeQueries({ queryKey: ['run'] });
                     client.removeQueries({ queryKey: ['run-days'] });
@@ -140,7 +138,8 @@ export default function StravaSheet() {
       )}
       {action.error && <Notice message={action.error} />}
       <Body>
-        Only you can view the runs connected to your account. You can disconnect at any time.
+        This connection follows your Growth account across devices and remains linked when you sign
+        out. Only you can view its runs, and you can disconnect at any time.
       </Body>
     </Sheet>
   );

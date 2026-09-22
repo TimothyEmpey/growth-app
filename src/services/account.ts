@@ -8,11 +8,11 @@ type AccountStatus = { account: Account | null; configured: boolean };
 type AccountResponse = { account: Account; token?: string };
 export type Verification = { challengeId: string; expiresIn: number };
 export const accountRequest = <T>(path: string, data: unknown) =>
-  api<T>(`/api/account/${path}`, { method: 'POST', body: JSON.stringify(data) }, 'account');
+  api<T>(`/api/account/${path}`, { method: 'POST', body: JSON.stringify(data) });
 export function useAccount() {
   return useQuery({
     queryKey: ['account'],
-    queryFn: ({ signal }) => api<AccountStatus>('/api/account', { signal }, 'account'),
+    queryFn: ({ signal }) => api<AccountStatus>('/api/account', { signal }),
     retry: false,
   });
 }

@@ -1,7 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import { api } from './api';
-import { clearVerifier, getVerifier, setSessionToken, setVerifier } from './session';
+import { clearVerifier, getVerifier, setVerifier } from './session';
 
 // The browser result and deep-link route can receive the same single-use exchange code.
 const exchanges = new Map<string, Promise<void>>();
@@ -11,11 +11,10 @@ export function finishStrava(code: string): Promise<void> {
   const exchange = (async () => {
     const verifier = await getVerifier();
     if (!verifier) throw new Error('This connection request expired. Please link Strava again.');
-    const result = await api<{ token: string }>('/api/strava/exchange', {
+    await api<{ connected: true }>('/api/strava/exchange', {
       method: 'POST',
       body: JSON.stringify({ code, verifier }),
     });
-    await setSessionToken(result.token);
     await clearVerifier();
   })();
   exchanges.set(code, exchange);

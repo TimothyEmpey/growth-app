@@ -47,29 +47,6 @@ export function cookie(request: Request, name: string) {
 export function setCookie(env: Env, name: string, value: string, seconds: number) {
   return `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${seconds}${env.APP_ORIGIN.startsWith('https:') ? '; Secure' : ''}`;
 }
-export async function createSession(env: Env, athleteId: string): Promise<string> {
-  const token = randomToken();
-  await env.DB.prepare('INSERT INTO sessions (token_hash, athlete_id, expires_at) VALUES (?, ?, ?)')
-    .bind(await hash(token), athleteId, now() + 90 * 86400)
-    .run();
-  return token;
-}
-export async function sessionAthlete(request: Request, env: Env): Promise<string | null> {
-  const bearer = request.headers.get('Authorization');
-  const token = bearer?.startsWith('Bearer ') ? bearer.slice(7) : cookie(request, 'growth_session');
-  if (!token) return null;
-  const row = await env.DB.prepare(
-    'SELECT athlete_id FROM sessions WHERE token_hash = ? AND expires_at > ?',
-  )
-    .bind(await hash(token), now())
-    .first<{ athlete_id: string }>();
-  return row?.athlete_id ?? null;
-}
-export async function requireAthlete(request: Request, env: Env) {
-  const athleteId = await sessionAthlete(request, env);
-  if (!athleteId) throw new ServiceError('Connect your Strava account to continue.', 401);
-  return athleteId;
-}
 export async function rateLimit(request: Request, env: Env, category: string, limit: number) {
   const bucket = `${category}:${await hash(request.headers.get('CF-Connecting-IP') ?? 'local')}:${Math.floor(now() / 60)}`;
   const row = await env.DB.prepare(

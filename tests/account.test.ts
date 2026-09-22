@@ -1,7 +1,6 @@
 import { afterEach, expect, test } from 'bun:test';
 import worker from '../server/index';
-import { environment, connection } from './helpers';
-import { createSession } from '../server/security';
+import { accountSession, environment, connection } from './helpers';
 import { now } from '../server/types';
 import {
   activityStreak,
@@ -391,7 +390,7 @@ test('untrusted origins, oversized bodies, and attempts to send recovery codes t
 test('streak endpoint reads distinct run dates across the entire history, not a single page', async () => {
   const { env } = setup();
   await connection(env);
-  const token = await createSession(env, '42');
+  const token = await accountSession(env);
   for (let i = 1; i <= 40; i++)
     await env.DB.prepare(
       'INSERT INTO runs (id,athlete_id,local_date,start_date,distance,moving_seconds,data,updated_at,seen_generation) VALUES (?,?,?,?,?,?,?,?,?)',

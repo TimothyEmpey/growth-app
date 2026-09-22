@@ -51,6 +51,10 @@ export const getConnection = (env: Env, athleteId: string) =>
   env.DB.prepare('SELECT * FROM connections WHERE athlete_id = ?')
     .bind(athleteId)
     .first<ConnectionRow>();
+export const getAccountConnection = (env: Env, accountId: string) =>
+  env.DB.prepare('SELECT * FROM connections WHERE account_id = ?')
+    .bind(accountId)
+    .first<ConnectionRow>();
 export function rateDelay(response: Response): number {
   const pairs = [
     ['X-ReadRateLimit-Usage', 'X-ReadRateLimit-Limit'],

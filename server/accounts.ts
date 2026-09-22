@@ -60,6 +60,14 @@ async function requireAccount(request: Request, env: Env) {
   if (!account) throw new ServiceError('Sign in to your Growth account to continue.', 401);
   return account;
 }
+export async function accountIdForRequest(request: Request, env: Env) {
+  return (await signedIn(request, env))?.id ?? null;
+}
+export async function requireAccountId(request: Request, env: Env) {
+  const accountId = await accountIdForRequest(request, env);
+  if (!accountId) throw new ServiceError('Sign in to your Growth account to continue.', 401);
+  return accountId;
+}
 async function body(request: Request): Promise<Record<string, unknown>> {
   const text = await request.text();
   if (text.length > 16_384) throw new ServiceError('Request too large.', 413);

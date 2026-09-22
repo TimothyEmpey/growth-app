@@ -1,5 +1,4 @@
 import { fetch } from 'expo/fetch';
-import { getSessionToken } from './session';
 import { getAccountToken } from './account-session';
 
 export class ApiError extends Error {
@@ -14,18 +13,14 @@ export function apiOrigin() {
   return process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
 }
 // Worker requests use browser cookies or the native Growth session, never Strava tokens.
-export async function api<T>(
-  path: string,
-  options: RequestInit = {},
-  scope: 'strava' | 'account' = 'strava',
-): Promise<T> {
+export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const base = apiOrigin();
   if (process.env.EXPO_OS !== 'web' && !base)
     throw new ApiError(
       'The online service has not been configured yet. Your local journal is ready to use.',
       503,
     );
-  const token = await (scope === 'account' ? getAccountToken() : getSessionToken());
+  const token = await getAccountToken();
   let response: Response;
   try {
     response = await fetch(`${base}${path}`, {
@@ -33,9 +28,7 @@ export async function api<T>(
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(scope === 'account'
-          ? { 'X-Growth-Platform': process.env.EXPO_OS === 'web' ? 'web' : 'native' }
-          : {}),
+        'X-Growth-Platform': process.env.EXPO_OS === 'web' ? 'web' : 'native',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },

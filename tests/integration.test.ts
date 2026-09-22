@@ -9,9 +9,9 @@ import {
   storeRun,
   stravaGet,
 } from '../server/strava';
-import { createSession, decrypt, encrypt, hash } from '../server/security';
+import { decrypt, encrypt, hash } from '../server/security';
 import { now } from '../server/types';
-import { activity, connection, environment } from './helpers';
+import { accountSession, activity, connection, environment } from './helpers';
 
 const originalFetch = globalThis.fetch;
 afterEach(() => {
@@ -38,17 +38,24 @@ const mockTokens = () => {
 };
 
 describe('OAuth and session security', () => {
-  test('web state is browser-bound, single-use, and sets an HttpOnly session', async () => {
+  test('web state is browser-bound, single-use, and tied to a Growth account', async () => {
     const { env } = environment();
+    const accountToken = await accountSession(env);
     mockTokens();
-    const start = await worker.fetch(request('/api/strava/authorize', { platform: 'web' }), env);
+    const start = await worker.fetch(
+      request('/api/strava/authorize', { platform: 'web' }, `growth_account=${accountToken}`),
+      env,
+    );
     const url = new URL((await start.json()).url);
     const state = url.searchParams.get('state');
     const callback = `/api/strava/callback?state=${state}&code=test&scope=activity:read_all`;
     expect(
       (await worker.fetch(request(callback, undefined, 'growth_oauth=wrong'), env)).status,
     ).toBe(400);
-    const response = await worker.fetch(request(callback, undefined, `growth_oauth=${state}`), env);
+    const response = await worker.fetch(
+      request(callback, undefined, `growth_oauth=${state}; growth_account=${accountToken}`),
+      env,
+    );
     expect(response.status).toBe(302);
     expect(response.headers.get('Location')).toContain('strava=connected');
     expect(response.headers.get('Set-Cookie')).toContain('HttpOnly');
@@ -58,7 +65,11 @@ describe('OAuth and session security', () => {
   });
   test('cancellation creates no session and returns to the app', async () => {
     const { env, sqlite } = environment();
-    const response = await worker.fetch(request('/api/strava/authorize', { platform: 'web' }), env);
+    const accountToken = await accountSession(env);
+    const response = await worker.fetch(
+      request('/api/strava/authorize', { platform: 'web' }, `growth_account=${accountToken}`),
+      env,
+    );
     const state = new URL((await response.json()).url).searchParams.get('state');
     const cancelled = await worker.fetch(
       request(
@@ -73,10 +84,16 @@ describe('OAuth and session security', () => {
   });
   test('native callback contains only a one-time code bound to the initiating device', async () => {
     const { env } = environment();
+    const accountToken = await accountSession(env);
+    const otherAccountToken = await accountSession(env, 'other-account');
     mockTokens();
     const verifier = 'device-verifier';
     const response = await worker.fetch(
-      request('/api/strava/authorize', { platform: 'native', challenge: await hash(verifier) }),
+      request(
+        '/api/strava/authorize',
+        { platform: 'native', challenge: await hash(verifier) },
+        `growth_account=${accountToken}`,
+      ),
       env,
     );
     const state = new URL((await response.json()).url).searchParams.get('state');
@@ -89,14 +106,42 @@ describe('OAuth and session security', () => {
     expect(callback.protocol).toBe('growth:');
     expect(callback.searchParams.has('token')).toBe(false);
     expect(
-      (await worker.fetch(request('/api/strava/exchange', { code, verifier: 'wrong-device' }), env))
-        .status,
+      (
+        await worker.fetch(
+          request(
+            '/api/strava/exchange',
+            { code, verifier },
+            `growth_account=${otherAccountToken}`,
+          ),
+          env,
+        )
+      ).status,
     ).toBe(401);
-    const exchange = await worker.fetch(request('/api/strava/exchange', { code, verifier }), env);
-    expect(exchange.status).toBe(200);
-    expect((await exchange.json()).token).toHaveLength(64);
     expect(
-      (await worker.fetch(request('/api/strava/exchange', { code, verifier }), env)).status,
+      (
+        await worker.fetch(
+          request(
+            '/api/strava/exchange',
+            { code, verifier: 'wrong-device' },
+            `growth_account=${accountToken}`,
+          ),
+          env,
+        )
+      ).status,
+    ).toBe(401);
+    const exchange = await worker.fetch(
+      request('/api/strava/exchange', { code, verifier }, `growth_account=${accountToken}`),
+      env,
+    );
+    expect(exchange.status).toBe(200);
+    expect((await exchange.json()).connected).toBe(true);
+    expect(
+      (
+        await worker.fetch(
+          request('/api/strava/exchange', { code, verifier }, `growth_account=${accountToken}`),
+          env,
+        )
+      ).status,
     ).toBe(401);
   });
   test('encrypted tokens round-trip and expired concurrent refresh calls cannot rotate twice', async () => {
@@ -128,6 +173,9 @@ describe('OAuth and session security', () => {
   test('untrusted origins and missing sessions cannot access runs', async () => {
     const { env } = environment();
     expect((await worker.fetch(request('/api/runs'), env)).status).toBe(401);
+    expect(
+      (await worker.fetch(request('/api/strava/authorize', { platform: 'web' }), env)).status,
+    ).toBe(401);
     const response = await worker.fetch(
       new Request('http://localhost:8787/api/strava/authorize', {
         method: 'POST',
@@ -137,6 +185,27 @@ describe('OAuth and session security', () => {
       env,
     );
     expect(response.status).toBe(403);
+  });
+  test('Growth accounts see only their own linked Strava runs and logout keeps the link', async () => {
+    const { env } = environment();
+    await connection(env, now() + 3600, '42', 'account-a');
+    await connection(env, now() + 3600, '84', 'account-b');
+    await storeRun(env, '42', 'generation', normalizeRun(activity(1))!, false);
+    await storeRun(env, '84', 'generation', normalizeRun(activity(2))!, false);
+    const tokenA = await accountSession(env, 'account-a');
+    const tokenB = await accountSession(env, 'account-b');
+    const runsA = await worker.fetch(
+      request('/api/runs', undefined, `growth_account=${tokenA}`),
+      env,
+    );
+    const runsB = await worker.fetch(
+      request('/api/runs', undefined, `growth_account=${tokenB}`),
+      env,
+    );
+    expect((await runsA.json()).runs.map((run: { id: string }) => run.id)).toEqual(['1']);
+    expect((await runsB.json()).runs.map((run: { id: string }) => run.id)).toEqual(['2']);
+    await worker.fetch(request('/api/account/logout', {}, `growth_account=${tokenA}`), env);
+    expect(await getConnection(env, '42')).not.toBeNull();
   });
 });
 describe('running synchronization', () => {
@@ -171,9 +240,9 @@ describe('running synchronization', () => {
     expect(calls).toBe(1);
     await processJob(jobs[0], env);
     expect((await getConnection(env, '42'))?.sync_complete).toBe(1);
-    const token = await createSession(env, '42');
+    const token = await accountSession(env);
     const page = await worker.fetch(
-      request('/api/runs?start=2024-01-01&end=2024-01-31', undefined, `growth_session=${token}`),
+      request('/api/runs?start=2024-01-01&end=2024-01-31', undefined, `growth_account=${token}`),
       env,
     );
     const payload = await page.json();
@@ -184,7 +253,7 @@ describe('running synchronization', () => {
       request(
         `/api/runs?start=2024-01-01&end=2024-01-31&cursor=${encodeURIComponent(payload.nextCursor)}`,
         undefined,
-        `growth_session=${token}`,
+        `growth_account=${token}`,
       ),
       env,
     );
@@ -203,8 +272,8 @@ describe('running synchronization', () => {
       event_time: now(),
     };
     await worker.fetch(request('/api/strava/webhook/secret-webhook-path', event), env);
-    const token = await createSession(env, '42');
-    await worker.fetch(request('/api/strava/sync', {}, `growth_session=${token}`), env);
+    const token = await accountSession(env);
+    await worker.fetch(request('/api/strava/sync', {}, `growth_account=${token}`), env);
     globalThis.fetch = (async () =>
       Response.json({ ...activity(8), name: 'Updated run' })) as typeof fetch;
     await processJob(jobs[0], env);

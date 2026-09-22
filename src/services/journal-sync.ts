@@ -31,14 +31,12 @@ const publish = (next: JournalSyncStatus) => {
   status = next;
   listeners.forEach((listener) => listener());
 };
-const cloudJournal = () =>
-  api<CloudJournal>('/api/account/journal', { cache: 'no-store' }, 'account');
+const cloudJournal = () => api<CloudJournal>('/api/account/journal', { cache: 'no-store' });
 const upload = (journal: Journal, baseRevision: number) =>
-  api<CloudJournal>(
-    '/api/account/journal',
-    { method: 'POST', body: JSON.stringify({ journal, baseRevision }) },
-    'account',
-  );
+  api<CloudJournal>('/api/account/journal', {
+    method: 'POST',
+    body: JSON.stringify({ journal, baseRevision }),
+  });
 
 async function reconcile(id: string) {
   const { journal: local, editVersion } = await journalSnapshot();

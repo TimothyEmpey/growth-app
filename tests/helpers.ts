@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite';
 import { readFileSync, readdirSync } from 'node:fs';
 import type { Env, SyncJob } from '../server/types';
-import { encrypt } from '../server/security';
+import { encrypt, hash } from '../server/security';
 import { now } from '../server/types';
 
 export function environment() {
@@ -48,7 +48,6 @@ export function environment() {
     APP_ORIGIN: 'http://localhost:8787',
     STRAVA_CLIENT_ID: '123',
     STRAVA_CLIENT_SECRET: 'test-secret',
-    STRAVA_ATHLETE_ID: '42',
     STRAVA_SUBSCRIPTION_ID: '1',
     STRAVA_VERIFY_TOKEN: 'verify-test',
     WEBHOOK_PATH_SECRET: 'secret-webhook-path',
@@ -57,12 +56,33 @@ export function environment() {
   } as unknown as Env;
   return { env, jobs, sqlite, queries };
 }
-export async function connection(env: Env, expires = now() + 3600) {
+export async function accountSession(env: Env, accountId = 'account-1') {
   await env.DB.prepare(
-    'INSERT INTO connections (athlete_id,name,access_cipher,refresh_cipher,expires_at,scopes,generation,sync_before) VALUES (?,?,?,?,?,?,?,?)',
+    'INSERT OR IGNORE INTO accounts (id,email,password_hash,name,created_at) VALUES (?,?,?,?,?)',
+  )
+    .bind(accountId, `${accountId}@example.invalid`, 'test-hash', 'Test Account', now())
+    .run();
+  const token = `token-${accountId}`;
+  await env.DB.prepare(
+    'INSERT OR REPLACE INTO account_sessions (token_hash,account_id,expires_at,security_version) VALUES (?,?,?,0)',
+  )
+    .bind(await hash(token), accountId, now() + 3600)
+    .run();
+  return token;
+}
+export async function connection(
+  env: Env,
+  expires = now() + 3600,
+  athleteId = '42',
+  accountId = 'account-1',
+) {
+  await accountSession(env, accountId);
+  await env.DB.prepare(
+    'INSERT INTO connections (athlete_id,account_id,name,access_cipher,refresh_cipher,expires_at,scopes,generation,sync_before) VALUES (?,?,?,?,?,?,?,?,?)',
   )
     .bind(
-      '42',
+      athleteId,
+      accountId,
       'Test Runner',
       await encrypt('access', env),
       await encrypt('refresh', env),

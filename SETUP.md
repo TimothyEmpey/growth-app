@@ -40,7 +40,7 @@ The web export is served by the same Worker. Do not change the app's web output 
 
 ## 2. Register Strava
 
-Create an API application at [Strava API settings](https://www.strava.com/settings/api). Strava currently requires a subscription to create an application and initially allows the registering athlete in single-player mode. This app intentionally accepts only the athlete ID configured by its owner. See the [current getting-started guide](https://developers.strava.com/docs/getting-started/).
+Create one API application at [Strava API settings](https://www.strava.com/settings/api). Its client credentials configure the Growth service; each signed-in Growth user then authorizes and links their own Strava account. Strava currently requires a subscription to create an application and initially allows the registering athlete in single-player mode. Request expanded access from Strava before inviting more athletes than the application's current limit. See the [current getting-started guide](https://developers.strava.com/docs/getting-started/).
 
 Set the Strava **Authorization Callback Domain** to your Worker hostname, without a scheme or path. The callback URL used by Growth is:
 
@@ -48,7 +48,7 @@ Set the Strava **Authorization Callback Domain** to your Worker hostname, withou
 https://YOUR-WORKER-HOST/api/strava/callback
 ```
 
-Record the application's client ID, client secret, and your numerical athlete ID (visible in your Strava profile URL). Growth requests `activity:read` and `activity:read_all` so your private runs and activity webhooks are included. It does not request permission to create or edit activities.
+Record the application's client ID and client secret. Growth requests `activity:read` and `activity:read_all` so each user's private runs and activity webhooks are included. It does not request permission to create or edit activities. Provider tokens are encrypted and stored per Growth account; signing out does not disconnect Strava, so the connection and imported runs remain available when that Growth account signs in on another device.
 
 ## 3. Obtain a food API key
 
@@ -61,7 +61,6 @@ For local API work, copy `server/.dev.vars.example` to `server/.dev.vars` and fi
 ```sh
 bunx wrangler secret put STRAVA_CLIENT_ID --config server/wrangler.jsonc
 bunx wrangler secret put STRAVA_CLIENT_SECRET --config server/wrangler.jsonc
-bunx wrangler secret put STRAVA_ATHLETE_ID --config server/wrangler.jsonc
 bunx wrangler secret put USDA_API_KEY --config server/wrangler.jsonc
 bunx wrangler secret put TOKEN_ENCRYPTION_KEY --config server/wrangler.jsonc
 bunx wrangler secret put STRAVA_VERIFY_TOKEN --config server/wrangler.jsonc
@@ -96,9 +95,9 @@ Store the subscription ID reported by the script:
 bunx wrangler secret put STRAVA_SUBSCRIPTION_ID --config server/wrangler.jsonc
 ```
 
-The webhook URL includes an unguessable path secret because Strava does not sign event POSTs. Growth also checks the subscription ID and athlete ID. Keep the full callback path private. Worker invocation logging is disabled to avoid recording that URL or OAuth query values; application error logs omit secrets.
+The webhook URL includes an unguessable path secret because Strava does not sign event POSTs. Growth checks the subscription ID and routes each event to the Growth account linked to its Strava athlete ID. Keep the full callback path private. Worker invocation logging is disabled to avoid recording that URL or OAuth query values; application error logs omit secrets.
 
-Now open Running → Link Strava → Connect with Strava and authorize your account. The service imports every page of history, counts Run/TrailRun/VirtualRun activities, and displays incomplete totals while importing. Queue retries resume interrupted pages. A daily reconciliation catches missed activity edits or deletions. Disconnect removes Strava credentials, sessions, and cached runs, while leaving local journals untouched.
+Sign in to a Growth account, then open Running → Link Strava → Connect with Strava and authorize that user's Strava account. The service imports every page of history, counts Run/TrailRun/VirtualRun activities, and displays incomplete totals while importing. Queue retries resume interrupted pages. A daily reconciliation catches missed activity edits or deletions. The link persists through Growth logout and across devices. It is removed only when the user chooses Disconnect or revokes Growth in Strava. Disconnect removes that account's Strava credentials and cached runs while leaving its journal untouched.
 
 ## 6. Test iPhone sign-in
 

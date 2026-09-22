@@ -6,7 +6,6 @@ export interface Env {
   DEV_CLIENT_ORIGIN?: string;
   STRAVA_CLIENT_ID?: string;
   STRAVA_CLIENT_SECRET?: string;
-  STRAVA_ATHLETE_ID?: string;
   STRAVA_SUBSCRIPTION_ID?: string;
   STRAVA_VERIFY_TOKEN?: string;
   WEBHOOK_PATH_SECRET?: string;
@@ -17,6 +16,7 @@ export interface Env {
 }
 export interface ConnectionRow {
   athlete_id: string;
+  account_id: string | null;
   name: string;
   access_cipher: string;
   refresh_cipher: string;
@@ -58,10 +58,5 @@ export const now = () => Math.floor(Date.now() / 1000);
 export const json = (value: unknown, status = 200, headers?: HeadersInit) =>
   Response.json(value, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
 export function configured(env: Env): boolean {
-  return !!(
-    env.STRAVA_CLIENT_ID &&
-    env.STRAVA_CLIENT_SECRET &&
-    env.STRAVA_ATHLETE_ID &&
-    env.TOKEN_ENCRYPTION_KEY
-  );
+  return !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET && env.TOKEN_ENCRYPTION_KEY);
 }

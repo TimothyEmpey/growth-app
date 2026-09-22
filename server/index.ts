@@ -1,9 +1,15 @@
-import { accountRoute, accountsConfigured } from './accounts';
+import {
+  accountIdForRequest,
+  accountRoute,
+  accountsConfigured,
+  requireAccountId,
+} from './accounts';
 import { foodDetail, searchFoods } from './food';
 import { authorize, nativeExchange, oauthCallback } from './oauth';
-import { hash, rateLimit, requireAthlete, sessionAthlete, setCookie } from './security';
+import { hash, rateLimit } from './security';
 import {
   accessToken,
+  getAccountConnection,
   getConnection,
   normalizeRun,
   processJob,
@@ -55,10 +61,7 @@ async function webhook(request: Request, env: Env) {
     event_time: number;
     updates?: { authorized?: string };
   };
-  if (
-    String(event.owner_id) !== env.STRAVA_ATHLETE_ID ||
-    String(event.subscription_id) !== env.STRAVA_SUBSCRIPTION_ID
-  )
+  if (String(event.subscription_id) !== env.STRAVA_SUBSCRIPTION_ID)
     throw new ServiceError('Invalid webhook subscription.', 403);
   if (
     !['activity', 'athlete'].includes(event.object_type) ||
@@ -111,11 +114,11 @@ async function route(request: Request, env: Env): Promise<Response> {
     });
   if (path === '/api/strava/status' && method === 'GET') {
     if (!configured(env)) return json({ configured: false, connected: false });
-    const athleteId = await sessionAthlete(request, env);
-    const connection = athleteId ? await getConnection(env, athleteId) : null;
+    const accountId = await accountIdForRequest(request, env);
+    const connection = accountId ? await getAccountConnection(env, accountId) : null;
     if (!connection) return json({ configured: true, connected: false });
     const count = await env.DB.prepare('SELECT COUNT(*) AS count FROM runs WHERE athlete_id=?')
-      .bind(athleteId)
+      .bind(connection.athlete_id)
       .first<{ count: number }>();
     return json({
       configured: true,
@@ -138,11 +141,11 @@ async function route(request: Request, env: Env): Promise<Response> {
     return nativeExchange(request, env);
   }
   if (path === '/api/strava/disconnect' && method === 'POST') {
-    const athleteId = await requireAthlete(request, env);
-    const connection = await getConnection(env, athleteId);
+    const accountId = await requireAccountId(request, env);
+    const connection = await getAccountConnection(env, accountId);
     if (connection?.status === 'connected') {
       try {
-        const token = await accessToken(env, athleteId);
+        const token = await accessToken(env, connection.athlete_id);
         const response = await fetch('https://www.strava.com/oauth/deauthorize', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
@@ -154,26 +157,26 @@ async function route(request: Request, env: Env): Promise<Response> {
         if (!(error instanceof ServiceError && error.status === 401)) throw error;
       }
     }
-    await removeConnection(env, athleteId);
-    return json({ disconnected: true }, 200, {
-      'Set-Cookie': setCookie(env, 'growth_session', '', 0),
-    });
+    if (connection) await removeConnection(env, connection.athlete_id);
+    return json({ disconnected: true });
   }
   if (path === '/api/strava/sync' && method === 'POST') {
-    const athleteId = await requireAthlete(request, env);
+    const accountId = await requireAccountId(request, env);
+    const connection = await getAccountConnection(env, accountId);
+    if (!connection) throw new ServiceError('Connect your Strava account to continue.', 401);
     await rateLimit(request, env, 'sync', 3);
-    await requestSync(env, athleteId);
+    await requestSync(env, connection.athlete_id);
     return json({ queued: true }, 202);
   }
   if (path === '/api/run-days' && method === 'GET') {
-    const athleteId = await requireAthlete(request, env);
-    const connection = await getConnection(env, athleteId);
+    const accountId = await requireAccountId(request, env);
+    const connection = await getAccountConnection(env, accountId);
     if (connection?.status !== 'connected')
       throw new ServiceError('Reconnect Strava to include runs in your streak.', 401);
     const days = await env.DB.prepare(
       'SELECT DISTINCT local_date FROM runs WHERE athlete_id=? ORDER BY local_date',
     )
-      .bind(athleteId)
+      .bind(connection.athlete_id)
       .all<{ local_date: string }>();
     return json({
       dates: days.results.map((row) => row.local_date),
@@ -181,10 +184,11 @@ async function route(request: Request, env: Env): Promise<Response> {
     });
   }
   if (path === '/api/runs' && method === 'GET') {
-    const athleteId = await requireAthlete(request, env);
-    const connection = await getConnection(env, athleteId);
+    const accountId = await requireAccountId(request, env);
+    const connection = await getAccountConnection(env, accountId);
     if (connection?.status !== 'connected')
       throw new ServiceError('Reconnect Strava to view your runs.', 401);
+    const athleteId = connection.athlete_id;
     const start = url.searchParams.get('start') ?? '0001-01-01',
       end = url.searchParams.get('end') ?? '9999-12-31';
     if (![start, end].every((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)) || start > end)
@@ -229,11 +233,12 @@ async function route(request: Request, env: Env): Promise<Response> {
     });
   }
   if (/^\/api\/runs\/\d+$/.test(path) && method === 'GET') {
-    const athleteId = await requireAthlete(request, env);
+    const accountId = await requireAccountId(request, env);
     const id = path.split('/').at(-1)!;
-    const connection = await getConnection(env, athleteId);
+    const connection = await getAccountConnection(env, accountId);
     if (!connection || connection.status !== 'connected')
       throw new ServiceError('Reconnect Strava to view your runs.', 401);
+    const athleteId = connection.athlete_id;
     const cached = await env.DB.prepare(
       'SELECT data,detailed FROM runs WHERE athlete_id=? AND id=?',
     )
