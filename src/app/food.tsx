@@ -4,7 +4,15 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useJournal, updateJournal } from '@/data/journal-store';
-import { formatFoodLabel, newId, nutritionFor, positive, today, validDate } from '@/domain/journal';
+import {
+  formatFoodLabel,
+  newId,
+  nutritionFor,
+  positive,
+  today,
+  validDate,
+  withOunceFallback,
+} from '@/domain/journal';
 import { MEALS, type Food, type FoodSearchItem, type Meal } from '@/domain/types';
 import { api } from '@/services/api';
 import {
@@ -42,7 +50,9 @@ function FoodForm() {
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<Food | null>(existing?.food ?? null);
+  const [selected, setSelected] = useState<Food | null>(() =>
+    existing ? withOunceFallback(existing.food) : null,
+  );
   const queryClient = useQueryClient();
   const [portionId, setPortionId] = useState(existing?.portionId ?? 'grams');
   const [portionMenuOpen, setPortionMenuOpen] = useState(false);
@@ -74,7 +84,7 @@ function FoodForm() {
       !query || `${food.name} ${food.brand ?? ''}`.toLowerCase().includes(query.toLowerCase()),
   );
   const choose = (food: Food) => {
-    setSelected(food);
+    setSelected(withOunceFallback(food));
     const portion = food.portions.find((p) => p.id !== 'grams') ?? food.portions[0];
     setPortionId(portion.id);
     setQuantity(portion.id === 'grams' ? '100' : '1');

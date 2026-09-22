@@ -15,6 +15,7 @@ import {
   sumNutrition,
   today,
   validDate,
+  withOunceFallback,
 } from '../src/domain/journal';
 import type { Food } from '../src/domain/types';
 import { hasMacroData, normalizeFood, searchTermScore } from '../server/food';
@@ -78,6 +79,17 @@ describe('nutrition calculations', () => {
     expect(formatServingAmount(1.5, '1 medium banana (118 g)')).toBe('1.5 medium banana');
     expect(formatServingAmount(100, '1 gram')).toBe('100 grams');
     expect(formatServingAmount(2, '0.5 cup (80 g)')).toBe('1 cup');
+  });
+
+  test('adds a calculated ounce only when grams are the sole native portion', () => {
+    const gramOnly = { ...food, portions: [{ id: 'grams', label: '1 gram', grams: 1 }] };
+    const prepared = withOunceFallback(gramOnly);
+    expect(prepared.portions).toEqual([
+      { id: 'grams', label: '1 gram', grams: 1 },
+      { id: 'ounce', label: '1 ounce (28.35 g)', grams: 28.349523125 },
+    ]);
+    expect(nutritionFor(prepared, 'ounce', 1).calories).toBeCloseTo(107.728187875);
+    expect(withOunceFallback(food)).toBe(food);
   });
 
   test('formats all-caps food labels without changing existing capitalization', () => {

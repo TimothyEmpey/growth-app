@@ -60,6 +60,13 @@ export function formatServingAmount(quantity: number, label: string): string {
     description += 's';
   return `${amount} ${description}`;
 }
+export function withOunceFallback(food: Food): Food {
+  if (food.portions.length !== 1 || food.portions[0].id !== 'grams') return food;
+  return {
+    ...food,
+    portions: [...food.portions, { id: 'ounce', label: '1 ounce (28.35 g)', grams: 28.349523125 }],
+  };
+}
 export function pace(seconds: number, meters: number, units: 'us' | 'metric' = 'us'): string {
   if (meters <= 0 || seconds <= 0) return '—';
   const sec = Math.round(seconds / (meters / (units === 'metric' ? 1000 : 1609.344)));
