@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useJournal, updateJournal } from '@/data/journal-store';
-import { formatDate, newId, positive, sortLifts, today, validDate } from '@/domain/journal';
+import { formatDate, newId, positiveAtMost, sortLifts, today, validDate } from '@/domain/journal';
+import { INPUT_LIMITS } from '@/domain/input';
 import {
   dismissSheet,
   Body,
@@ -16,6 +17,7 @@ import {
   JournalReady,
   Label,
   Notice,
+  NumericField,
   Row,
   Sheet,
   Title,
@@ -120,11 +122,11 @@ function LiftForm() {
           {adding && (
             <View style={{ gap: 16 }}>
               <Title size={18}>{editing ? 'Edit record' : 'New max'}</Title>
-              <Field
+              <NumericField
                 label={`Weight (${unit})`}
                 value={weight}
                 onChangeText={setWeight}
-                keyboardType="decimal-pad"
+                max={units === 'metric' ? INPUT_LIMITS.liftKg : INPUT_LIMITS.liftLb}
                 placeholder="0"
               />
               <DateField value={date} onChange={setDate} />
@@ -136,7 +138,14 @@ function LiftForm() {
                     const pounds =
                       source && weight === String(displayWeight(source.pounds, units))
                         ? source.pounds
-                        : weightToPounds(positive(weight), units);
+                        : weightToPounds(
+                            positiveAtMost(
+                              weight,
+                              units === 'metric' ? INPUT_LIMITS.liftKg : INPUT_LIMITS.liftLb,
+                              'weight',
+                            ),
+                            units,
+                          );
                     if (!validDate(date)) throw new Error('Choose a valid date, today or earlier.');
                     await updateJournal((j) => {
                       if (!j.exercises.some((e) => e.id === id))

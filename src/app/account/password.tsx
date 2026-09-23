@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { dismissSheet, Body, Button, Field, Notice, Sheet, useAction } from '@/components/ui';
 import { validatePassword } from '@/domain/account';
+import { INPUT_LIMITS } from '@/domain/input';
 import { useAccount, useAccountActions } from '@/services/account';
 export default function PasswordSheet() {
   const account = useAccount();
@@ -34,6 +35,7 @@ export default function PasswordSheet() {
             onChangeText={setCurrent}
             secureTextEntry
             autoComplete="current-password"
+            maxLength={INPUT_LIMITS.passwordLength}
             editable={!action.busy}
           />
           <Field
@@ -43,6 +45,7 @@ export default function PasswordSheet() {
             secureTextEntry
             autoComplete="new-password"
             placeholder="At least 12 characters"
+            maxLength={INPUT_LIMITS.passwordLength}
             editable={!action.busy}
           />
           <Field
@@ -51,6 +54,7 @@ export default function PasswordSheet() {
             onChangeText={setConfirm}
             secureTextEntry
             autoComplete="new-password"
+            maxLength={INPUT_LIMITS.passwordLength}
             editable={!action.busy}
           />
           <Body>Use 12–128 characters. A memorable, unique passphrase works well.</Body>

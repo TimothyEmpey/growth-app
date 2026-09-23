@@ -1,7 +1,17 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { dismissSheet, Body, Button, Field, Notice, Sheet, useAction } from '@/components/ui';
+import {
+  dismissSheet,
+  Body,
+  Button,
+  Field,
+  Notice,
+  NumericField,
+  Sheet,
+  useAction,
+} from '@/components/ui';
 import { normalizeEmail } from '@/domain/account';
+import { INPUT_LIMITS } from '@/domain/input';
 import {
   accountRequest,
   useAccount,
@@ -50,21 +60,21 @@ export default function EmailSheet() {
             We sent separate codes to {account.data.account.email} and {email}. Enter both to
             approve the change. Your current email stays active until verification is complete.
           </Body>
-          <Field
+          <NumericField
             label="Current email code"
             value={oldCode}
             onChangeText={setOldCode}
-            keyboardType="number-pad"
-            maxLength={6}
+            max={INPUT_LIMITS.verificationCode}
+            decimals={0}
             placeholder="000000"
             editable={!action.busy}
           />
-          <Field
+          <NumericField
             label="New email code"
             value={code}
             onChangeText={setCode}
-            keyboardType="number-pad"
-            maxLength={6}
+            max={INPUT_LIMITS.verificationCode}
+            decimals={0}
             placeholder="000000"
             editable={!action.busy}
           />
@@ -118,6 +128,7 @@ export default function EmailSheet() {
             autoCorrect={false}
             keyboardType="email-address"
             autoComplete="email"
+            maxLength={INPUT_LIMITS.emailLength}
             editable={!action.busy}
           />
           <Field
@@ -126,6 +137,7 @@ export default function EmailSheet() {
             onChangeText={setPassword}
             secureTextEntry
             autoComplete="current-password"
+            maxLength={INPUT_LIMITS.passwordLength}
             editable={!action.busy}
           />
           <Body>

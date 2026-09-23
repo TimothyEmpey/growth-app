@@ -1,8 +1,19 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { Body, Button, Field, Notice, Row, Sheet, dismissSheet, useAction } from '@/components/ui';
+import {
+  Body,
+  Button,
+  Field,
+  Notice,
+  NumericField,
+  Row,
+  Sheet,
+  dismissSheet,
+  useAction,
+} from '@/components/ui';
 import { useJournal, updateJournal } from '@/data/journal-store';
 import { normalizeEmail, validatePassword } from '@/domain/account';
+import { INPUT_LIMITS } from '@/domain/input';
 import { accountRequest, useAccountActions, type Verification } from '@/services/account';
 
 type Mode = 'login' | 'register' | 'reset';
@@ -75,13 +86,13 @@ export default function SignInSheet() {
               : 'If an account uses this email, you’ll receive a six-digit code.'}{' '}
             Codes expire after 10 minutes.
           </Body>
-          <Field
+          <NumericField
             label="Verification code"
             value={code}
             onChangeText={setCode}
-            keyboardType="number-pad"
+            max={INPUT_LIMITS.verificationCode}
+            decimals={0}
             autoComplete="one-time-code"
-            maxLength={6}
             placeholder="000000"
             editable={!action.busy}
           />
@@ -94,6 +105,7 @@ export default function SignInSheet() {
                 secureTextEntry
                 autoComplete="new-password"
                 placeholder="At least 12 characters"
+                maxLength={INPUT_LIMITS.passwordLength}
                 editable={!action.busy}
               />
               <Field
@@ -102,6 +114,7 @@ export default function SignInSheet() {
                 onChangeText={setConfirm}
                 secureTextEntry
                 autoComplete="new-password"
+                maxLength={INPUT_LIMITS.passwordLength}
                 editable={!action.busy}
               />
             </>
@@ -158,6 +171,7 @@ export default function SignInSheet() {
             autoCorrect={false}
             keyboardType="email-address"
             autoComplete="email"
+            maxLength={INPUT_LIMITS.emailLength}
             editable={!action.busy}
           />
           {mode !== 'reset' && (
@@ -168,6 +182,7 @@ export default function SignInSheet() {
               secureTextEntry
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               placeholder={mode === 'register' ? 'At least 12 characters' : 'Your password'}
+              maxLength={INPUT_LIMITS.passwordLength}
               editable={!action.busy}
             />
           )}
@@ -178,6 +193,7 @@ export default function SignInSheet() {
               onChangeText={setConfirm}
               secureTextEntry
               autoComplete="new-password"
+              maxLength={INPUT_LIMITS.passwordLength}
               editable={!action.busy}
             />
           )}

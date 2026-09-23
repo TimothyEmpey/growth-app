@@ -9,6 +9,7 @@ import {
   JournalReady,
   Label,
   Notice,
+  NumericField,
   Row,
   Sheet,
   Title,
@@ -19,6 +20,7 @@ import { useJournal, updateJournal } from '@/data/journal-store';
 import { validateProfile, type Account, type Profile } from '@/domain/account';
 import { useAccount, useAccountActions } from '@/services/account';
 import { usePreferences } from '@/hooks/use-preferences';
+import { INPUT_LIMITS } from '@/domain/input';
 
 export default function ProfileSheet() {
   const account = useAccount();
@@ -113,44 +115,45 @@ function ProfileForm({ account, unavailable }: { account: Account | null; unavai
         maxLength={60}
         editable={!action.busy}
       />
-      <Field
+      <NumericField
         label="Age (optional)"
         placeholder="Years"
         value={age}
         onChangeText={edit(setAge)}
-        keyboardType="number-pad"
-        maxLength={3}
+        max={INPUT_LIMITS.age}
+        decimals={0}
         editable={!action.busy}
       />
       <Row style={{ alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>
-          <Field
+          <NumericField
             label={metric ? 'Height (cm)' : 'Height (ft)'}
             value={height}
             onChangeText={edit(setHeight)}
-            keyboardType="decimal-pad"
+            max={metric ? INPUT_LIMITS.heightCm : INPUT_LIMITS.heightFeet}
+            decimals={metric ? 1 : 0}
             placeholder="Optional"
             editable={!action.busy}
           />
         </View>
         {!metric && (
           <View style={{ flex: 1 }}>
-            <Field
+            <NumericField
               label="Height (in)"
               value={inches}
               onChangeText={edit(setInches)}
-              keyboardType="decimal-pad"
+              max={INPUT_LIMITS.heightInches}
               placeholder="0–11.9"
               editable={!action.busy}
             />
           </View>
         )}
       </Row>
-      <Field
+      <NumericField
         label={`Weight (${metric ? 'kg' : 'lb'})`}
         value={weight}
         onChangeText={edit(setWeight)}
-        keyboardType="decimal-pad"
+        max={metric ? INPUT_LIMITS.bodyWeightKg : INPUT_LIMITS.bodyWeightLb}
         placeholder="Optional"
         editable={!action.busy}
       />

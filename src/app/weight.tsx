@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 import { useJournal, updateJournal } from '@/data/journal-store';
-import { newId, positive, putWeight, today } from '@/domain/journal';
+import { newId, positiveAtMost, putWeight, today } from '@/domain/journal';
+import { INPUT_LIMITS } from '@/domain/input';
 import {
   dismissSheet,
   Body,
   Button,
-  Field,
+  NumericField,
   JournalReady,
   Notice,
   Sheet,
@@ -41,12 +42,12 @@ function WeightForm() {
       title={existing ? 'Edit weigh-in' : 'Log your weight'}
       subtitle="Small check-ins. A bigger picture."
     >
-      <Field
+      <NumericField
         label={`Weight (${unit})`}
-        keyboardType="decimal-pad"
         autoFocus
         value={weight}
         onChangeText={setWeight}
+        max={units === 'metric' ? INPUT_LIMITS.bodyWeightKg : INPUT_LIMITS.bodyWeightLb}
         placeholder="0.0"
         style={{ fontSize: 32 }}
       />
@@ -70,7 +71,14 @@ function WeightForm() {
             const pounds =
               source && weight === String(displayWeight(source.pounds, units))
                 ? source.pounds
-                : weightToPounds(positive(weight), units);
+                : weightToPounds(
+                    positiveAtMost(
+                      weight,
+                      units === 'metric' ? INPUT_LIMITS.bodyWeightKg : INPUT_LIMITS.bodyWeightLb,
+                      'weight',
+                    ),
+                    units,
+                  );
             await updateJournal((j) => {
               j.weights = putWeight(j.weights, {
                 id: id ?? duplicate?.id ?? newId(),

@@ -9,6 +9,7 @@ import {
   pace,
   periodStart,
   positive,
+  positiveAtMost,
   putWeight,
   shiftDay,
   sortLifts,
@@ -17,6 +18,7 @@ import {
   validDate,
   withOunceFallback,
 } from '../src/domain/journal';
+import { sanitizeNumericInput } from '../src/domain/input';
 import type { Food } from '../src/domain/types';
 import { hasMacroData, normalizeFood, searchTermScore } from '../server/food';
 
@@ -72,6 +74,17 @@ describe('journal dates and records', () => {
     expect(() => positive('')).toThrow();
     expect(() => positive(-1)).toThrow();
     expect(() => positive('Infinity')).toThrow();
+    expect(positiveAtMost('5000', 5000, 'weight')).toBe(5000);
+    expect(() => positiveAtMost('5001', 5000, 'weight')).toThrow('no greater than 5000');
+  });
+
+  test('numeric input removes invalid characters and refuses oversized values', () => {
+    expect(sanitizeNumericInput('12lb.34', 100, 1)).toBe('12.3');
+    expect(sanitizeNumericInput('72,5', 300, 1)).toBe('72.5');
+    expect(sanitizeNumericInput('1.2.3', 100, 2)).toBe('1.23');
+    expect(sanitizeNumericInput('00a123', 999999, 0)).toBe('00123');
+    expect(sanitizeNumericInput('501', 500, 0)).toBeNull();
+    expect(sanitizeNumericInput('letters', 500, 0)).toBe('');
   });
 });
 describe('nutrition calculations', () => {

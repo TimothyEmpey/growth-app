@@ -41,6 +41,11 @@ export function positive(value: string | number): number {
   if (!Number.isFinite(parsed) || parsed <= 0) throw new Error('Enter a number greater than zero.');
   return parsed;
 }
+export function positiveAtMost(value: string | number, max: number, label = 'number'): number {
+  const parsed = positive(value);
+  if (parsed > max) throw new Error(`Enter a ${label} no greater than ${max}.`);
+  return parsed;
+}
 export function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }
@@ -86,7 +91,7 @@ export function sortLifts(records: LiftRecord[]): LiftRecord[] {
 }
 export function putWeight(weights: WeightEntry[], entry: WeightEntry): WeightEntry[] {
   if (!validDate(entry.date)) throw new Error('Choose a valid date, today or earlier.');
-  positive(entry.pounds);
+  positiveAtMost(entry.pounds, 1433, 'weight');
   // Replace both the edited record and any record occupying its new date.
   return [...weights.filter((w) => w.id !== entry.id && w.date !== entry.date), entry].sort(
     (a, b) => a.date.localeCompare(b.date),

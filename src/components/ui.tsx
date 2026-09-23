@@ -17,6 +17,7 @@ import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Nutrition, Period } from '@/domain/types';
+import { sanitizeNumericInput } from '@/domain/input';
 import { useJournal } from '@/data/journal-store';
 import { Dialog } from './dialog';
 import { MainPageSwipe } from './gestures';
@@ -409,6 +410,36 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
         ]}
       />
     </View>
+  );
+}
+export function NumericField({
+  label,
+  value,
+  onChangeText,
+  max,
+  decimals = 1,
+  ...props
+}: Omit<TextInputProps, 'value' | 'onChangeText' | 'keyboardType' | 'inputMode'> & {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  max: number;
+  decimals?: number;
+}) {
+  const integerDigits = String(Math.floor(max)).length;
+  return (
+    <Field
+      {...props}
+      label={label}
+      value={value}
+      keyboardType={decimals ? 'decimal-pad' : 'number-pad'}
+      inputMode={decimals ? 'decimal' : 'numeric'}
+      maxLength={integerDigits + (decimals ? decimals + 1 : 0)}
+      onChangeText={(input) => {
+        const next = sanitizeNumericInput(input, max, decimals);
+        if (next !== null) onChangeText(next);
+      }}
+    />
   );
 }
 export function dismissSheet(fallback: '/' | '/diet' | '/running' | '/account' = '/') {

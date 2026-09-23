@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useJournal, updateJournal } from '@/data/journal-store';
-import { nutritionKeys, positive } from '@/domain/journal';
+import { nutritionKeys, positiveAtMost } from '@/domain/journal';
+import { INPUT_LIMITS } from '@/domain/input';
 import {
   dismissSheet,
   Body,
   Button,
-  Field,
   JournalReady,
+  NumericField,
   Notice,
   Sheet,
   useAction,
@@ -29,12 +30,12 @@ function GoalsForm() {
   return (
     <Sheet title="Daily goals" subtitle="Set targets that work for you. Every field is optional.">
       {nutritionKeys.map((key) => (
-        <Field
+        <NumericField
           key={key}
           label={`${key[0].toUpperCase()}${key.slice(1)} (${key === 'calories' ? 'cal' : 'g'})`}
           value={values[key]}
           onChangeText={(value) => setValues({ ...values, [key]: value })}
-          keyboardType="decimal-pad"
+          max={key === 'calories' ? INPUT_LIMITS.calories : INPUT_LIMITS.macroGrams}
           placeholder="No goal"
         />
       ))}
@@ -48,7 +49,12 @@ function GoalsForm() {
           void action.run(async () => {
             const goals: Goals = {};
             for (const key of nutritionKeys)
-              if (values[key].trim()) goals[key] = positive(values[key]);
+              if (values[key].trim())
+                goals[key] = positiveAtMost(
+                  values[key],
+                  key === 'calories' ? INPUT_LIMITS.calories : INPUT_LIMITS.macroGrams,
+                  `${key} goal`,
+                );
             await updateJournal((j) => {
               j.goals = goals;
             });

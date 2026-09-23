@@ -8,11 +8,12 @@ import {
   formatFoodLabel,
   newId,
   nutritionFor,
-  positive,
+  positiveAtMost,
   today,
   validDate,
   withOunceFallback,
 } from '@/domain/journal';
+import { INPUT_LIMITS } from '@/domain/input';
 import { MEALS, type Food, type FoodSearchItem, type Meal } from '@/domain/types';
 import { api } from '@/services/api';
 import {
@@ -25,6 +26,7 @@ import {
   JournalReady,
   Label,
   Notice,
+  NumericField,
   NutritionStrip,
   Row,
   Sheet,
@@ -178,11 +180,12 @@ function FoodForm() {
               </View>
             )}
           </View>
-          <Field
+          <NumericField
             label={portionId === 'grams' ? 'Grams' : 'Number of servings'}
             value={quantity}
             onChangeText={setQuantity}
-            keyboardType="decimal-pad"
+            max={portionId === 'grams' ? INPUT_LIMITS.foodGrams : INPUT_LIMITS.foodServings}
+            decimals={2}
             placeholder="1"
           />
           {nutrition && (
@@ -200,7 +203,11 @@ function FoodForm() {
             loading={action.busy}
             onPress={() =>
               void action.run(async () => {
-                const count = positive(quantity);
+                const count = positiveAtMost(
+                  quantity,
+                  portionId === 'grams' ? INPUT_LIMITS.foodGrams : INPUT_LIMITS.foodServings,
+                  'quantity',
+                );
                 if (!MEALS.includes(meal) || !validDate(date))
                   throw new Error('Choose a valid meal and date.');
                 const snapshot = nutritionFor(selected, portionId, count);
@@ -255,6 +262,7 @@ function FoodForm() {
             autoFocus
             placeholder="Try eggs, Greek yogurt, or a brand…"
             autoCorrect={false}
+            maxLength={INPUT_LIMITS.searchLength}
           />
           {action.busy && <ActivityIndicator color={C.blue} />}
           {action.error && <Notice message={action.error} />}
