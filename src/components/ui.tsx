@@ -302,6 +302,7 @@ export function Page({
         style={{ flex: 1, backgroundColor: C.bg }}
         contentContainerStyle={{
           padding: process.env.EXPO_OS === 'web' && width >= 600 ? 28 : 20,
+          paddingTop: process.env.EXPO_OS === 'web' ? Math.max(20, insets.top) : undefined,
           paddingBottom: 110 + insets.bottom,
           gap: 26,
           width: '100%',
