@@ -18,12 +18,12 @@ type CloudJournal = {
 };
 export type JournalSyncStatus = {
   state: 'idle' | 'syncing' | 'synced' | 'offline' | 'error';
-  updatedAt: string | null;
+  syncedAt: string | null;
   message: string | null;
 };
 
 let accountId: string | null = null;
-let status: JournalSyncStatus = { state: 'idle', updatedAt: null, message: null };
+let status: JournalSyncStatus = { state: 'idle', syncedAt: null, message: null };
 const listeners = new Set<() => void>();
 let work: Promise<void> = Promise.resolve();
 let rerun = false;
@@ -120,14 +120,15 @@ export function requestJournalSync() {
     .catch(() => {})
     .then(async () => {
       try {
-        const updatedAt = await reconcile(id);
-        if (accountId === id) publish({ state: 'synced', updatedAt, message: null });
+        await reconcile(id);
+        if (accountId === id)
+          publish({ state: 'synced', syncedAt: new Date().toISOString(), message: null });
       } catch (error) {
         if (accountId !== id) return;
         const offline = error instanceof ApiError && error.status === 503;
         publish({
           state: offline ? 'offline' : 'error',
-          updatedAt: status.updatedAt,
+          syncedAt: status.syncedAt,
           message: error instanceof Error ? error.message : 'Journal sync failed.',
         });
       } finally {
@@ -142,7 +143,7 @@ export function requestJournalSync() {
 export function setJournalSyncAccount(id: string | null) {
   if (accountId === id) return;
   accountId = id;
-  publish({ state: id ? 'idle' : 'idle', updatedAt: null, message: null });
+  publish({ state: 'idle', syncedAt: null, message: null });
   if (id) requestJournalSync();
 }
 
@@ -155,7 +156,7 @@ export async function clearSyncedJournal() {
       await saveSyncState(null);
     });
   await work;
-  publish({ state: 'idle', updatedAt: null, message: null });
+  publish({ state: 'idle', syncedAt: null, message: null });
 }
 
 export async function clearJournalIfOwned() {

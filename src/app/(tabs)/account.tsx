@@ -202,18 +202,18 @@ export default function AccountPage() {
                     ? 'Saved here. Growth will sync when you’re back online.'
                     : sync.state === 'error'
                       ? (sync.message ?? 'Your journal could not be synced.')
-                      : sync.updatedAt
-                        ? `Synced ${new Date(sync.updatedAt).toLocaleString()}`
+                      : sync.syncedAt
+                        ? `Last synced ${new Date(sync.syncedAt).toLocaleString()}`
                         : 'Your journal will follow this account to your other devices.'}
               </Body>
             </View>
             {sync.state === 'syncing' ? (
               <ActivityIndicator color={C.blue} />
-            ) : (
+            ) : sync.state === 'offline' || sync.state === 'error' ? (
               <Button quiet onPress={requestJournalSync}>
-                Sync now
+                Try again
               </Button>
-            )}
+            ) : null}
           </Row>
         </Card>
       )}
