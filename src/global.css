@@ -28,6 +28,12 @@ input {
 }
 /* WebKit can inset absolutely positioned bars twice in installed iOS web apps. */
 @media (display-mode: standalone) {
+  html,
+  body,
+  #root {
+    height: 100vh !important;
+    min-height: 100vh;
+  }
   #growth-standalone-tab-bar {
     position: fixed !important;
     padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
