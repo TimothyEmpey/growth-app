@@ -80,6 +80,7 @@ export default function AppTabs() {
     <Tabs style={{ flex: 1, flexDirection: compact ? 'column' : 'row', backgroundColor: C.bg }}>
       <TabList asChild>
         <View
+          nativeID="growth-standalone-tab-bar"
           style={
             compact
               ? {

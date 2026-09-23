@@ -26,6 +26,13 @@ textarea {
 input {
   color-scheme: inherit;
 }
+/* WebKit can inset absolutely positioned bars twice in installed iOS web apps. */
+@media (display-mode: standalone) {
+  #growth-standalone-tab-bar {
+    position: fixed !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  }
+}
 .growth-dialog-overlay {
   position: fixed;
   inset: 0;
