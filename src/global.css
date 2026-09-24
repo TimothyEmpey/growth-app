@@ -26,6 +26,15 @@ textarea {
 input {
   color-scheme: inherit;
 }
+[data-testid='weight-chart'],
+[data-testid='weight-chart'] * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+[data-testid='weight-chart'] ::selection {
+  background: transparent;
+}
 /* WebKit can inset absolutely positioned bars twice in installed iOS web apps. */
 @media (display-mode: standalone) {
   html,

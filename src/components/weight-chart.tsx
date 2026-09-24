@@ -66,7 +66,10 @@ export function WeightChart({
   const y = (e: WeightEntry) => bottom - ((e.pounds - low) / (high - low)) * (bottom - top);
   const line = entries.map((e, i) => `${i ? 'L' : 'M'}${x(e)},${y(e)}`).join(' ');
   return (
-    <View onLayout={(event) => setWidth(Math.max(200, event.nativeEvent.layout.width))}>
+    <View
+      testID="weight-chart"
+      onLayout={(event) => setWidth(Math.max(200, event.nativeEvent.layout.width))}
+    >
       <Svg
         width="100%"
         height={height}
