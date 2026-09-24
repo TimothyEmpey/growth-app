@@ -189,6 +189,21 @@ export default function AccountPage() {
           onPress={() => router.push('/account/preferences')}
         />
       </Card>
+      <Card style={{ paddingVertical: 4, gap: 0 }}>
+        <SettingsRow
+          icon="lock"
+          title="Privacy policy"
+          detail="How Growth handles your information"
+          onPress={() => router.push('/privacy')}
+        />
+        <View style={{ height: 1, backgroundColor: C.border }} />
+        <SettingsRow
+          icon="account"
+          title="Support"
+          detail="Account help, privacy requests & feedback"
+          onPress={() => router.push('/support')}
+        />
+      </Card>
       {account.data?.account && (
         <Card style={{ gap: 12 }}>
           <Row style={{ justifyContent: 'space-between' }}>

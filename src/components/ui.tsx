@@ -454,11 +454,13 @@ export function Sheet({
   const pathname = usePathname();
   const fallback = pathname.startsWith('/account/')
     ? '/account'
-    : pathname === '/food' || pathname === '/goals'
-      ? '/diet'
-      : pathname === '/run' || pathname === '/run-history' || pathname === '/strava'
-        ? '/running'
-        : '/';
+    : pathname === '/privacy' || pathname === '/support'
+      ? '/account'
+      : pathname === '/food' || pathname === '/goals'
+        ? '/diet'
+        : pathname === '/run' || pathname === '/run-history' || pathname === '/strava'
+          ? '/running'
+          : '/';
   return (
     <Dialog title={title} onDismiss={() => dismissSheet(fallback)}>
       <ScrollView

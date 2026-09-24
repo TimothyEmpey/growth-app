@@ -103,6 +103,8 @@ function AppNavigation() {
           'account/sign-in',
           'account/email',
           'account/password',
+          'privacy',
+          'support',
         ].map((name) => (
           <Stack.Screen key={name} name={name} options={modalOptions} />
         ))}
