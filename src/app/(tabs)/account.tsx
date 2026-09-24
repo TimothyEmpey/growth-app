@@ -114,7 +114,6 @@ export default function AccountPage() {
         </Row>
         <Row style={{ alignItems: 'baseline', gap: 10 }}>
           <Text
-            selectable
             style={{
               color: C.text,
               fontSize: 58,

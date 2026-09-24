@@ -55,7 +55,6 @@ export default function LiftingPage() {
         <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <View style={{ gap: compact ? 4 : 7 }}>
             <Text
-              selectable
               style={{
                 color: C.text,
                 fontSize: compact ? 40 : 48,
@@ -150,7 +149,6 @@ export default function LiftingPage() {
                 </Row>
                 <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
                   <Text
-                    selectable
                     style={{
                       color: C.text,
                       fontSize: 32,

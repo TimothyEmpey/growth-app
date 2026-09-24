@@ -46,7 +46,6 @@ export default function WeightHistorySheet() {
                 <Row>
                   <View style={{ flex: 1, gap: 5 }}>
                     <Text
-                      selectable
                       style={{
                         color: C.text,
                         fontSize: 18,

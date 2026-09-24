@@ -124,7 +124,6 @@ export default function DietPage() {
               />
             </Svg>
             <Text
-              selectable
               style={{
                 color: C.text,
                 fontSize: compact ? 28 : 36,
@@ -151,7 +150,6 @@ export default function DietPage() {
                       {key}
                     </Text>
                     <Text
-                      selectable
                       style={{
                         fontSize: 15,
                         color,

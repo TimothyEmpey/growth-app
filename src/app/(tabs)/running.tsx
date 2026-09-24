@@ -104,7 +104,6 @@ export default function RunningPage() {
           <Card key={metric.label} style={{ flex: 1, minWidth: 170, gap: 23 }}>
             <Label>{metric.label}</Label>
             <Text
-              selectable
               style={{
                 color: metric.color,
                 fontSize: 36,

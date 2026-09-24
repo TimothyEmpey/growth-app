@@ -62,7 +62,7 @@ export default function RunSheet() {
               ].map((metric) => (
                 <View key={metric.label} style={{ gap: 9, minWidth: 130 }}>
                   <Label>{metric.label}</Label>
-                  <Text selectable style={{ color: C.text, fontSize: 22, fontWeight: '600' }}>
+                  <Text style={{ color: C.text, fontSize: 22, fontWeight: '600' }}>
                     {metric.value}
                   </Text>
                 </View>

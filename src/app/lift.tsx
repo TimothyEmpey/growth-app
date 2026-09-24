@@ -97,7 +97,7 @@ function LiftForm() {
         <>
           <Card style={{ backgroundColor: C.bg }}>
             <Label>Current max</Label>
-            <Text selectable style={{ color: C.text, fontSize: 44, fontWeight: '600' }}>
+            <Text style={{ color: C.text, fontSize: 44, fontWeight: '600' }}>
               {records[0] ? displayWeight(records[0].pounds, units) : '—'}
               <Text style={{ color: C.muted, fontSize: 18 }}> {unit}</Text>
             </Text>

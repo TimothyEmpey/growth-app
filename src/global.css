@@ -19,6 +19,19 @@ select,
 textarea {
   font: inherit;
 }
+body,
+body * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+input,
+textarea,
+[contenteditable='true'] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
 *:focus-visible {
   outline: 2px solid #719bff;
   outline-offset: 3px;

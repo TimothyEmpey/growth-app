@@ -37,18 +37,14 @@ export function RunHistoryRow({ run, units }: { run: Run; units: Units }) {
           <Icon name="run" color={C.green} size={21} />
         </View>
         <View style={{ flex: 1, gap: 7 }}>
-          <Text selectable style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
-            {run.title}
-          </Text>
+          <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{run.title}</Text>
           <Body>{formatDate(run.localDate)}</Body>
           <Row style={{ flexWrap: 'wrap', gap: 18 }}>
-            <Text selectable style={{ color: C.text, fontSize: 14 }}>
+            <Text style={{ color: C.text, fontSize: 14 }}>
               {distanceValue(run.distanceMeters, units).toFixed(2)} {distanceUnit}
             </Text>
-            <Text selectable style={{ color: C.muted, fontSize: 14 }}>
-              {duration(run.movingSeconds)}
-            </Text>
-            <Text selectable style={{ color: C.blue, fontSize: 14 }}>
+            <Text style={{ color: C.muted, fontSize: 14 }}>{duration(run.movingSeconds)}</Text>
+            <Text style={{ color: C.blue, fontSize: 14 }}>
               {pace(run.movingSeconds, run.distanceMeters, units)} / {distanceUnit}
             </Text>
           </Row>

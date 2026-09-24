@@ -137,19 +137,12 @@ export function Label({ children, color }: { children: ReactNode; color?: string
 export function Body({ children, color }: { children: ReactNode; color?: string }) {
   const C = useColors();
   color ??= C.muted;
-  return (
-    <Text selectable style={{ color, fontSize: 14, lineHeight: 22 }}>
-      {children}
-    </Text>
-  );
+  return <Text style={{ color, fontSize: 14, lineHeight: 22 }}>{children}</Text>;
 }
 export function Title({ children, size = 22 }: { children: ReactNode; size?: number }) {
   const C = useColors();
   return (
-    <Text
-      selectable
-      style={{ color: C.text, fontSize: size, fontWeight: '600', letterSpacing: -0.6 }}
-    >
+    <Text style={{ color: C.text, fontSize: size, fontWeight: '600', letterSpacing: -0.6 }}>
       {children}
     </Text>
   );
@@ -514,7 +507,6 @@ export function NutritionStrip({ nutrition }: { nutrition: Nutrition }) {
         <View key={key} style={{ gap: 6 }}>
           <Label>{key === 'calories' ? 'Calories' : key}</Label>
           <Text
-            selectable
             style={{
               color:
                 key === 'calories'
