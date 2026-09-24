@@ -239,6 +239,25 @@ export async function removeConnection(env: Env, athleteId: string) {
     env.DB.prepare('DELETE FROM connections WHERE athlete_id=?').bind(athleteId),
   ]);
 }
+export async function disconnectAccountStrava(env: Env, accountId: string) {
+  const connection = await getAccountConnection(env, accountId);
+  if (!connection) return;
+  if (connection.status === 'connected') {
+    try {
+      const token = await accessToken(env, connection.athlete_id);
+      const response = await fetch('https://www.strava.com/oauth/deauthorize', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!response.ok && response.status !== 401)
+        throw new ServiceError('Strava could not be disconnected. Please try again.', 502);
+    } catch (error) {
+      if (!(error instanceof ServiceError && error.status === 401)) throw error;
+    }
+  }
+  await removeConnection(env, connection.athlete_id);
+}
 // Each delivery handles one import page or one webhook; persisted progress makes retries safe.
 export async function processJob(job: SyncJob, env: Env) {
   const connection = await getConnection(env, job.athleteId);

@@ -64,7 +64,10 @@ function ProfileForm({ account, unavailable }: { account: Account | null; unavai
   const [inches, setInches] = useState(initialInches);
   const [weight, setWeight] = useState(initialWeight);
   const [saved, setSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
   const action = useAction();
+  const deleteAction = useAction();
   const actions = useAccountActions();
   const edit = (setter: (value: string) => void) => (value: string) => {
     setter(value);
@@ -207,6 +210,54 @@ function ProfileForm({ account, unavailable }: { account: Account | null; unavai
       >
         Save profile
       </Button>
+      {account &&
+        (confirmDelete ? (
+          <Card style={{ gap: 16 }}>
+            <Label>Delete Growth account</Label>
+            <Body>
+              This permanently deletes your profile, synced journal, imported Strava runs, and every
+              Growth session. This cannot be undone.
+            </Body>
+            <Field
+              label="Current password"
+              value={deletePassword}
+              onChangeText={setDeletePassword}
+              secureTextEntry
+              autoComplete="current-password"
+              maxLength={INPUT_LIMITS.passwordLength}
+              editable={!deleteAction.busy}
+            />
+            {deleteAction.error && <Notice message={deleteAction.error} />}
+            <Button
+              quiet
+              danger
+              loading={deleteAction.busy}
+              onPress={() =>
+                void deleteAction.run(async () => {
+                  await actions.deleteAccount(deletePassword);
+                  setDeletePassword('');
+                  router.dismissTo('/account');
+                })
+              }
+            >
+              Permanently delete account
+            </Button>
+            <Button
+              quiet
+              disabled={deleteAction.busy}
+              onPress={() => {
+                setDeletePassword('');
+                setConfirmDelete(false);
+              }}
+            >
+              Keep account
+            </Button>
+          </Card>
+        ) : (
+          <Button quiet danger disabled={action.busy} onPress={() => setConfirmDelete(true)}>
+            Delete account
+          </Button>
+        ))}
     </Sheet>
   );
 }

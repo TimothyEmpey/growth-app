@@ -365,6 +365,55 @@ test('password recovery uses a single-use code and logout removes access', async
   ).toBe(400);
 });
 
+test('account deletion requires confirmation and removes account, journal, sessions and Strava data', async () => {
+  const { env, call, register, sqlite } = setup();
+  const signedIn = await register();
+  const token = signedIn.data.token;
+  await call('/journal', { journal: emptyJournal(), baseRevision: 0 }, token);
+  await connection(env, now() + 3600, '42', signedIn.data.account.id);
+  await env.DB.prepare(
+    'INSERT INTO runs (id,athlete_id,local_date,start_date,distance,moving_seconds,data,updated_at,seen_generation) VALUES (?,?,?,?,?,?,?,?,?)',
+  )
+    .bind('run-1', '42', '2025-01-01', '2025-01-01', 1000, 300, '{}', now(), 'generation')
+    .run();
+
+  expect(
+    (await call('/delete', { password: 'strong-passphrase-123', confirmation: 'KEEP' }, token))
+      .response.status,
+  ).toBe(400);
+  expect(
+    (await call('/delete', { password: 'wrong', confirmation: 'DELETE' }, token)).response.status,
+  ).toBe(403);
+
+  let deauthorized = false;
+  globalThis.fetch = (async (url: string | URL | Request, options?: RequestInit) => {
+    expect(String(url)).toBe('https://www.strava.com/oauth/deauthorize');
+    expect(new Headers(options?.headers).get('Authorization')).toBe('Bearer access');
+    deauthorized = true;
+    return Response.json({});
+  }) as typeof fetch;
+  const deleted = await call(
+    '/delete',
+    { password: 'strong-passphrase-123', confirmation: 'DELETE' },
+    token,
+  );
+  expect(deleted.response.status).toBe(200);
+  expect(deleted.data.deleted).toBe(true);
+  expect(deauthorized).toBe(true);
+  for (const table of [
+    'accounts',
+    'account_sessions',
+    'account_challenges',
+    'account_journals',
+    'connections',
+    'runs',
+    'sessions',
+    'native_exchanges',
+  ])
+    expect(sqlite.query(`SELECT * FROM ${table}`).all(), table).toHaveLength(0);
+  expect((await call('', undefined, token)).data.account).toBeNull();
+});
+
 test('email failure and missing provider configuration cannot silently complete verification', async () => {
   const { env, call, sqlite } = setup();
   globalThis.fetch = (async () =>

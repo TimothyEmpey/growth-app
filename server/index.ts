@@ -8,12 +8,11 @@ import { foodDetail, searchFoods } from './food';
 import { authorize, nativeExchange, oauthCallback } from './oauth';
 import { hash, rateLimit } from './security';
 import {
-  accessToken,
+  disconnectAccountStrava,
   getAccountConnection,
   getConnection,
   normalizeRun,
   processJob,
-  removeConnection,
   storeRun,
   stravaGet,
   type StravaActivity,
@@ -142,22 +141,7 @@ async function route(request: Request, env: Env): Promise<Response> {
   }
   if (path === '/api/strava/disconnect' && method === 'POST') {
     const accountId = await requireAccountId(request, env);
-    const connection = await getAccountConnection(env, accountId);
-    if (connection?.status === 'connected') {
-      try {
-        const token = await accessToken(env, connection.athlete_id);
-        const response = await fetch('https://www.strava.com/oauth/deauthorize', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          signal: AbortSignal.timeout(15_000),
-        });
-        if (!response.ok && response.status !== 401)
-          throw new ServiceError('Strava could not be disconnected. Please try again.', 502);
-      } catch (error) {
-        if (!(error instanceof ServiceError && error.status === 401)) throw error;
-      }
-    }
-    if (connection) await removeConnection(env, connection.athlete_id);
+    await disconnectAccountStrava(env, accountId);
     return json({ disconnected: true });
   }
   if (path === '/api/strava/sync' && method === 'POST') {

@@ -39,5 +39,16 @@ export function useAccountActions() {
         account: null,
       }));
     },
+    deleteAccount: async (password: string) => {
+      await accountRequest('delete', { password, confirmation: 'DELETE' });
+      await clearAccountToken();
+      await clearSyncedJournal();
+      await client.cancelQueries();
+      client.clear();
+      client.setQueryData<AccountStatus>(['account'], {
+        configured: true,
+        account: null,
+      });
+    },
   };
 }

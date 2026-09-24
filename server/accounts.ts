@@ -8,6 +8,7 @@ import { migrateJournal } from '../src/domain/journal';
 import type { Journal } from '../src/domain/types';
 import { cookie, hash, randomToken, rateLimit, setCookie } from './security';
 import { passwordHash, passwordMatches } from './passwords';
+import { disconnectAccountStrava } from './strava';
 import { type Env, json, now, ServiceError } from './types';
 
 type AccountRow = {
@@ -326,6 +327,9 @@ async function verify(request: Request, env: Env, input: Record<string, unknown>
     account = (await env.DB.prepare('SELECT * FROM accounts WHERE id=?')
       .bind(id)
       .first<AccountRow>())!;
+    await env.DB.prepare('UPDATE account_challenges SET account_id=? WHERE id=?')
+      .bind(id, row.id)
+      .run();
   } else {
     const changed = await env.DB.prepare(
       row.purpose === 'email'
@@ -417,6 +421,23 @@ export async function accountRoute(request: Request, env: Env): Promise<Response
       .bind(await hash(accountToken(request)!))
       .run();
     return json({ signedOut: true }, 200, {
+      'Set-Cookie': setCookie(env, 'growth_account', '', 0),
+    });
+  }
+  if (path === '/api/account/delete') {
+    if (input.confirmation !== 'DELETE')
+      throw new ServiceError('Type DELETE to confirm account deletion.');
+    await checkPassword(account, input.password);
+    // Revoke the external grant while its encrypted token is still available.
+    await disconnectAccountStrava(env, account.id);
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM account_challenges WHERE account_id=? OR email=?').bind(
+        account.id,
+        account.email,
+      ),
+      env.DB.prepare('DELETE FROM accounts WHERE id=?').bind(account.id),
+    ]);
+    return json({ deleted: true }, 200, {
       'Set-Cookie': setCookie(env, 'growth_account', '', 0),
     });
   }

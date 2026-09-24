@@ -207,6 +207,33 @@ describe('OAuth and session security', () => {
     await worker.fetch(request('/api/account/logout', {}, `growth_account=${tokenA}`), env);
     expect(await getConnection(env, '42')).not.toBeNull();
   });
+  test('disconnect deauthorizes Strava and deletes its tokens, connection and imported runs', async () => {
+    const { env, sqlite } = environment();
+    const accountToken = await accountSession(env);
+    await connection(env);
+    await storeRun(env, '42', 'generation', normalizeRun(activity(8))!, false);
+    await env.DB.prepare('INSERT INTO sessions (token_hash,athlete_id,expires_at) VALUES (?,?,?)')
+      .bind('strava-session', '42', now() + 3600)
+      .run();
+    await env.DB.prepare(
+      'INSERT INTO native_exchanges (code_hash,athlete_id,verifier_hash,expires_at,account_id) VALUES (?,?,?,?,?)',
+    )
+      .bind('exchange', '42', 'verifier', now() + 3600, 'account-1')
+      .run();
+    globalThis.fetch = (async (url: string | URL | Request, options?: RequestInit) => {
+      expect(String(url)).toBe('https://www.strava.com/oauth/deauthorize');
+      expect(new Headers(options?.headers).get('Authorization')).toBe('Bearer access');
+      return Response.json({});
+    }) as typeof fetch;
+
+    const response = await worker.fetch(
+      request('/api/strava/disconnect', {}, `growth_account=${accountToken}`),
+      env,
+    );
+    expect(response.status).toBe(200);
+    for (const table of ['connections', 'runs', 'sessions', 'native_exchanges'])
+      expect(sqlite.query(`SELECT * FROM ${table}`).all(), table).toHaveLength(0);
+  });
 });
 describe('running synchronization', () => {
   test('imports multiple pages, filters sports, resumes and deduplicates deliveries', async () => {

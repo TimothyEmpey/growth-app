@@ -90,8 +90,8 @@ export default function StravaSheet() {
           {confirm ? (
             <>
               <Body>
-                Disconnect Strava and remove its cached runs from Growth? Your lifting and food
-                journals remain unchanged.
+                Disconnect Strava and permanently delete its imported runs and connection tokens
+                from Growth? Your lifting and food journals remain unchanged.
               </Body>
               <Button
                 quiet
@@ -109,7 +109,7 @@ export default function StravaSheet() {
                   })
                 }
               >
-                Disconnect and remove runs
+                Disconnect and delete Strava data
               </Button>
               <Button quiet onPress={() => setConfirm(false)}>
                 Keep connected

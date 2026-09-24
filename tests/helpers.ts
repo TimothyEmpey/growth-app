@@ -7,6 +7,7 @@ import { now } from '../server/types';
 export function environment() {
   const queries = { count: 0 };
   const sqlite = new Database(':memory:');
+  sqlite.exec('PRAGMA foreign_keys = ON');
   for (const file of readdirSync(new URL('../server/migrations/', import.meta.url)).sort())
     sqlite.exec(readFileSync(new URL(`../server/migrations/${file}`, import.meta.url), 'utf8'));
   const prepare = (sql: string) => {
