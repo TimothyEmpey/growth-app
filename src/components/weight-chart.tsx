@@ -1,8 +1,8 @@
 import { usePreferences } from '@/hooks/use-preferences';
 import { displayWeight } from '@/domain/account';
 import { useColors } from '@/providers/appearance';
-import { useState } from 'react';
-import { View, Pressable, Text, useWindowDimensions } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Pressable, useWindowDimensions } from 'react-native';
 import Svg, {
   Circle,
   Defs,
@@ -17,14 +17,20 @@ import { formatDate, parseDate } from '@/domain/journal';
 import { Empty } from './ui';
 
 // Plot recorded weights at their actual date positions; no measurements are added for gaps.
-export function WeightChart({ entries }: { entries: WeightEntry[] }) {
+export function WeightChart({
+  entries,
+  onHoldChange,
+}: {
+  entries: WeightEntry[];
+  onHoldChange: (entry: WeightEntry | null) => void;
+}) {
   const C = useColors();
   const { units } = usePreferences();
   const { width: viewportWidth } = useWindowDimensions();
   const compact = viewportWidth < 600;
   const unit = units === 'metric' ? 'kg' : 'lb';
   const [width, setWidth] = useState(600);
-  const [heldId, setHeldId] = useState<string | null>(null);
+  useEffect(() => () => onHoldChange(null), [onHoldChange]);
   const height = compact ? 140 : 250,
     left = 42,
     right = width - 16,
@@ -59,7 +65,6 @@ export function WeightChart({ entries }: { entries: WeightEntry[] }) {
       : left + ((parseDate(e.date).getTime() - start) / (end - start)) * (right - left);
   const y = (e: WeightEntry) => bottom - ((e.pounds - low) / (high - low)) * (bottom - top);
   const line = entries.map((e, i) => `${i ? 'L' : 'M'}${x(e)},${y(e)}`).join(' ');
-  const heldEntry = entries.find((entry) => entry.id === heldId);
   return (
     <View onLayout={(event) => setWidth(Math.max(200, event.nativeEvent.layout.width))}>
       <Svg
@@ -122,9 +127,9 @@ export function WeightChart({ entries }: { entries: WeightEntry[] }) {
             key={entry.id}
             accessibilityRole="button"
             accessibilityLabel={`Weigh-in ${entry.date}: ${displayWeight(entry.pounds, units)} ${unit}`}
-            accessibilityHint="Press and hold to show this value on the chart."
-            onPressIn={() => setHeldId(entry.id)}
-            onPressOut={() => setHeldId(null)}
+            accessibilityHint="Press and hold to show this value in the main weight indicator."
+            onPressIn={() => onHoldChange(entry)}
+            onPressOut={() => onHoldChange(null)}
             style={{
               position: 'absolute',
               left: x(entry) - 18,
@@ -135,35 +140,6 @@ export function WeightChart({ entries }: { entries: WeightEntry[] }) {
             }}
           />
         ))}
-        {heldEntry && (
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              left: Math.max(4, Math.min(width - 84, x(heldEntry) + 8)),
-              top: Math.max(0, y(heldEntry) - 32),
-              minWidth: 72,
-              paddingHorizontal: 8,
-              paddingVertical: 5,
-              borderRadius: 8,
-              backgroundColor: C.elevated,
-              borderWidth: 1,
-              borderColor: C.border,
-              alignItems: 'center',
-            }}
-          >
-            <Text
-              style={{
-                color: C.text,
-                fontSize: 12,
-                fontWeight: '600',
-                fontVariant: ['tabular-nums'],
-              }}
-            >
-              {displayWeight(heldEntry.pounds, units)} {unit}
-            </Text>
-          </View>
-        )}
       </View>
     </View>
   );

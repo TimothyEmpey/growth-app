@@ -1,12 +1,14 @@
 import { usePreferences, useDefaultPeriod } from '@/hooks/use-preferences';
 import { displayWeight } from '@/domain/account';
 import { useColors } from '@/providers/appearance';
+import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useJournal } from '@/data/journal-store';
 import { formatDate, periodStart, sortLifts, today } from '@/domain/journal';
 import { Body, Button, Card, Icon, Label, Page, PeriodControl, Row, Title } from '@/components/ui';
 import { WeightChart } from '@/components/weight-chart';
+import type { WeightEntry } from '@/domain/types';
 
 export default function LiftingPage() {
   const C = useColors();
@@ -16,6 +18,7 @@ export default function LiftingPage() {
   const [period, setPeriod] = useDefaultPeriod();
   const { units } = usePreferences();
   const weightUnit = units === 'metric' ? 'kg' : 'lb';
+  const [heldWeight, setHeldWeight] = useState<WeightEntry | null>(null);
   // The chart and change use the selected period; the headline weight uses the full history.
   const entries = journal.weights.filter((w) => w.date >= periodStart(period) && w.date <= today());
   const latest = journal.weights.at(-1);
@@ -61,7 +64,11 @@ export default function LiftingPage() {
                 fontVariant: ['tabular-nums'],
               }}
             >
-              {latest ? displayWeight(latest.pounds, units) : '—'}
+              {heldWeight
+                ? displayWeight(heldWeight.pounds, units)
+                : latest
+                  ? displayWeight(latest.pounds, units)
+                  : '—'}
               <Text style={{ color: C.muted, fontSize: compact ? 16 : 18, letterSpacing: 0 }}>
                 {' '}
                 {weightUnit}
@@ -86,7 +93,7 @@ export default function LiftingPage() {
             </Body>
           </View>
         </Row>
-        <WeightChart entries={entries} />
+        <WeightChart entries={entries} onHoldChange={setHeldWeight} />
         <Row style={{ justifyContent: 'flex-end' }}>
           <Button quiet onPress={() => router.push('/weight-history')}>
             History
