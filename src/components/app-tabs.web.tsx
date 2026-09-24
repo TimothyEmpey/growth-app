@@ -126,18 +126,18 @@ export default function AppTabs() {
           )}
           {!compact && (
             <>
-              <Image
-                source={{ uri: '/icons/icon-192.png' }}
-                accessibilityLabel="Growth"
-                contentFit="contain"
+              <Text
                 style={{
-                  width: 92,
-                  height: 92,
-                  borderRadius: 23,
-                  alignSelf: 'center',
-                  marginBottom: 36,
+                  color: C.text,
+                  fontSize: 32,
+                  fontWeight: '700',
+                  letterSpacing: -1.2,
+                  marginLeft: 14,
+                  marginBottom: 54,
                 }}
-              />
+              >
+                Growth<Text style={{ color: C.blue }}>.</Text>
+              </Text>
               <Text
                 style={{
                   color: '#6d7787',
