@@ -17,7 +17,7 @@ export default function Root({ children }: PropsWithChildren) {
           content="Your personal journal for lifting, running, and nutrition."
         />
         <title>Growth · Fitness journal</title>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/icons/icon-192.png?v=2" type="image/png" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <ScrollViewStyleReset />
