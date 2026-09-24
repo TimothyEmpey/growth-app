@@ -126,25 +126,18 @@ export default function AppTabs() {
           )}
           {!compact && (
             <>
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 48 }}
-              >
-                <View
-                  style={{
-                    height: 35,
-                    width: 35,
-                    borderRadius: 10,
-                    backgroundColor: C.blueDark,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Icon name="chart" color="#fff" size={22} />
-                </View>
-                <Text style={{ color: C.text, fontSize: 25, fontWeight: '700', letterSpacing: -1 }}>
-                  Growth<Text style={{ color: C.blue }}>.</Text>
-                </Text>
-              </View>
+              <Image
+                source={{ uri: '/icons/icon-192.png' }}
+                accessibilityLabel="Growth"
+                contentFit="contain"
+                style={{
+                  width: 92,
+                  height: 92,
+                  borderRadius: 23,
+                  alignSelf: 'center',
+                  marginBottom: 36,
+                }}
+              />
               <Text
                 style={{
                   color: '#6d7787',
