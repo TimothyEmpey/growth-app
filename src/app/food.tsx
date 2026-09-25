@@ -61,6 +61,8 @@ function FoodForm() {
   const [portionMenuOpen, setPortionMenuOpen] = useState(false);
   const [quantity, setQuantity] = useState(existing?.quantity.toString() ?? '100');
   const [scanning, setScanning] = useState(false);
+  const [webCameraOpen, setWebCameraOpen] = useState(false);
+  const webBarcodeHandled = useRef(false);
   const scannerSubscription = useRef<ReturnType<typeof CameraView.onModernBarcodeScanned> | null>(
     null,
   );
@@ -97,9 +99,28 @@ function FoodForm() {
     setPortionId(portion.id);
     setQuantity(portion.id === 'grams' ? '100' : '1');
   };
+  const selectScannedFood = async (rawBarcode: string) => {
+    const barcode = rawBarcode.replace(/\D/g, '');
+    if (!barcode) throw new Error('That scan did not contain a supported food barcode.');
+    choose(
+      await queryClient.fetchQuery({
+        queryKey: ['food', `off:${barcode}`],
+        queryFn: ({ signal }) => api<Food>(`/api/foods/off:${barcode}`, { signal }),
+        retry: false,
+      }),
+    );
+  };
   const scanBarcode = async () => {
-    if (process.env.EXPO_OS === 'web')
-      throw new Error('Barcode scanning is available in the Growth iOS or Android app.');
+    if (process.env.EXPO_OS === 'web') {
+      if (!(await CameraView.isAvailableAsync()))
+        throw new Error('No camera is available in this browser.');
+      const permission = await Camera.requestCameraPermissionsAsync();
+      if (!permission.granted) throw new Error('Camera access is required to scan a food barcode.');
+      webBarcodeHandled.current = false;
+      setScanning(true);
+      setWebCameraOpen(true);
+      return;
+    }
     const permission = await Camera.requestCameraPermissionsAsync();
     if (!permission.granted) throw new Error('Camera access is required to scan a food barcode.');
 
@@ -110,17 +131,7 @@ function FoodForm() {
       setScanning(false);
       // iOS presents the scanner modally; Android dismisses it after a scan.
       if (process.env.EXPO_OS === 'ios') void CameraView.dismissScanner();
-      void action.run(async () => {
-        const barcode = data.replace(/\D/g, '');
-        if (!barcode) throw new Error('That scan did not contain a supported food barcode.');
-        choose(
-          await queryClient.fetchQuery({
-            queryKey: ['food', `off:${barcode}`],
-            queryFn: ({ signal }) => api<Food>(`/api/foods/off:${barcode}`, { signal }),
-            retry: false,
-          }),
-        );
-      });
+      void action.run(() => selectScannedFood(data));
     });
     scannerSubscription.current = subscription;
     setScanning(true);
@@ -344,6 +355,40 @@ function FoodForm() {
               </Pressable>
             </View>
           </View>
+          {webCameraOpen && (
+            <View style={{ gap: 10 }}>
+              <CameraView
+                style={{ height: 280, borderRadius: 14, overflow: 'hidden' }}
+                facing="back"
+                barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'itf14'] }}
+                onBarcodeScanned={({ data }) => {
+                  if (webBarcodeHandled.current) return;
+                  webBarcodeHandled.current = true;
+                  setWebCameraOpen(false);
+                  setScanning(false);
+                  void action.run(() => selectScannedFood(data));
+                }}
+                onMountError={({ message }) => {
+                  setWebCameraOpen(false);
+                  setScanning(false);
+                  void action.run(async () => {
+                    throw new Error(`Could not start the camera: ${message}`);
+                  });
+                }}
+              />
+              <Button
+                quiet
+                icon="close"
+                onPress={() => {
+                  webBarcodeHandled.current = false;
+                  setWebCameraOpen(false);
+                  setScanning(false);
+                }}
+              >
+                Cancel scan
+              </Button>
+            </View>
+          )}
           {action.busy && <ActivityIndicator color={C.blue} />}
           {action.error && <Notice message={action.error} />}
           {recents.length > 0 && (
