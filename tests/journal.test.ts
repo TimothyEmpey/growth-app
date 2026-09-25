@@ -20,7 +20,7 @@ import {
 } from '../src/domain/journal';
 import { sanitizeNumericInput } from '../src/domain/input';
 import type { Food } from '../src/domain/types';
-import { hasMacroData, normalizeFood, searchTermScore } from '../server/food';
+import { hasMacroData, normalizeFood, uniqueFoodNames } from '../server/food';
 
 const food: Food = {
   id: '123',
@@ -130,62 +130,46 @@ describe('nutrition calculations', () => {
       fat: 5.6000000000000005,
     });
   });
-  test('normalizes USDA details, known gram portions and branded label fallback', () => {
+  test('normalizes Open Food Facts nutrition and a documented gram serving', () => {
     const normalized = normalizeFood({
-      fdcId: 1,
-      description: 'Yogurt',
-      servingSize: 150,
-      servingSizeUnit: 'g',
-      labelNutrients: { calories: { value: 120 }, protein: { value: 15 } },
-      foodNutrients: [{ nutrient: { id: 1004 }, amount: 0 }],
-      foodPortions: [{ id: 1, gramWeight: 200, amount: 1, measureUnit: { name: 'cup' } }],
+      code: '123',
+      product_name: 'Yogurt',
+      serving_size: '1 bottle',
+      serving_quantity: '340',
+      nutriments: { 'energy-kcal_100g': 80, proteins_100g: 10, fat_100g: 0 },
     });
     expect(normalized.per100g).toEqual({ calories: 80, protein: 10, fat: 0, carbs: null });
-    expect(normalized.portions.map((p) => p.grams)).toEqual([1, 150, 200]);
-    const liquid = normalizeFood({
-      fdcId: 2,
-      description: 'Liquid',
-      servingSize: 200,
-      servingSizeUnit: 'ml',
-      labelNutrients: { calories: { value: 100 } },
-    });
-    expect(liquid.portions).toHaveLength(1);
-    expect(liquid.per100g.calories).toBeNull();
+    expect(normalized.portions).toEqual([
+      { id: 'grams', label: '1 gram', grams: 1 },
+      { id: 'serving', label: '1 bottle', grams: 340 },
+    ]);
+    expect(normalized.id).toBe('off:123');
   });
-  test('keeps USDA search results with recorded macros, including true zero-calorie foods', () => {
+  test('keeps Open Food Facts results with recorded macros, including true zero values', () => {
     expect(
       hasMacroData({
-        fdcId: 1,
-        description: 'Protein powder',
-        foodNutrients: [
-          { nutrientId: 1003, value: 20 },
-          { nutrientId: 1004, value: 0 },
-          { nutrientId: 1005, value: 0 },
-        ],
+        code: '1',
+        nutriments: { proteins_100g: 20, fat_100g: 0, carbohydrates_100g: 0 },
       }),
     ).toBe(true);
     expect(
       hasMacroData({
-        fdcId: 2,
-        description: 'No macro data',
-        foodNutrients: [
-          { nutrientId: 1003, value: 0 },
-          { nutrientId: 1004, value: 0 },
-          { nutrientId: 1005, value: 0 },
-        ],
+        code: '2',
+        nutriments: { proteins_100g: 0, fat_100g: 0, carbohydrates_100g: 0 },
       }),
     ).toBe(true);
-    expect(hasMacroData({ fdcId: 3, description: 'Missing macros' })).toBe(false);
+    expect(hasMacroData({ code: '3' })).toBe(false);
   });
-  test('ranks food-search terms in any order and ignores punctuation', () => {
-    const result = {
-      fdcId: 1,
-      description: 'Milk, whole, with vitamin D',
-      brandName: 'Local Dairy',
-    };
-    expect(searchTermScore(result, 'whole milk')).toBe(2);
-    expect(searchTermScore(result, 'skim milk')).toBe(1);
-    expect(searchTermScore({ fdcId: 2, description: `DOMINO'S Cheese Pizza` }, 'dominos')).toBe(1);
+  test('keeps the first relevance-ranked result for each normalized product name', () => {
+    const results = uniqueFoodNames([
+      { code: 'first', product_name: 'Egg' },
+      { code: 'duplicate', product_name: ' egg ' },
+      { code: 'pasteurized', product_name: 'Egg pasteurized' },
+      { code: 'dozen', product_name: '12 eggs' },
+      { code: 'medium', product_name: 'Medium egg' },
+      { code: 'small', product_name: 'Egg (small)' },
+    ]);
+    expect(results.map((food) => food.code)).toEqual(['first', 'pasteurized', 'dozen', 'medium', 'small']);
   });
   test('pace is based on total time over distance', () => {
     expect(pace(1800, 1609.344 * 3)).toBe('10:00');

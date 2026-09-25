@@ -109,7 +109,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       ok: true,
       accountsConfigured: accountsConfigured(env),
       stravaConfigured: configured(env),
-      foodConfigured: !!env.USDA_API_KEY,
+      foodConfigured: true,
     });
   if (path === '/api/strava/status' && method === 'GET') {
     if (!configured(env)) return json({ configured: false, connected: false });
@@ -244,12 +244,12 @@ async function route(request: Request, env: Env): Promise<Response> {
   if (path === '/api/foods/search' && method === 'GET') {
     const query = url.searchParams.get('q')?.trim() ?? '',
       page = Number(url.searchParams.get('page') ?? 1);
-    if (query.length < 2 || query.length > 120 || !Number.isInteger(page) || page < 1 || page > 100)
+    if (query.length < 2 || query.length > 120 || !Number.isInteger(page) || page !== 1)
       throw new ServiceError('Enter a food name between 2 and 120 characters.');
     await rateLimit(request, env, 'food', 60);
     return json(await searchFoods(query, page, env));
   }
-  if (/^\/api\/foods\/\d+$/.test(path) && method === 'GET') {
+  if (/^\/api\/foods\/off:\d+$/.test(path) && method === 'GET') {
     await rateLimit(request, env, 'food', 60);
     return json(await foodDetail(path.split('/').at(-1)!, env));
   }

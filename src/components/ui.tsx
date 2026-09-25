@@ -36,6 +36,7 @@ export type IconName =
   | 'close'
   | 'calendar'
   | 'chart'
+  | 'scan'
   | 'check'
   | 'settings'
   | 'search'
@@ -82,7 +83,7 @@ export function Icon({
   }
 
   const paths: Record<
-    Exclude<IconName, 'flame' | 'account' | 'lift' | 'run' | 'food' | 'link'>,
+    Exclude<IconName, 'flame' | 'account' | 'lift' | 'run' | 'food' | 'link' | 'scan'>,
     string
   > = {
     sun: 'M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
@@ -110,7 +111,16 @@ export function Icon({
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <Path d={paths[name]} />
+      {name === 'scan' ? (
+        <>
+          <Path d="M8 4H6a2 2 0 0 0-2 2v2M16 4h2a2 2 0 0 1 2 2v2M4 16v2a2 2 0 0 0 2 2h2M20 16v2a2 2 0 0 1-2 2h-2" />
+          <Path d="M8 9V7.8A1.8 1.8 0 0 1 9.8 6h4.4A1.8 1.8 0 0 1 16 7.8V9" />
+          <Path d="M6 12h12" />
+          <Path d="M8 12v3.2a1.8 1.8 0 0 0 1.8 1.8h4.4a1.8 1.8 0 0 0 1.8-1.8V12" />
+        </>
+      ) : (
+        <Path d={paths[name]} />
+      )}
       {name === 'search' && <Circle cx={10.5} cy={10.5} r={6.5} />}
       {name === 'calendar' && <Rect x={3} y={4} width={18} height={18} rx={3} />}
       {name === 'lock' && <Rect x={5} y={10} width={14} height={11} rx={2} />}

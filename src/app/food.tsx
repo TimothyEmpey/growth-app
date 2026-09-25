@@ -1,5 +1,6 @@
 import { useColors } from '@/providers/appearance';
-import { useEffect, useState } from 'react';
+import { Camera, CameraView } from 'expo-camera';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -59,6 +60,10 @@ function FoodForm() {
   const [portionId, setPortionId] = useState(existing?.portionId ?? 'grams');
   const [portionMenuOpen, setPortionMenuOpen] = useState(false);
   const [quantity, setQuantity] = useState(existing?.quantity.toString() ?? '100');
+  const [scanning, setScanning] = useState(false);
+  const scannerSubscription = useRef<ReturnType<typeof CameraView.onModernBarcodeScanned> | null>(
+    null,
+  );
   const action = useAction();
   const currentPortion = selected?.portions.find((portion) => portion.id === portionId);
   useEffect(() => {
@@ -87,16 +92,63 @@ function FoodForm() {
   );
   const choose = (food: Food) => {
     setSelected(withOunceFallback(food));
+    setPortionMenuOpen(false);
     const portion = food.portions.find((p) => p.id !== 'grams') ?? food.portions[0];
     setPortionId(portion.id);
     setQuantity(portion.id === 'grams' ? '100' : '1');
   };
+  const scanBarcode = async () => {
+    if (process.env.EXPO_OS === 'web')
+      throw new Error('Barcode scanning is available in the Growth iOS or Android app.');
+    const permission = await Camera.requestCameraPermissionsAsync();
+    if (!permission.granted) throw new Error('Camera access is required to scan a food barcode.');
+
+    scannerSubscription.current?.remove();
+    const subscription = CameraView.onModernBarcodeScanned(({ data }) => {
+      subscription.remove();
+      scannerSubscription.current = null;
+      setScanning(false);
+      // iOS presents the scanner modally; Android dismisses it after a scan.
+      if (process.env.EXPO_OS === 'ios') void CameraView.dismissScanner();
+      void action.run(async () => {
+        const barcode = data.replace(/\D/g, '');
+        if (!barcode) throw new Error('That scan did not contain a supported food barcode.');
+        choose(
+          await queryClient.fetchQuery({
+            queryKey: ['food', `off:${barcode}`],
+            queryFn: ({ signal }) => api<Food>(`/api/foods/off:${barcode}`, { signal }),
+            retry: false,
+          }),
+        );
+      });
+    });
+    scannerSubscription.current = subscription;
+    setScanning(true);
+    try {
+      await CameraView.launchScanner({
+        barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'itf14'],
+      });
+    } finally {
+      // Dismissing the native scanner without a scan must also reset this state.
+      if (scannerSubscription.current === subscription) {
+        subscription.remove();
+        scannerSubscription.current = null;
+        setScanning(false);
+      }
+    }
+  };
+  useEffect(
+    () => () => {
+      scannerSubscription.current?.remove();
+    },
+    [],
+  );
   return (
     <Sheet
       title={existing ? 'Food details' : `Log ${meal}`}
       subtitle={
         selected
-          ? formatFoodLabel(selected.brand ?? 'USDA FoodData Central')
+          ? formatFoodLabel(selected.brand ?? 'Open Food Facts')
           : 'Find a food, choose a serving, make it yours.'
       }
     >
@@ -109,6 +161,7 @@ function FoodForm() {
               icon="left"
               onPress={() => {
                 setSelected(null);
+                setPortionMenuOpen(false);
               }}
             >
               Back to search
@@ -195,7 +248,7 @@ function FoodForm() {
           )}
           {nutrition && Object.values(nutrition).includes(null) && (
             <Body>
-              USDA does not provide every nutrient for this food. Missing values are shown as —.
+              Open Food Facts does not provide every nutrient for this food. Missing values are shown as —.
             </Body>
           )}
           {action.error && <Notice message={action.error} />}
@@ -255,15 +308,42 @@ function FoodForm() {
         </>
       ) : (
         <>
-          <Field
-            label="Search foods"
-            value={query}
-            onChangeText={setQuery}
-            autoFocus
-            placeholder="Try eggs, Greek yogurt, or a brand…"
-            autoCorrect={false}
-            maxLength={INPUT_LIMITS.searchLength}
-          />
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'stretch' }}>
+            <View style={{ flex: 1 }}>
+              <Field
+                label="Search foods"
+                value={query}
+                onChangeText={setQuery}
+                autoFocus
+                placeholder="Try eggs, Greek yogurt, or a brand…"
+                autoCorrect={false}
+                maxLength={INPUT_LIMITS.searchLength}
+              />
+            </View>
+            <View style={{ justifyContent: 'flex-end' }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Scan barcode"
+                accessibilityState={{ disabled: scanning, busy: scanning }}
+                disabled={scanning}
+                onPress={() => void action.run(scanBarcode)}
+                style={({ pressed }) => ({
+                  width: 50,
+                  height: 50,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: C.elevated,
+                  borderWidth: 1,
+                  borderColor: C.border,
+                  borderRadius: 12,
+                  borderCurve: 'continuous',
+                  opacity: scanning ? 0.45 : pressed ? 0.65 : 1,
+                })}
+              >
+                {scanning ? <ActivityIndicator color={C.blue} size="small" /> : <Icon name="scan" size={27} color={C.blue} />}
+              </Pressable>
+            </View>
+          </View>
           {action.busy && <ActivityIndicator color={C.blue} />}
           {action.error && <Notice message={action.error} />}
           {recents.length > 0 && (
@@ -332,7 +412,7 @@ function FoodForm() {
               </Body>
             </View>
           )}
-          <Body>Food data from USDA FoodData Central.</Body>
+          <Body>Food data from Open Food Facts.</Body>
         </>
       )}
     </Sheet>

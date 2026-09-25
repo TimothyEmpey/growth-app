@@ -32,7 +32,7 @@ const sections: LegalSection[] = [
   {
     title: 'Food and nutrition data',
     paragraphs: [
-      'Food information comes from USDA FoodData Central. Some foods do not include every nutrient or a reliable gram conversion. Missing values are shown as unavailable rather than assumed to be zero.',
+      'Food information comes from Open Food Facts. Some foods do not include every nutrient or a reliable gram conversion. Missing values are shown as unavailable rather than assumed to be zero.',
       'Growth is a personal journal and does not provide medical diagnosis or individualized medical advice. Contact a qualified professional for medical or dietary care.',
     ],
   },

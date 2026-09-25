@@ -50,9 +50,9 @@ https://YOUR-WORKER-HOST/api/strava/callback
 
 Record the application's client ID and client secret. Growth requests `activity:read` and `activity:read_all` so each user's private runs and activity webhooks are included. It does not request permission to create or edit activities. Provider tokens are encrypted and stored per Growth account; signing out does not disconnect Strava, so the connection and imported runs remain available when that Growth account signs in on another device.
 
-## 3. Obtain a food API key
+## 3. Configure Open Food Facts
 
-Request a free key through [USDA FoodData Central](https://fdc.nal.usda.gov/api-key-signup/). Growth searches generic and branded foods and normalizes their nutrient and serving data. It does not use the severely limited shared `DEMO_KEY` in production.
+Growth searches Open Food Facts' relevance-ranked Search-a-licious API for packaged foods and normalizes the nutrition values that are explicitly supplied per 100 g. Searches return only the top 10 results. No API key is required for read requests. Open Food Facts asks API clients to send an identifiable User-Agent; the Worker includes one by default. Set `OPEN_FOOD_FACTS_USER_AGENT` if you want to provide a different app name and contact URL.
 
 ## 4. Configure secrets
 
@@ -61,7 +61,8 @@ For local API work, copy `server/.dev.vars.example` to `server/.dev.vars` and fi
 ```sh
 bunx wrangler secret put STRAVA_CLIENT_ID --config server/wrangler.jsonc
 bunx wrangler secret put STRAVA_CLIENT_SECRET --config server/wrangler.jsonc
-bunx wrangler secret put USDA_API_KEY --config server/wrangler.jsonc
+# Optional: override the default Open Food Facts User-Agent
+bunx wrangler secret put OPEN_FOOD_FACTS_USER_AGENT --config server/wrangler.jsonc
 bunx wrangler secret put TOKEN_ENCRYPTION_KEY --config server/wrangler.jsonc
 bunx wrangler secret put STRAVA_VERIFY_TOKEN --config server/wrangler.jsonc
 bunx wrangler secret put WEBHOOK_PATH_SECRET --config server/wrangler.jsonc
@@ -124,7 +125,7 @@ bun run build:web
 bun run api:check
 ```
 
-Automated tests use isolated local databases and mock Strava/USDA responses; they do not access your accounts. Validate the live integration after credentials are configured:
+Automated tests use isolated local databases and mock Strava/Open Food Facts responses; they do not access your accounts. Validate the live integration after credentials are configured:
 
 - Link, cancel, reconnect, and disconnect from both web and an iOS development build.
 - Compare imported run count, distance, and weighted pace with your Strava activities; wait for the full import to finish first.

@@ -1,130 +1,97 @@
 import type { Food, FoodPortion, FoodSearchItem, Nutrition } from '../src/domain/types';
 import { type Env, now, ServiceError } from './types';
 
-type Nutrient = {
-  nutrient?: { id: number; unitName?: string };
-  nutrientId?: number;
-  amount?: number;
-  value?: number;
+type OpenFoodFactsProduct = {
+  code?: string;
+  product_name?: string;
+  brands?: string | string[];
+  nutriments?: Record<string, unknown>;
+  serving_size?: string;
+  serving_quantity?: number | string;
 };
-type USDAFood = {
-  fdcId: number;
-  description: string;
-  brandOwner?: string;
-  brandName?: string;
-  foodNutrients?: Nutrient[];
-  servingSize?: number;
-  servingSizeUnit?: string;
-  householdServingFullText?: string;
-  labelNutrients?: Record<string, { value?: number }>;
-  foodPortions?: {
-    id?: number;
-    amount?: number;
-    gramWeight?: number;
-    modifier?: string;
-    portionDescription?: string;
-    measureUnit?: { name: string };
-  }[];
-};
+
 const numeric = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0;
-// Convert USDA records to per-100g nutrition and portions with known gram equivalents.
-export function normalizeFood(raw: USDAFood): Food {
-  const nutrients = raw.foodNutrients ?? [];
-  const get = (...ids: number[]) => {
-    for (const id of ids) {
-      const nutrient = nutrients.find(
-        (n) => (n.nutrient?.id ?? n.nutrientId) === id && numeric(n.amount ?? n.value),
-      );
-      if (nutrient) return (nutrient.amount ?? nutrient.value)!;
-    }
-    return null;
-  };
+
+function numberValue(value: unknown) {
+  if (numeric(value)) return value;
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const parsed = Number(value);
+  return numeric(parsed) ? parsed : null;
+}
+
+function brandName(brands: OpenFoodFactsProduct['brands']) {
+  return Array.isArray(brands) ? brands.filter(Boolean).join(', ') : brands?.trim() || undefined;
+}
+
+function normalizedName(name: string) {
+  return name.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+}
+
+export function uniqueFoodNames<T extends { product_name?: string }>(foods: T[]) {
+  const seen = new Set<string>();
+  return foods.filter((food) => {
+    const name = food.product_name && normalizedName(food.product_name);
+    if (!name || seen.has(name)) return false;
+    seen.add(name);
+    return true;
+  });
+}
+
+// Open Food Facts normalizes these fields to a consistent per-100g basis.
+export function normalizeFood(raw: OpenFoodFactsProduct): Food {
+  const nutriments = raw.nutriments ?? {};
   const per100g: Nutrition = {
-    calories: get(1008, 2048, 2047),
-    protein: get(1003),
-    carbs: get(1005),
-    fat: get(1004),
+    calories: numberValue(nutriments['energy-kcal_100g']),
+    protein: numberValue(nutriments.proteins_100g),
+    carbs: numberValue(nutriments.carbohydrates_100g),
+    fat: numberValue(nutriments.fat_100g),
   };
   const portions: FoodPortion[] = [{ id: 'grams', label: '1 gram', grams: 1 }];
-  const unit = raw.servingSizeUnit?.toLowerCase();
-  // Volume servings need a supplied gram weight; no density is inferred for ml or fluid ounces.
-  const factor = unit === 'g' || unit === 'grm' ? 1 : unit === 'oz' ? 28.349523125 : 0;
-  if (numeric(raw.servingSize) && raw.servingSize > 0 && factor) {
-    const grams = raw.servingSize * factor;
+  const servingGrams = numberValue(raw.serving_quantity);
+  if (servingGrams && servingGrams > 0) {
     portions.push({
       id: 'serving',
-      label: `${raw.householdServingFullText || '1 serving'} (${Number(grams.toFixed(2))} g)`,
-      grams,
-    });
-    for (const [key, label] of [
-      ['calories', 'calories'],
-      ['protein', 'protein'],
-      ['carbs', 'carbohydrates'],
-      ['fat', 'fat'],
-    ] as const) {
-      const value = raw.labelNutrients?.[label]?.value;
-      if (per100g[key] === null && numeric(value)) per100g[key] = (value * 100) / grams;
-    }
-  }
-  for (const [index, portion] of (raw.foodPortions ?? []).entries()) {
-    if (!numeric(portion.gramWeight) || portion.gramWeight <= 0) continue;
-    const measure = portion.measureUnit?.name !== 'undetermined' ? portion.measureUnit?.name : '';
-    const label =
-      portion.portionDescription ||
-      `${portion.amount ?? 1} ${measure || portion.modifier || 'portion'}${measure && portion.modifier ? `, ${portion.modifier}` : ''}`;
-    portions.push({
-      id: `portion-${portion.id ?? index}`,
-      label: `${label} (${portion.gramWeight} g)`,
-      grams: portion.gramWeight,
+      // Keep the label exactly as it appears in the source; grams are only for math.
+      label: raw.serving_size?.trim() || '1 serving',
+      grams: servingGrams,
     });
   }
   return {
-    id: String(raw.fdcId),
-    name: raw.description,
-    brand: raw.brandName ?? raw.brandOwner,
+    id: `off:${raw.code ?? ''}`,
+    name: raw.product_name?.trim() || 'Unnamed food',
+    brand: brandName(raw.brands),
     per100g,
     portions,
   };
 }
-export function hasMacroData(raw: USDAFood) {
+
+export function hasMacroData(raw: OpenFoodFactsProduct) {
   const { protein, carbs, fat } = normalizeFood(raw).per100g;
   return [protein, carbs, fat].some((value) => value !== null);
 }
-function searchTerms(query: string) {
-  return [...new Set(query.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])];
-}
-export function searchTermScore(raw: USDAFood, query: string) {
-  const terms = searchTerms(query);
-  const searchable = [raw.description, raw.brandName, raw.brandOwner]
-    .filter(Boolean)
-    .join(' ')
-    .toLocaleLowerCase();
-  const compact = searchable.replace(/[^\p{L}\p{N}]/gu, '');
-  return terms.filter((term) => searchable.includes(term) || compact.includes(term)).length;
-}
-export async function usda(path: string, env: Env) {
-  if (!env.USDA_API_KEY)
-    throw new ServiceError(
-      'Food search is ready to configure. Add a USDA FoodData Central API key using the setup guide.',
-      503,
-    );
-  const response = await fetch(
-    `https://api.nal.usda.gov/fdc/v1/${path}${path.includes('?') ? '&' : '?'}api_key=${encodeURIComponent(env.USDA_API_KEY)}`,
-    { signal: AbortSignal.timeout(15_000) },
-  );
+
+const fields = 'code,product_name,brands,nutriments,serving_size,serving_quantity';
+const userAgent = (env: Env) =>
+  env.OPEN_FOOD_FACTS_USER_AGENT || 'Growth/1.0 (https://growth-journal.tlegeneral.workers.dev)';
+
+async function openFoodFacts(url: URL, env: Env, init: RequestInit = {}) {
+  const response = await fetch(url, {
+    ...init,
+    headers: { Accept: 'application/json', 'User-Agent': userAgent(env), ...init.headers },
+    signal: AbortSignal.timeout(15_000),
+  });
   if (response.status === 429)
     throw new ServiceError(
       'Food search has reached its request limit. You can still use your recent foods. Please try again later.',
       429,
-      3600,
+      60,
     );
-  if (response.status === 404)
-    throw new ServiceError('This food is no longer available. Please search again.', 404);
-  if (!response.ok)
-    throw new ServiceError('Food search is temporarily unavailable. Please try again.', 502);
+  if (response.status === 404) throw new ServiceError('This food is no longer available. Please search again.', 404);
+  if (!response.ok) throw new ServiceError('Food search is temporarily unavailable. Please try again.', 502);
   return response.json();
 }
+
 async function cached<T>(key: string, env: Env, load: () => Promise<T>): Promise<T> {
   const cache = await env.DB.prepare(
     'SELECT data FROM food_cache WHERE cache_key = ? AND expires_at > ?',
@@ -140,37 +107,50 @@ async function cached<T>(key: string, env: Env, load: () => Promise<T>): Promise
     .run();
   return data;
 }
+
 export function searchFoods(query: string, page: number, env: Env) {
-  return cached(`search:v8:${query.toLowerCase()}:${page}`, env, async () => {
-    const result = (await usda(
-      `foods/search?query=${encodeURIComponent(query)}&pageSize=20&pageNumber=${page}`,
-      env,
-    )) as { foods: USDAFood[]; totalPages: number };
-    const ranked = result.foods
-      .map((food, index) => ({ food, index, score: searchTermScore(food, query) }))
-      .filter(({ food }) => hasMacroData(food))
-      .sort((a, b) => b.score - a.score || a.index - b.index)
-      .map(({ food }) => food);
-    if (ranked.length)
-      await env.DB.batch(
-        ranked.map((food) =>
-          env.DB.prepare(
-            'INSERT INTO food_cache (cache_key, data, expires_at) VALUES (?, ?, ?) ON CONFLICT(cache_key) DO UPDATE SET data=excluded.data, expires_at=excluded.expires_at',
-          ).bind(`food:${food.fdcId}`, JSON.stringify(normalizeFood(food)), now() + 86400),
-        ),
-      );
+  return cached(`search:off:v3:${query.toLowerCase()}`, env, async () => {
+    const url = new URL('https://search.openfoodfacts.org/search');
+    const result = (await openFoodFacts(url, env, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q: query,
+        page: 1,
+        // A wider candidate set lets us omit missing-macro and duplicate-name results.
+        page_size: 50,
+        fields: fields.split(','),
+        langs: ['en'],
+        // Exact multi-word matches are promoted ahead of looser token matches.
+        boost_phrase: true,
+      }),
+    })) as { hits?: OpenFoodFactsProduct[] };
+    const foods = uniqueFoodNames(
+      (result.hits ?? []).filter(
+        (food) => Boolean(food.code && food.product_name) && hasMacroData(food),
+      ),
+    ).slice(0, 10);
     return {
-      foods: ranked.map((food): FoodSearchItem => ({
-        id: String(food.fdcId),
-        name: food.description,
-        brand: food.brandName ?? food.brandOwner,
+      foods: foods.map((food): FoodSearchItem => ({
+        id: `off:${food.code}`,
+        name: food.product_name!,
+        brand: brandName(food.brands),
       })),
-      hasMore: result.totalPages > page,
+      hasMore: false,
     };
   });
 }
+
 export function foodDetail(id: string, env: Env) {
-  return cached(`food:${id}`, env, async () =>
-    normalizeFood((await usda(`food/${id}`, env)) as USDAFood),
-  );
+  // Search hits are intentionally never reused here: detail records carry servings.
+  return cached(`food-detail:${id}`, env, async () => {
+    const code = id.startsWith('off:') ? id.slice('off:'.length) : '';
+    if (!/^\d+$/.test(code)) throw new ServiceError('This food is no longer available. Please search again.', 404);
+    const url = new URL(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);
+    url.searchParams.set('fields', fields);
+    const result = (await openFoodFacts(url, env)) as { status?: number; product?: OpenFoodFactsProduct };
+    if (result.status !== 1 || !result.product?.code) throw new ServiceError('This food is no longer available. Please search again.', 404);
+    if (!hasMacroData(result.product)) throw new ServiceError('This food does not have nutrition data.', 404);
+    return normalizeFood(result.product);
+  });
 }

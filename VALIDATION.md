@@ -5,7 +5,7 @@
 - Expo web export and iOS JavaScript/Hermes bundle export pass.
 - Cloudflare Worker packaging passes with `wrangler deploy --dry-run`; all three D1 migrations apply locally.
 - Browser checks cover navigation, weight and max logging/deletion, food search, fractional portions, gram edits, daily totals, optional goals, date navigation, persistence after reload, empty histories, responsive layouts, and modal focus wrapping/Escape dismissal.
-- A real USDA search and food-detail lookup succeeded through the local Worker using USDA's public demo key. The temporary key was removed after testing. Journals contain no seeded weight, max, or meal records.
+- A real Open Food Facts search and food-detail lookup should be validated through the deployed Worker. Journals contain no seeded weight, max, or meal records.
 
 Live Strava authorization/imports/webhook delivery require the owner's provider credentials and a deployed Worker. The iOS OAuth return flow and native keyboard/layout checks still require a signed development build on an iPhone or a full Xcode simulator installation. The iOS bundle check does not replace native runtime testing. Follow [SETUP.md](./SETUP.md) for activation and the live acceptance checklist.
 

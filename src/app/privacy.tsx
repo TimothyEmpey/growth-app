@@ -35,7 +35,7 @@ const sections: LegalSection[] = [
   {
     title: 'Food search and email delivery',
     paragraphs: [
-      'Food searches are sent through the Growth service to USDA FoodData Central. Search terms and requested food identifiers are provided to USDA, but Growth does not send your Growth password or Strava credentials with those requests. Selected nutrition values are saved with journal entries so historical entries do not change when database results change.',
+      'Food searches are sent through the Growth service to Open Food Facts. Search terms and requested product identifiers are provided to Open Food Facts, but Growth does not send your Growth password or Strava credentials with those requests. Selected nutrition values are saved with journal entries so historical entries do not change when database results change.',
       'Growth uses Resend to deliver account-verification, password-recovery, and email-change messages. Resend receives the destination email address and message content needed to deliver those messages.',
     ],
   },
@@ -53,7 +53,7 @@ const sections: LegalSection[] = [
   {
     title: 'Service providers',
     paragraphs: [
-      'Growth relies on Cloudflare for application hosting, API processing, queues, and database storage; Strava for connected running information; USDA FoodData Central for food and nutrition information; and Resend for account email delivery. These providers process only the information needed for their role and operate under their own terms and privacy practices.',
+      'Growth relies on Cloudflare for application hosting, API processing, queues, and database storage; Strava for connected running information; Open Food Facts for food and nutrition information; and Resend for account email delivery. These providers process only the information needed for their role and operate under their own terms and privacy practices.',
     ],
   },
   {

@@ -10,7 +10,8 @@ export interface Env {
   STRAVA_VERIFY_TOKEN?: string;
   WEBHOOK_PATH_SECRET?: string;
   TOKEN_ENCRYPTION_KEY?: string;
-  USDA_API_KEY?: string;
+  /** Optional override; Open Food Facts asks clients to identify requests. */
+  OPEN_FOOD_FACTS_USER_AGENT?: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
 }
