@@ -533,11 +533,9 @@ export function NutritionStrip({ nutrition }: { nutrition: Nutrition }) {
               fontVariant: ['tabular-nums'],
             }}
           >
-            {nutrition[key] === null
-              ? '—'
-              : key === 'calories'
-                ? Math.round(nutrition[key]!)
-                : Number(nutrition[key]!.toFixed(1))}
+            {key === 'calories'
+              ? Math.round(nutrition[key] ?? 0)
+              : Number((nutrition[key] ?? 0).toFixed(1))}
             <Text style={{ fontSize: 12, color: C.muted }}>
               {' '}
               {key === 'calories' ? 'cal' : 'g'}

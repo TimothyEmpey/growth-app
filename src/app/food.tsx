@@ -220,11 +220,6 @@ function FoodForm() {
               <NutritionStrip nutrition={nutrition} />
             </Card>
           )}
-          {nutrition && Object.values(nutrition).includes(null) && (
-            <Body>
-              Open Food Facts does not provide every nutrient for this food. Missing values are shown as —.
-            </Body>
-          )}
           {action.error && <Notice message={action.error} />}
           <Button
             loading={action.busy}

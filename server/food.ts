@@ -42,10 +42,10 @@ export function uniqueFoodNames<T extends { product_name?: string }>(foods: T[])
 export function normalizeFood(raw: OpenFoodFactsProduct): Food {
   const nutriments = raw.nutriments ?? {};
   const per100g: Nutrition = {
-    calories: numberValue(nutriments['energy-kcal_100g']),
-    protein: numberValue(nutriments.proteins_100g),
-    carbs: numberValue(nutriments.carbohydrates_100g),
-    fat: numberValue(nutriments.fat_100g),
+    calories: numberValue(nutriments['energy-kcal_100g']) ?? 0,
+    protein: numberValue(nutriments.proteins_100g) ?? 0,
+    carbs: numberValue(nutriments.carbohydrates_100g) ?? 0,
+    fat: numberValue(nutriments.fat_100g) ?? 0,
   };
   const portions: FoodPortion[] = [{ id: 'grams', label: '1 gram', grams: 1 }];
   const servingGrams = numberValue(raw.serving_quantity);
@@ -67,8 +67,10 @@ export function normalizeFood(raw: OpenFoodFactsProduct): Food {
 }
 
 export function hasMacroData(raw: OpenFoodFactsProduct) {
-  const { protein, carbs, fat } = normalizeFood(raw).per100g;
-  return [protein, carbs, fat].some((value) => value !== null);
+  const nutriments = raw.nutriments ?? {};
+  return [nutriments.proteins_100g, nutriments.carbohydrates_100g, nutriments.fat_100g].some(
+    (value) => numberValue(value) !== null,
+  );
 }
 
 const fields = 'code,product_name,brands,nutriments,serving_size,serving_quantity';

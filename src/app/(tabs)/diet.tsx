@@ -27,7 +27,7 @@ export default function DietPage() {
   const entries = journal.meals.filter((e) => e.date === date);
   const totals = sumNutrition(entries.map((e) => e.nutrition));
   const goal = journal.goals.calories;
-  const ratio = goal && totals.calories !== null ? Math.min(1, totals.calories / goal) : 0;
+  const ratio = goal ? Math.min(1, (totals.calories ?? 0) / goal) : 0;
   return (
     <Page
       title="Diet"
@@ -132,7 +132,7 @@ export default function DietPage() {
                 letterSpacing: -1,
               }}
             >
-              {totals.calories === null ? '—' : Math.round(totals.calories)}
+              {Math.round(totals.calories ?? 0)}
             </Text>
             <Text style={{ color: C.muted, fontSize: 13, marginTop: 5 }}>
               {goal ? `${goal.toLocaleString()} cal` : 'No goal'}
@@ -140,7 +140,7 @@ export default function DietPage() {
           </View>
           <View style={{ flex: 1, minWidth: compact ? 115 : 210, gap: compact ? 18 : 25 }}>
             {(['protein', 'carbs', 'fat'] as const).map((key) => {
-              const value = totals[key],
+              const value = totals[key] ?? 0,
                 target = journal.goals[key],
                 color = key === 'protein' ? C.blue : key === 'carbs' ? C.gold : C.purple;
               return (
@@ -157,7 +157,7 @@ export default function DietPage() {
                         fontWeight: '600',
                       }}
                     >
-                      {value === null ? '—' : Number(value.toFixed(1))}
+                      {Number(value.toFixed(1))}
                       <Text style={{ fontWeight: '400', color: C.muted }}>
                         {' '}
                         {target ? `/ ${target} g` : 'g'}
@@ -170,7 +170,7 @@ export default function DietPage() {
                         height: 5,
                         borderRadius: 3,
                         backgroundColor: color,
-                        width: `${target && value !== null ? Math.min(100, (value / target) * 100) : 0}%`,
+                        width: `${target ? Math.min(100, (value / target) * 100) : 0}%`,
                       }}
                     />
                   </View>
@@ -179,9 +179,6 @@ export default function DietPage() {
             })}
           </View>
         </Row>
-        {Object.values(totals).includes(null) && (
-          <Body>Some foods are missing nutrition data. Incomplete totals appear as —.</Body>
-        )}
         {!goal && <Body>Set your own daily goals whenever you’re ready.</Body>}
       </Card>
       <View style={{ gap: 14 }}>
@@ -220,9 +217,7 @@ export default function DietPage() {
                       {meal}
                     </Text>
                     <Text style={{ color: C.muted, fontSize: 12 }}>
-                      {nutrition.calories === null
-                        ? 'Incomplete'
-                        : `${Math.round(nutrition.calories)} cal`}
+                      {`${Math.round(nutrition.calories ?? 0)} cal`}
                     </Text>
                   </View>
                 </Row>
@@ -267,9 +262,7 @@ export default function DietPage() {
                           </Text>
                         </View>
                         <Text style={{ color: C.muted, fontSize: 14 }}>
-                          {entry.nutrition.calories === null
-                            ? '—'
-                            : Math.round(entry.nutrition.calories)}{' '}
+                          {Math.round(entry.nutrition.calories ?? 0)}{' '}
                           <Text style={{ fontSize: 11, color: C.muted }}>cal</Text>
                         </Text>
                         <Icon name="right" size={16} />

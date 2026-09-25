@@ -118,13 +118,13 @@ describe('nutrition calculations', () => {
       sumNutrition([nutritionFor(food, 'grams', 1), nutritionFor(food, 'grams', 1)]).calories,
     ).toBeCloseTo(7.6, 10);
   });
-  test('unknown is distinct from zero, and historical values are snapshots', () => {
+  test('missing values count as zero, and historical values are snapshots', () => {
     const snapshot = nutritionFor(food, 'cup', 1);
     const changed = { ...food, per100g: { ...food.per100g, calories: 999 } };
     expect(snapshot.calories).toBe(304);
     expect(nutritionFor(changed, 'cup', 1).calories).not.toBe(snapshot.calories);
     expect(sumNutrition([snapshot, { calories: null, protein: 0, carbs: 0, fat: 0 }])).toEqual({
-      calories: null,
+      calories: 304,
       protein: 10.4,
       carbs: 54.400000000000006,
       fat: 5.6000000000000005,
@@ -138,7 +138,7 @@ describe('nutrition calculations', () => {
       serving_quantity: '340',
       nutriments: { 'energy-kcal_100g': 80, proteins_100g: 10, fat_100g: 0 },
     });
-    expect(normalized.per100g).toEqual({ calories: 80, protein: 10, fat: 0, carbs: null });
+    expect(normalized.per100g).toEqual({ calories: 80, protein: 10, fat: 0, carbs: 0 });
     expect(normalized.portions).toEqual([
       { id: 'grams', label: '1 gram', grams: 1 },
       { id: 'serving', label: '1 bottle', grams: 340 },

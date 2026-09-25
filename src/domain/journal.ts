@@ -105,18 +105,14 @@ export function nutritionFor(food: Food, portionId: string, quantity: number): N
   // All portions have a known gram weight; preserve precision until the UI formats the result.
   const multiplier = (portion.grams * quantity) / 100;
   return Object.fromEntries(
-    nutritionKeys.map((key) => [
-      key,
-      food.per100g[key] === null ? null : food.per100g[key]! * multiplier,
-    ]),
+    nutritionKeys.map((key) => [key, (food.per100g[key] ?? 0) * multiplier]),
   ) as Nutrition;
 }
 export function sumNutrition(items: Nutrition[]): Nutrition {
-  // An unknown nutrient makes that nutrient's total unknown, rather than understating it.
   const total = emptyNutrition();
   for (const item of items)
     for (const key of nutritionKeys)
-      total[key] = total[key] === null || item[key] === null ? null : total[key]! + item[key]!;
+      total[key] = (total[key] ?? 0) + (item[key] ?? 0);
   return total;
 }
 export function emptyJournal(): Journal {
@@ -154,6 +150,24 @@ export function migrateJournal(value: unknown): Journal {
     throw new Error('Your journal could not be read. Your stored data has not been changed.');
   return {
     ...journal,
+    foods: journal.foods.map((food) => ({
+      ...food,
+      per100g: Object.fromEntries(
+        nutritionKeys.map((key) => [key, food.per100g[key] ?? 0]),
+      ) as Nutrition,
+    })),
+    meals: journal.meals.map((entry) => ({
+      ...entry,
+      food: {
+        ...entry.food,
+        per100g: Object.fromEntries(
+          nutritionKeys.map((key) => [key, entry.food.per100g[key] ?? 0]),
+        ) as Nutrition,
+      },
+      nutrition: Object.fromEntries(
+        nutritionKeys.map((key) => [key, entry.nutrition[key] ?? 0]),
+      ) as Nutrition,
+    })),
     preferences: normalizePreferences(journal.preferences),
     profile: { ...emptyProfile(), ...journal.profile },
   };
