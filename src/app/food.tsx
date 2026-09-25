@@ -1,7 +1,7 @@
 import { useColors } from '@/providers/appearance';
 import { Camera, CameraView } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useJournal, updateJournal } from '@/data/journal-store';
@@ -61,11 +61,8 @@ function FoodForm() {
   const [portionMenuOpen, setPortionMenuOpen] = useState(false);
   const [quantity, setQuantity] = useState(existing?.quantity.toString() ?? '100');
   const [scanning, setScanning] = useState(false);
-  const [webCameraOpen, setWebCameraOpen] = useState(false);
-  const webBarcodeHandled = useRef(false);
-  const scannerSubscription = useRef<ReturnType<typeof CameraView.onModernBarcodeScanned> | null>(
-    null,
-  );
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const barcodeHandled = useRef(false);
   const action = useAction();
   const currentPortion = selected?.portions.find((portion) => portion.id === portionId);
   useEffect(() => {
@@ -111,58 +108,24 @@ function FoodForm() {
     );
   };
   const scanBarcode = async () => {
-    if (process.env.EXPO_OS === 'web') {
-      if (!(await CameraView.isAvailableAsync()))
-        throw new Error('No camera is available in this browser.');
-      const permission = await Camera.requestCameraPermissionsAsync();
-      if (!permission.granted) throw new Error('Camera access is required to scan a food barcode.');
-      webBarcodeHandled.current = false;
-      setScanning(true);
-      setWebCameraOpen(true);
-      return;
-    }
+    if (process.env.EXPO_OS === 'web' && !(await CameraView.isAvailableAsync()))
+      throw new Error('No camera is available in this browser.');
     const permission = await Camera.requestCameraPermissionsAsync();
     if (!permission.granted) throw new Error('Camera access is required to scan a food barcode.');
-
-    scannerSubscription.current?.remove();
-    const subscription = CameraView.onModernBarcodeScanned(({ data }) => {
-      subscription.remove();
-      scannerSubscription.current = null;
-      setScanning(false);
-      // iOS presents the scanner modally; Android dismisses it after a scan.
-      if (process.env.EXPO_OS === 'ios') void CameraView.dismissScanner();
-      void action.run(() => selectScannedFood(data));
-    });
-    scannerSubscription.current = subscription;
+    barcodeHandled.current = false;
     setScanning(true);
-    try {
-      await CameraView.launchScanner({
-        barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'itf14'],
-      });
-    } finally {
-      // Dismissing the native scanner without a scan must also reset this state.
-      if (scannerSubscription.current === subscription) {
-        subscription.remove();
-        scannerSubscription.current = null;
-        setScanning(false);
-      }
-    }
+    setScannerOpen(true);
   };
-  useEffect(
-    () => () => {
-      scannerSubscription.current?.remove();
-    },
-    [],
-  );
   return (
-    <Sheet
-      title={existing ? 'Food details' : `Log ${meal}`}
-      subtitle={
-        selected
-          ? formatFoodLabel(selected.brand ?? 'Open Food Facts')
-          : 'Find a food, choose a serving, make it yours.'
-      }
-    >
+    <>
+      <Sheet
+        title={existing ? 'Food details' : `Log ${meal}`}
+        subtitle={
+          selected
+            ? formatFoodLabel(selected.brand ?? 'Open Food Facts')
+            : 'Find a food, choose a serving, make it yours.'
+        }
+      >
       {selected ? (
         <>
           <Title size={22}>{formatFoodLabel(selected.name)}</Title>
@@ -355,40 +318,6 @@ function FoodForm() {
               </Pressable>
             </View>
           </View>
-          {webCameraOpen && (
-            <View style={{ gap: 10 }}>
-              <CameraView
-                style={{ height: 280, borderRadius: 14, overflow: 'hidden' }}
-                facing="back"
-                barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'itf14'] }}
-                onBarcodeScanned={({ data }) => {
-                  if (webBarcodeHandled.current) return;
-                  webBarcodeHandled.current = true;
-                  setWebCameraOpen(false);
-                  setScanning(false);
-                  void action.run(() => selectScannedFood(data));
-                }}
-                onMountError={({ message }) => {
-                  setWebCameraOpen(false);
-                  setScanning(false);
-                  void action.run(async () => {
-                    throw new Error(`Could not start the camera: ${message}`);
-                  });
-                }}
-              />
-              <Button
-                quiet
-                icon="close"
-                onPress={() => {
-                  webBarcodeHandled.current = false;
-                  setWebCameraOpen(false);
-                  setScanning(false);
-                }}
-              >
-                Cancel scan
-              </Button>
-            </View>
-          )}
           {action.busy && <ActivityIndicator color={C.blue} />}
           {action.error && <Notice message={action.error} />}
           {recents.length > 0 && (
@@ -460,9 +389,220 @@ function FoodForm() {
           <Body>Food data from Open Food Facts.</Body>
         </>
       )}
-    </Sheet>
+      </Sheet>
+      <BarcodeScannerOverlay
+        visible={scannerOpen}
+        onCancel={() => {
+          barcodeHandled.current = false;
+          setScannerOpen(false);
+          setScanning(false);
+        }}
+        onScanned={(data) => {
+          if (barcodeHandled.current) return;
+          barcodeHandled.current = true;
+          setScannerOpen(false);
+          setScanning(false);
+          void action.run(() => selectScannedFood(data));
+        }}
+        onError={(message) => {
+          setScannerOpen(false);
+          setScanning(false);
+          void action.run(async () => {
+            throw new Error(`Could not start the camera: ${message}`);
+          });
+        }}
+      />
+    </>
   );
 }
+
+function BarcodeScannerOverlay({
+  visible,
+  onCancel,
+  onScanned,
+  onError,
+}: {
+  visible: boolean;
+  onCancel: () => void;
+  onScanned: (data: string) => void;
+  onError: (message: string) => void;
+}) {
+  const C = useColors();
+  const { width } = useWindowDimensions();
+  const [scanProgress] = useState(() => new Animated.Value(0));
+  const frameWidth = Math.min(Math.max(width - 48, 260), 440);
+  const frameHeight = Math.round(frameWidth * 0.62);
+
+  useEffect(() => {
+    if (!visible) return;
+    scanProgress.setValue(0);
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanProgress, {
+          toValue: 1,
+          duration: 1650,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanProgress, {
+          toValue: 0,
+          duration: 1650,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [scanProgress, visible]);
+
+  if (!visible) return null;
+  const translateY = scanProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [18, frameHeight - 22],
+  });
+  return (
+    <Modal animationType="fade" presentationStyle="fullScreen" onRequestClose={onCancel}>
+      <View style={{ flex: 1, backgroundColor: '#05070b' }}>
+        <CameraView
+          style={{ position: 'absolute', inset: 0 }}
+          facing="back"
+          barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'itf14'] }}
+          onBarcodeScanned={({ data }) => onScanned(data)}
+          onMountError={({ message }) => onError(message)}
+        />
+        <View
+          pointerEvents="none"
+          style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(3, 6, 12, 0.38)' }}
+        />
+        <View style={{ flex: 1, padding: 24, paddingTop: 64, justifyContent: 'space-between' }}>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <View style={{ gap: 3 }}>
+              <Text style={{ color: '#fff', fontSize: 19, fontWeight: '700' }}>Scan barcode</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13 }}>
+                Hold the barcode inside the frame
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cancel barcode scan"
+              onPress={onCancel}
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(5, 7, 11, 0.64)',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.22)',
+                opacity: pressed ? 0.65 : 1,
+              })}
+            >
+              <Icon name="close" size={22} color="#fff" />
+            </Pressable>
+          </Row>
+          <View style={{ alignItems: 'center' }} pointerEvents="none">
+            <View
+              style={{
+                width: frameWidth,
+                height: frameHeight,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.78)',
+                overflow: 'hidden',
+                backgroundColor: 'rgba(3, 6, 12, 0.1)',
+              }}
+            >
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: 38,
+                  height: 38,
+                  borderTopWidth: 4,
+                  borderLeftWidth: 4,
+                  borderColor: C.blue,
+                  borderTopLeftRadius: 17,
+                }}
+              />
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: 38,
+                  height: 38,
+                  borderTopWidth: 4,
+                  borderRightWidth: 4,
+                  borderColor: C.blue,
+                  borderTopRightRadius: 17,
+                }}
+              />
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: 38,
+                  height: 38,
+                  borderBottomWidth: 4,
+                  borderLeftWidth: 4,
+                  borderColor: C.blue,
+                  borderBottomLeftRadius: 17,
+                }}
+              />
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  width: 38,
+                  height: 38,
+                  borderBottomWidth: 4,
+                  borderRightWidth: 4,
+                  borderColor: C.blue,
+                  borderBottomRightRadius: 17,
+                }}
+              />
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  left: 18,
+                  right: 18,
+                  height: 3,
+                  borderRadius: 3,
+                  backgroundColor: C.blue,
+                  boxShadow: `0 0 14px ${C.blue}`,
+                  transform: [{ translateY }],
+                }}
+              />
+            </View>
+          </View>
+          <View
+            style={{
+              alignSelf: 'center',
+              maxWidth: 390,
+              paddingHorizontal: 18,
+              paddingVertical: 14,
+              borderRadius: 16,
+              borderCurve: 'continuous',
+              backgroundColor: 'rgba(5, 7, 11, 0.72)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.16)',
+            }}
+          >
+            <Text style={{ color: '#fff', textAlign: 'center', fontSize: 14, lineHeight: 20 }}>
+              Keep the label steady and avoid glare for the quickest match.
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function FoodResult({ food, onPress }: { food: FoodSearchItem; onPress: () => void }) {
   const C = useColors();
   return (
