@@ -1,4 +1,7 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
+
+const DISMISS_DISTANCE = 110;
+const DISMISS_VELOCITY = 0.55;
 
 // Web sheet shell: backdrop dismissal, Escape handling, and keyboard focus containment.
 // Native sheets are presented by the router; dialog.tsx simply passes through their content.
@@ -13,6 +16,8 @@ export function Dialog({
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const dismiss = useRef(onDismiss);
+  const drag = useRef<{ y: number; time: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
   useEffect(() => {
     dismiss.current = onDismiss;
   }, [onDismiss]);
@@ -60,6 +65,30 @@ export function Dialog({
       if (previous && !element.contains(previous)) requestAnimationFrame(() => previous.focus());
     };
   }, []);
+  const startDrag = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    drag.current = { y: touch.clientY, time: performance.now() };
+    setDragOffset(0);
+  };
+  const moveDrag = (event: TouchEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    setDragOffset(Math.max(0, touch.clientY - drag.current.y));
+  };
+  const endDrag = (event: TouchEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    const touch = event.changedTouches[0];
+    const distance = touch ? Math.max(0, touch.clientY - drag.current.y) : dragOffset;
+    const elapsed = Math.max(1, performance.now() - drag.current.time);
+    drag.current = null;
+    if (distance >= DISMISS_DISTANCE || distance / elapsed >= DISMISS_VELOCITY) {
+      dismiss.current();
+      return;
+    }
+    setDragOffset(0);
+  };
   return (
     <div
       className="growth-dialog-overlay"
@@ -74,7 +103,21 @@ export function Dialog({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
+        style={{ transform: `translateY(${dragOffset}px)` }}
       >
+        <div
+          className="growth-dialog-drag-handle"
+          aria-hidden="true"
+          onTouchStart={startDrag}
+          onTouchMove={moveDrag}
+          onTouchEnd={endDrag}
+          onTouchCancel={() => {
+            drag.current = null;
+            setDragOffset(0);
+          }}
+        >
+          <span />
+        </div>
         {children}
       </div>
     </div>
