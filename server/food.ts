@@ -171,11 +171,9 @@ async function oauthSignature(params: Record<string, string>, env: Env) {
     throw new ServiceError('Food search is not configured.', 503);
   const normalized = Object.entries(params)
     .map(([key, value]) => [oauthEncode(key), oauthEncode(value)] as const)
-    .sort(([leftKey, leftValue], [rightKey, rightValue]) => {
-      if (leftKey !== rightKey) return leftKey < rightKey ? -1 : 1;
-      if (leftValue === rightValue) return 0;
-      return leftValue < rightValue ? -1 : 1;
-    })
+    .sort(([leftKey, leftValue], [rightKey, rightValue]) =>
+      leftKey === rightKey ? leftValue.localeCompare(rightValue) : leftKey.localeCompare(rightKey),
+    )
     .map(([key, value]) => `${key}=${value}`)
     .join('&');
   const base = `GET&${oauthEncode('https://platform.fatsecret.com/rest/server.api')}&${oauthEncode(normalized)}`;
