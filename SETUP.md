@@ -54,6 +54,11 @@ Record the application's client ID and client secret. Growth requests `activity:
 
 Typed food searches use FatSecret's server-ranked API. Growth requests 10 rows per page and preserves FatSecret's order, names, brands, and duplicate names without client- or Worker-side filtering. Food details use FatSecret serving IDs and serving nutrition. Register a FatSecret Platform application and keep its OAuth 2.0 client credentials on the Worker.
 
+FatSecret OAuth 2 requires requests from an approved server IP. Production routes these requests
+through the `fatsecret-proxy` Fly Machine. Add its static egress IP to the FatSecret application,
+then configure matching `FATSECRET_PROXY_URL` and `FATSECRET_PROXY_SECRET` Worker secrets. The
+proxy accepts only authenticated food-search and food-detail requests.
+
 Barcode scans continue to use Open Food Facts. No key is required for those read requests. Open Food Facts asks clients to send an identifiable User-Agent; the Worker includes one by default. Set `OPEN_FOOD_FACTS_USER_AGENT` to override it.
 
 FatSecret limits non-ID response caching to 24 hours and requires attribution anywhere its content is displayed. The Worker cache expires at 24 hours and the UI includes the required linked attribution. Confirm that Growth's journal-storage design is covered by your FatSecret agreement before production use because journals retain nutrition snapshots longer than the response-cache window.
@@ -65,8 +70,10 @@ For local API work, copy `server/.dev.vars.example` to `server/.dev.vars` and fi
 ```sh
 bunx wrangler secret put STRAVA_CLIENT_ID --config server/wrangler.jsonc
 bunx wrangler secret put STRAVA_CLIENT_SECRET --config server/wrangler.jsonc
- bunx wrangler secret put FATSECRET_CLIENT_ID --config server/wrangler.jsonc
- bunx wrangler secret put FATSECRET_CLIENT_SECRET --config server/wrangler.jsonc
+bunx wrangler secret put FATSECRET_CLIENT_ID --config server/wrangler.jsonc
+bunx wrangler secret put FATSECRET_CLIENT_SECRET --config server/wrangler.jsonc
+bunx wrangler secret put FATSECRET_PROXY_URL --config server/wrangler.jsonc
+bunx wrangler secret put FATSECRET_PROXY_SECRET --config server/wrangler.jsonc
 # Optional: override the default Open Food Facts User-Agent
 bunx wrangler secret put OPEN_FOOD_FACTS_USER_AGENT --config server/wrangler.jsonc
 bunx wrangler secret put TOKEN_ENCRYPTION_KEY --config server/wrangler.jsonc

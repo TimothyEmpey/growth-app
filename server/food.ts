@@ -152,7 +152,10 @@ async function openFoodFacts(url: URL, env: Env) {
 let fatSecretToken: { value: string; expiresAt: number } | null = null;
 
 export function fatSecretConfigured(env: Env) {
-  return !!(env.FATSECRET_CLIENT_ID && env.FATSECRET_CLIENT_SECRET);
+  return !!(
+    (env.FATSECRET_PROXY_URL && env.FATSECRET_PROXY_SECRET) ||
+    (env.FATSECRET_CLIENT_ID && env.FATSECRET_CLIENT_SECRET)
+  );
 }
 
 export function mapFatSecretSearchFoods(foods: FatSecretSearchFood[]): FoodSearchItem[] {
@@ -164,7 +167,7 @@ export function mapFatSecretSearchFoods(foods: FatSecretSearchFood[]): FoodSearc
 }
 
 async function accessToken(env: Env, force = false) {
-  if (!fatSecretConfigured(env))
+  if (!env.FATSECRET_CLIENT_ID || !env.FATSECRET_CLIENT_SECRET)
     throw new ServiceError('Food search is not configured.', 503);
   if (!force && fatSecretToken && fatSecretToken.expiresAt > now() + 60)
     return fatSecretToken.value;
@@ -194,13 +197,16 @@ async function accessToken(env: Env, force = false) {
 
 async function fatSecretGet<T>(path: string, params: Record<string, string>, env: Env): Promise<T> {
   const request = async (forceToken = false) => {
-    const url = new URL(`https://platform.fatsecret.com${path}`);
+    const viaProxy = !!(env.FATSECRET_PROXY_URL && env.FATSECRET_PROXY_SECRET);
+    const url = new URL(path, viaProxy ? env.FATSECRET_PROXY_URL : 'https://platform.fatsecret.com');
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
     url.searchParams.set('format', 'json');
     return fetch(url, {
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${await accessToken(env, forceToken)}`,
+        Authorization: viaProxy
+          ? `Bearer ${env.FATSECRET_PROXY_SECRET}`
+          : `Bearer ${await accessToken(env, forceToken)}`,
       },
       signal: AbortSignal.timeout(15_000),
     });

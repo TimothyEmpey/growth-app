@@ -7,6 +7,9 @@ WEBHOOK_PATH_SECRET=
 TOKEN_ENCRYPTION_KEY=
 FATSECRET_CLIENT_ID=
 FATSECRET_CLIENT_SECRET=
+# Optional in production when FatSecret requires a fixed outbound IP.
+FATSECRET_PROXY_URL=https://your-proxy.fly.dev
+FATSECRET_PROXY_SECRET=replace-with-a-long-random-secret
 # Optional identifiable User-Agent override for Open Food Facts barcode lookups.
 OPEN_FOOD_FACTS_USER_AGENT=
 # Growth account verification, email changes, and password recovery.
