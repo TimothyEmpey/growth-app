@@ -5,7 +5,10 @@ STRAVA_VERIFY_TOKEN=
 WEBHOOK_PATH_SECRET=
 # 32 random bytes represented as exactly 64 hexadecimal characters.
 TOKEN_ENCRYPTION_KEY=
-USDA_API_KEY=
+FATSECRET_CLIENT_ID=
+FATSECRET_CLIENT_SECRET=
+# Optional identifiable User-Agent override for Open Food Facts barcode lookups.
+OPEN_FOOD_FACTS_USER_AGENT=
 # Growth account verification, email changes, and password recovery.
 # Use a sender on a domain verified with Resend. Never use EXPO_PUBLIC_ for these.
 RESEND_API_KEY=

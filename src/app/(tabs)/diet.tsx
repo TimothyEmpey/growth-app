@@ -13,7 +13,17 @@ import {
   today,
 } from '@/domain/journal';
 import { MEALS } from '@/domain/types';
-import { Body, Button, Card, Icon, Label, Page, Row, Title } from '@/components/ui';
+import {
+  Body,
+  Button,
+  Card,
+  FatSecretAttribution,
+  Icon,
+  Label,
+  Page,
+  Row,
+  Title,
+} from '@/components/ui';
 import { DateField } from '@/components/date-field';
 import { SwipeToDelete } from '@/components/gestures';
 
@@ -279,6 +289,7 @@ export default function DietPage() {
           );
         })}
       </View>
+      <FatSecretAttribution />
     </Page>
   );
 }

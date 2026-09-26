@@ -100,7 +100,12 @@ export function putWeight(weights: WeightEntry[], entry: WeightEntry): WeightEnt
 export function nutritionFor(food: Food, portionId: string, quantity: number): Nutrition {
   positive(quantity);
   const portion = food.portions.find((p) => p.id === portionId);
-  if (!portion || !Number.isFinite(portion.grams) || portion.grams <= 0)
+  if (!portion) throw new Error('Select a serving size.');
+  if (portion.nutrition)
+    return Object.fromEntries(
+      nutritionKeys.map((key) => [key, (portion.nutrition![key] ?? 0) * quantity]),
+    ) as Nutrition;
+  if (!Number.isFinite(portion.grams) || portion.grams <= 0)
     throw new Error('Select a serving size.');
   // All portions have a known gram weight; preserve precision until the UI formats the result.
   const multiplier = (portion.grams * quantity) / 100;

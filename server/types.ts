@@ -10,6 +10,8 @@ export interface Env {
   STRAVA_VERIFY_TOKEN?: string;
   WEBHOOK_PATH_SECRET?: string;
   TOKEN_ENCRYPTION_KEY?: string;
+  FATSECRET_CLIENT_ID?: string;
+  FATSECRET_CLIENT_SECRET?: string;
   /** Optional override; Open Food Facts asks clients to identify requests. */
   OPEN_FOOD_FACTS_USER_AGENT?: string;
   RESEND_API_KEY?: string;

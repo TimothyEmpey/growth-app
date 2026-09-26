@@ -21,13 +21,14 @@ export type LiftRecord = {
   pounds: number;
   createdAt: number;
 };
-export type FoodPortion = { id: string; label: string; grams: number };
+export type FoodPortion = { id: string; label: string; grams: number; nutrition?: Nutrition };
 export type Food = {
   id: string;
   name: string;
   brand?: string;
   per100g: Nutrition;
   portions: FoodPortion[];
+  defaultPortionId?: string;
 };
 export type FoodSearchItem = { id: string; name: string; brand?: string };
 export type MealEntry = {

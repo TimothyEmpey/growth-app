@@ -53,6 +53,8 @@ export function environment() {
     STRAVA_VERIFY_TOKEN: 'verify-test',
     WEBHOOK_PATH_SECRET: 'secret-webhook-path',
     TOKEN_ENCRYPTION_KEY: 'ab'.repeat(32),
+    FATSECRET_CLIENT_ID: 'fatsecret-test-client',
+    FATSECRET_CLIENT_SECRET: 'fatsecret-test-secret',
     OPEN_FOOD_FACTS_USER_AGENT: 'Growth-tests/1.0 (https://example.invalid)',
   } as unknown as Env;
   return { env, jobs, sqlite, queries };

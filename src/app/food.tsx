@@ -23,6 +23,7 @@ import {
   Button,
   Card,
   Field,
+  FatSecretAttribution,
   Icon,
   JournalReady,
   Label,
@@ -85,14 +86,14 @@ function FoodForm() {
   let nutrition = selected?.per100g;
   if (selected && Number(quantity) > 0 && Number.isFinite(Number(quantity)))
     nutrition = nutritionFor(selected, portionId, Number(quantity));
-  const recents = journal.foods.filter(
-    (food) =>
-      !query || `${food.name} ${food.brand ?? ''}`.toLowerCase().includes(query.toLowerCase()),
-  );
+  const recents = journal.foods;
   const choose = (food: Food) => {
     setSelected(withOunceFallback(food));
     setPortionMenuOpen(false);
-    const portion = food.portions.find((p) => p.id !== 'grams') ?? food.portions[0];
+    const portion =
+      food.portions.find((p) => p.id === food.defaultPortionId) ??
+      food.portions.find((p) => p.id !== 'grams') ??
+      food.portions[0];
     setPortionId(portion.id);
     setQuantity(portion.id === 'grams' ? '100' : '1');
   };
@@ -122,7 +123,9 @@ function FoodForm() {
         title={existing ? 'Food details' : `Log ${meal}`}
         subtitle={
           selected
-            ? formatFoodLabel(selected.brand ?? 'Open Food Facts')
+            ? formatFoodLabel(
+                selected.brand ?? (selected.id.startsWith('fs:') ? 'FatSecret' : 'Open Food Facts'),
+              )
             : 'Find a food, choose a serving, make it yours.'
         }
       >
@@ -315,7 +318,7 @@ function FoodForm() {
           </View>
           {action.busy && <ActivityIndicator color={C.blue} />}
           {action.error && <Notice message={action.error} />}
-          {recents.length > 0 && (
+          {!query && recents.length > 0 && (
             <View style={{ gap: 8 }}>
               <Label>Recent foods · available offline</Label>
               {recents.slice(0, 8).map((food) => (
@@ -381,8 +384,12 @@ function FoodForm() {
               </Body>
             </View>
           )}
-          <Body>Food data from Open Food Facts.</Body>
         </>
+      )}
+      {selected?.id.startsWith('off:') ? (
+        <Body>Barcode data from Open Food Facts.</Body>
+      ) : (
+        <FatSecretAttribution />
       )}
       </Sheet>
       <BarcodeScannerOverlay
@@ -609,9 +616,9 @@ function FoodResult({ food, onPress }: { food: FoodSearchItem; onPress: () => vo
       <Row>
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={{ color: C.text, fontSize: 15, lineHeight: 22 }}>
-            {formatFoodLabel(food.name)}
+            {food.name}
           </Text>
-          {food.brand && <Body>{formatFoodLabel(food.brand)}</Body>}
+          {food.brand && <Body>{food.brand}</Body>}
         </View>
         <Icon name="right" size={18} />
       </Row>

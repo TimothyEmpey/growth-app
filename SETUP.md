@@ -50,9 +50,13 @@ https://YOUR-WORKER-HOST/api/strava/callback
 
 Record the application's client ID and client secret. Growth requests `activity:read` and `activity:read_all` so each user's private runs and activity webhooks are included. It does not request permission to create or edit activities. Provider tokens are encrypted and stored per Growth account; signing out does not disconnect Strava, so the connection and imported runs remain available when that Growth account signs in on another device.
 
-## 3. Configure Open Food Facts
+## 3. Configure food providers
 
-Growth searches Open Food Facts' relevance-ranked Search-a-licious API for packaged foods and normalizes the nutrition values that are explicitly supplied per 100 g. Searches return only the top 10 results. No API key is required for read requests. Open Food Facts asks API clients to send an identifiable User-Agent; the Worker includes one by default. Set `OPEN_FOOD_FACTS_USER_AGENT` if you want to provide a different app name and contact URL.
+Typed food searches use FatSecret's server-ranked API. Growth requests 10 rows per page and preserves FatSecret's order, names, brands, and duplicate names without client- or Worker-side filtering. Food details use FatSecret serving IDs and serving nutrition. Register a FatSecret Platform application and keep its OAuth 2.0 client credentials on the Worker.
+
+Barcode scans continue to use Open Food Facts. No key is required for those read requests. Open Food Facts asks clients to send an identifiable User-Agent; the Worker includes one by default. Set `OPEN_FOOD_FACTS_USER_AGENT` to override it.
+
+FatSecret limits non-ID response caching to 24 hours and requires attribution anywhere its content is displayed. The Worker cache expires at 24 hours and the UI includes the required linked attribution. Confirm that Growth's journal-storage design is covered by your FatSecret agreement before production use because journals retain nutrition snapshots longer than the response-cache window.
 
 ## 4. Configure secrets
 
@@ -61,6 +65,8 @@ For local API work, copy `server/.dev.vars.example` to `server/.dev.vars` and fi
 ```sh
 bunx wrangler secret put STRAVA_CLIENT_ID --config server/wrangler.jsonc
 bunx wrangler secret put STRAVA_CLIENT_SECRET --config server/wrangler.jsonc
+ bunx wrangler secret put FATSECRET_CLIENT_ID --config server/wrangler.jsonc
+ bunx wrangler secret put FATSECRET_CLIENT_SECRET --config server/wrangler.jsonc
 # Optional: override the default Open Food Facts User-Agent
 bunx wrangler secret put OPEN_FOOD_FACTS_USER_AGENT --config server/wrangler.jsonc
 bunx wrangler secret put TOKEN_ENCRYPTION_KEY --config server/wrangler.jsonc
@@ -125,12 +131,12 @@ bun run build:web
 bun run api:check
 ```
 
-Automated tests use isolated local databases and mock Strava/Open Food Facts responses; they do not access your accounts. Validate the live integration after credentials are configured:
+Automated tests use isolated local databases and mock Strava, FatSecret, and Open Food Facts responses; they do not access your accounts. Validate the live integration after credentials are configured:
 
 - Link, cancel, reconnect, and disconnect from both web and an iOS development build.
 - Compare imported run count, distance, and weighted pace with your Strava activities; wait for the full import to finish first.
 - Edit/delete a run in Strava and confirm the webhook updates Growth.
-- Search a generic food and a branded food, adjust grams/servings, log meals, and revisit a past day after restarting.
+- Search a generic food and a branded food, confirm FatSecret ordering is unchanged, adjust servings, scan a barcode, log meals, and revisit a past day after restarting.
 - Verify that empty/unavailable nutrients show `—`, and that nutrition snapshots do not change when foods are fetched again.
 
 Check Worker logs, `connections.sync_error`, and the `growth-sync-failed` queue if a sync stalls. The next daily reconciliation or Refresh runs resumes a pending import. Provider keys and a signed iOS development build are required for live acceptance; passing local tests alone does not verify those external connections.

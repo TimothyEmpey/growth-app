@@ -51,7 +51,7 @@ Record weigh-ins and see your progress over time. Keep dated personal records fo
 
 Connect a personal Strava account to import running, trail-running, and virtual-running activities. Review distance, moving time, pace, elevation, heart rate, and splits when available.
 
-Build a daily food journal for breakfast, lunch, dinner, and snacks. Search Open Food Facts, adjust servings and quantities, and review calories, protein, carbohydrates, and fat. Saved nutrition snapshots keep past journal entries stable.
+Build a daily food journal for breakfast, lunch, dinner, and snacks. Search FatSecret, scan barcodes through Open Food Facts, adjust servings and quantities, and review calories, protein, carbohydrates, and fat. Saved nutrition snapshots keep past journal entries stable.
 
 Growth also includes optional nutrition goals, activity streaks, unit preferences, appearance themes, and cross-device synchronization through a verified Growth account. The core lifting and diet journal can be used locally without creating an account.
 
@@ -81,7 +81,7 @@ Select **Yes, data is collected** because signed-in journals and connected runs 
 | Fitness            | Runs, pace, heart rate, lifting records, exercise history                                                       | Yes when synchronized or connected | No       | App functionality                     |
 | Other User Content | Custom exercise names and journal content, if Apple’s questionnaire does not classify them under Health/Fitness | Yes when synchronized              | No       | App functionality                     |
 
-Current code does not use data for third-party advertising, developer advertising, cross-app tracking, or data-broker sharing. Food search terms are sent to Open Food Facts to return requested food results. Resend receives email addresses and verification-message content. Cloudflare processes and stores account/service data. Strava provides connected activity data after explicit authorization.
+Current code does not use data for third-party advertising, developer advertising, cross-app tracking, or data-broker sharing. Typed food search terms are sent to FatSecret; barcode identifiers are sent to Open Food Facts. Resend receives email addresses and verification-message content. Cloudflare processes and stores account/service data. Strava provides connected activity data after explicit authorization.
 
 ## App Review notes draft
 
@@ -165,5 +165,6 @@ The first public release also depends on the external services Growth uses:
 
 - Strava must permit enough connected athletes for the intended rollout. Its athlete capacity is separate from API rate limits.
 - Strava connection UI and attribution must follow current Strava brand guidelines.
-- Strava credentials/webhook, token-encryption key, Resend sender, and Cloudflare resources must remain configured. Open Food Facts does not require an API key for these read requests.
+- Strava credentials/webhook, FatSecret client credentials, token-encryption key, Resend sender, and Cloudflare resources must remain configured. Open Food Facts does not require an API key for barcode read requests.
+- Include `Powered by fatsecret nutrition API (www.fatsecret.com)` in the App Store description as required by FatSecret's attribution policy.
 - Remove `DEV_CLIENT_ORIGIN` from production Cloudflare configuration when local native development no longer needs production CORS access.

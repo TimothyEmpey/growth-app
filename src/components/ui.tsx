@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   Text,
@@ -148,6 +149,21 @@ export function Body({ children, color }: { children: ReactNode; color?: string 
   const C = useColors();
   color ??= C.muted;
   return <Text style={{ color, fontSize: 14, lineHeight: 22 }}>{children}</Text>;
+}
+export function FatSecretAttribution() {
+  const C = useColors();
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel="Powered by fatsecret Platform API"
+      onPress={() => void Linking.openURL('https://platform.fatsecret.com')}
+      style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}
+    >
+      <Text style={{ color: C.blue, fontSize: 12, textDecorationLine: 'underline' }}>
+        Powered by fatsecret Platform API
+      </Text>
+    </Pressable>
+  );
 }
 export function Title({ children, size = 22 }: { children: ReactNode; size?: number }) {
   const C = useColors();

@@ -20,7 +20,11 @@ import {
 } from '../src/domain/journal';
 import { sanitizeNumericInput } from '../src/domain/input';
 import type { Food } from '../src/domain/types';
-import { hasMacroData, normalizeFood, uniqueFoodNames } from '../server/food';
+import {
+  mapFatSecretSearchFoods,
+  normalizeFatSecretFood,
+  normalizeOpenFoodFacts,
+} from '../server/food';
 
 const food: Food = {
   id: '123',
@@ -130,8 +134,8 @@ describe('nutrition calculations', () => {
       fat: 5.6000000000000005,
     });
   });
-  test('normalizes Open Food Facts nutrition and a documented gram serving', () => {
-    const normalized = normalizeFood({
+  test('normalizes Open Food Facts barcode nutrition and a documented gram serving', () => {
+    const normalized = normalizeOpenFoodFacts({
       code: '123',
       product_name: 'Yogurt',
       serving_size: '1 bottle',
@@ -145,31 +149,62 @@ describe('nutrition calculations', () => {
     ]);
     expect(normalized.id).toBe('off:123');
   });
-  test('keeps Open Food Facts results with recorded macros, including true zero values', () => {
-    expect(
-      hasMacroData({
-        code: '1',
-        nutriments: { proteins_100g: 20, fat_100g: 0, carbohydrates_100g: 0 },
-      }),
-    ).toBe(true);
-    expect(
-      hasMacroData({
-        code: '2',
-        nutriments: { proteins_100g: 0, fat_100g: 0, carbohydrates_100g: 0 },
-      }),
-    ).toBe(true);
-    expect(hasMacroData({ code: '3' })).toBe(false);
-  });
-  test('keeps the first relevance-ranked result for each normalized product name', () => {
-    const results = uniqueFoodNames([
-      { code: 'first', product_name: 'Egg' },
-      { code: 'duplicate', product_name: ' egg ' },
-      { code: 'pasteurized', product_name: 'Egg pasteurized' },
-      { code: 'dozen', product_name: '12 eggs' },
-      { code: 'medium', product_name: 'Medium egg' },
-      { code: 'small', product_name: 'Egg (small)' },
+  test('uses FatSecret servings and its flagged default without rewriting labels', () => {
+    const normalized = normalizeFatSecretFood({
+      food_id: '42',
+      food_name: 'Protein Drink',
+      brand_name: 'Example Brand',
+      servings: {
+        serving: [
+          {
+            serving_id: 'a',
+            serving_description: '100 g',
+            metric_serving_amount: '100',
+            metric_serving_unit: 'g',
+            calories: '50',
+            protein: '10',
+            carbohydrate: '2',
+            fat: '1',
+          },
+          {
+            serving_id: 'b',
+            serving_description: '1 bottle',
+            metric_serving_amount: '340',
+            metric_serving_unit: 'g',
+            is_default: '1',
+            calories: '170',
+            protein: '34',
+            carbohydrate: '6.8',
+            fat: '3.4',
+          },
+        ],
+      },
+    });
+    expect(normalized.id).toBe('fs:42');
+    expect(normalized.defaultPortionId).toBe('fs-serving:b');
+    expect(normalized.portions.map(({ id, label }) => ({ id, label }))).toEqual([
+      { id: 'fs-serving:a', label: '100 g' },
+      { id: 'fs-serving:b', label: '1 bottle' },
     ]);
-    expect(results.map((food) => food.code)).toEqual(['first', 'pasteurized', 'dozen', 'medium', 'small']);
+    expect(nutritionFor(normalized, 'fs-serving:b', 1)).toEqual({
+      calories: 170,
+      protein: 34,
+      carbs: 6.8,
+      fat: 3.4,
+    });
+  });
+  test('preserves FatSecret search order, names, brands, and duplicate names', () => {
+    expect(
+      mapFatSecretSearchFoods([
+        { food_id: '7', food_name: 'EGG', brand_name: 'First Brand' },
+        { food_id: '8', food_name: 'EGG', brand_name: 'Second Brand' },
+        { food_id: '9', food_name: 'Egg, cooked' },
+      ]),
+    ).toEqual([
+      { id: 'fs:7', name: 'EGG', brand: 'First Brand' },
+      { id: 'fs:8', name: 'EGG', brand: 'Second Brand' },
+      { id: 'fs:9', name: 'Egg, cooked', brand: undefined },
+    ]);
   });
   test('pace is based on total time over distance', () => {
     expect(pace(1800, 1609.344 * 3)).toBe('10:00');
