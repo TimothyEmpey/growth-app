@@ -149,8 +149,6 @@ async function openFoodFacts(url: URL, env: Env) {
   return response.json();
 }
 
-let fatSecretToken: { value: string; expiresAt: number } | null = null;
-
 export function fatSecretConfigured(env: Env) {
   return !!(env.FATSECRET_CLIENT_ID && env.FATSECRET_CLIENT_SECRET);
 }
@@ -163,53 +161,53 @@ export function mapFatSecretSearchFoods(foods: FatSecretSearchFood[]): FoodSearc
   }));
 }
 
-async function accessToken(env: Env, force = false) {
+const oauthEncode = (value: string) =>
+  encodeURIComponent(value).replace(/[!'()*]/g, (character) =>
+    `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+
+async function oauthSignature(params: Record<string, string>, env: Env) {
   if (!fatSecretConfigured(env))
     throw new ServiceError('Food search is not configured.', 503);
-  if (!force && fatSecretToken && fatSecretToken.expiresAt > now() + 60)
-    return fatSecretToken.value;
-  const credentials = btoa(`${env.FATSECRET_CLIENT_ID}:${env.FATSECRET_CLIENT_SECRET}`);
-  const response = await fetch('https://oauth.fatsecret.com/connect/token', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({ grant_type: 'client_credentials', scope: 'basic' }),
-    signal: AbortSignal.timeout(15_000),
-  });
-  const result = (await response.json().catch(() => ({}))) as {
-    access_token?: string;
-    expires_in?: number;
-  };
-  if (!response.ok || !result.access_token)
-    throw new ServiceError('Food search authentication failed.', 502);
-  fatSecretToken = {
-    value: result.access_token,
-    expiresAt: now() + Math.max(60, Number(result.expires_in) || 3600),
-  };
-  return fatSecretToken.value;
+  const normalized = Object.entries(params)
+    .map(([key, value]) => [oauthEncode(key), oauthEncode(value)] as const)
+    .sort(([leftKey, leftValue], [rightKey, rightValue]) =>
+      leftKey === rightKey ? leftValue.localeCompare(rightValue) : leftKey.localeCompare(rightKey),
+    )
+    .map(([key, value]) => `${key}=${value}`)
+    .join('&');
+  const base = `GET&${oauthEncode('https://platform.fatsecret.com/rest/server.api')}&${oauthEncode(normalized)}`;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(`${oauthEncode(env.FATSECRET_CLIENT_SECRET!)}&`),
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign'],
+  );
+  const bytes = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(base)));
+  return btoa(String.fromCharCode(...bytes));
 }
 
-async function fatSecretGet<T>(path: string, params: Record<string, string>, env: Env): Promise<T> {
-  const request = async (forceToken = false) => {
-    const url = new URL(`https://platform.fatsecret.com${path}`);
-    for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-    url.searchParams.set('format', 'json');
-    return fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${await accessToken(env, forceToken)}`,
-      },
-      signal: AbortSignal.timeout(15_000),
-    });
+async function fatSecretGet<T>(method: string, input: Record<string, string>, env: Env): Promise<T> {
+  if (!fatSecretConfigured(env))
+    throw new ServiceError('Food search is not configured.', 503);
+  const params: Record<string, string> = {
+    ...input,
+    format: 'json',
+    method,
+    oauth_consumer_key: env.FATSECRET_CLIENT_ID!,
+    oauth_nonce: crypto.randomUUID().replaceAll('-', ''),
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_timestamp: String(Math.floor(Date.now() / 1000)),
+    oauth_version: '1.0',
   };
-  let response = await request();
-  if (response.status === 401) {
-    fatSecretToken = null;
-    response = await request(true);
-  }
+  params.oauth_signature = await oauthSignature(params, env);
+  const url = new URL('https://platform.fatsecret.com/rest/server.api');
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  const response = await fetch(url, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(15_000),
+  });
   if (response.status === 429)
     throw new ServiceError(
       'Food search has reached its request limit. Please try again later.',
@@ -253,7 +251,7 @@ export function searchFoods(query: string, page: number, env: Env) {
         page_number?: string | number;
       };
     }>(
-      '/rest/foods/search/v1',
+      'foods.search',
       { search_expression: query, page_number: String(page - 1), max_results: '10' },
       env,
     );
@@ -275,7 +273,7 @@ async function fatSecretFoodDetail(id: string, env: Env) {
     throw new ServiceError('This food is no longer available. Please search again.', 404);
   return cached(`food-detail:fatsecret:v2:${foodId}`, env, async () => {
     const result = await fatSecretGet<{ food?: FatSecretFood }>(
-      '/rest/food/v2',
+      'food.get.v2',
       { food_id: foodId },
       env,
     );
