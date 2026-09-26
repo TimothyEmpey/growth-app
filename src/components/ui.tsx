@@ -159,7 +159,7 @@ export function FatSecretAttribution() {
       onPress={() => void Linking.openURL('https://platform.fatsecret.com')}
       style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}
     >
-      <Text style={{ color: C.muted, fontSize: 12, textDecorationLine: 'underline' }}>
+      <Text style={{ color: C.blue, fontSize: 12, textDecorationLine: 'underline' }}>
         Powered by fatsecret Platform API
       </Text>
     </Pressable>

@@ -53,8 +53,8 @@ input {
   html,
   body,
   #root {
-    height: 100dvh !important;
-    min-height: 0;
+    height: 100vh !important;
+    min-height: 100vh;
   }
   #growth-standalone-tab-bar {
     position: fixed !important;
@@ -62,7 +62,6 @@ input {
   }
 }
 .growth-dialog-overlay {
-  overscroll-behavior: none;
   position: fixed;
   inset: 0;
   display: flex;
@@ -72,8 +71,6 @@ input {
   background: #000000aa;
 }
 .growth-dialog {
-  overscroll-behavior: contain;
-  position: relative;
   display: flex;
   width: min(600px, 100%);
   height: min(800px, 85dvh);
@@ -83,41 +80,6 @@ input {
   border-radius: 22px;
   background: var(--growth-surface, #191c22);
   box-shadow: 0 24px 100px #00000080;
-  transition: transform 180ms ease-out;
-}
-.growth-dialog * {
-  overscroll-behavior-y: contain;
-}
-.growth-swipe-page {
-  view-transition-name: growth-page;
-  animation: growth-page-enter 180ms ease-out;
-}
-::view-transition-old(growth-page) {
-  animation: growth-page-out 220ms ease-out both;
-}
-::view-transition-new(growth-page) {
-  animation: growth-page-in 220ms ease-out both;
-}
-@keyframes growth-page-out {
-  to {
-    transform: translateX(calc(var(--growth-swipe-direction, 1) * -100%));
-  }
-}
-@keyframes growth-page-in {
-  from {
-    transform: translateX(calc(var(--growth-swipe-direction, 1) * 100%));
-  }
-}
-@keyframes growth-page-enter {
-  from {
-    opacity: 0.6;
-  }
-  to {
-    opacity: 1;
-  }
-}
-.growth-dialog-drag-handle {
-  display: none;
 }
 @media (max-width: 640px) {
   .growth-dialog-overlay {
@@ -128,24 +90,6 @@ input {
     width: 100%;
     height: 90dvh;
     border-radius: 22px 22px 0 0;
-  }
-  .growth-dialog-drag-handle {
-    position: absolute;
-    z-index: 2;
-    top: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    height: 28px;
-    align-items: center;
-    justify-content: center;
-    touch-action: none;
-  }
-  .growth-dialog-drag-handle span {
-    width: 38px;
-    height: 5px;
-    border-radius: 999px;
-    background: var(--growth-border, #30353f);
   }
 }
 @media (prefers-reduced-motion: reduce) {

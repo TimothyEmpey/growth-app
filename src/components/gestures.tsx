@@ -17,8 +17,9 @@ const DELETE_SWIPE_DISTANCE = 96;
 export function MainPageSwipe({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const routeIndex = MAIN_ROUTES.indexOf(pathname as (typeof MAIN_ROUTES)[number]);
+  const enabled = process.env.EXPO_OS !== 'web' && routeIndex >= 0;
   const gesture = Gesture.Pan()
-    .enabled(routeIndex >= 0)
+    .enabled(enabled)
     .activeOffsetX([-18, 18])
     .failOffsetY([-16, 16])
     .runOnJS(true)
@@ -48,7 +49,9 @@ export function SwipeToDelete({
 }) {
   const C = useColors();
   const offset = useSharedValue(0);
+  const enabled = process.env.EXPO_OS !== 'web';
   const gesture = Gesture.Pan()
+    .enabled(enabled)
     .activeOffsetX([-14, 14])
     .failOffsetY([-14, 14])
     .runOnJS(true)
@@ -67,6 +70,7 @@ export function SwipeToDelete({
     transform: [{ translateX: offset.value }],
   }));
 
+  if (!enabled) return children;
   return (
     <View
       accessibilityLabel={accessibilityLabel}
