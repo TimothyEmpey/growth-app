@@ -332,7 +332,7 @@ export function Page({
         <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <View style={{ gap: 9 }}>
             <Label>{eyebrow}</Label>
-            {process.env.EXPO_OS === 'web' && <Title size={34}>{title}</Title>}
+            {process.env.EXPO_OS === 'web' && width >= 850 && <Title size={34}>{title}</Title>}
           </View>
           {action}
         </Row>

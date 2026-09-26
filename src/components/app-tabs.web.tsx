@@ -1,7 +1,9 @@
 import { useAppearance, useColors } from '@/providers/appearance';
 import { Image } from 'expo-image';
 import { Tabs, TabList, TabTrigger, TabSlot, type TabTriggerSlotProps } from 'expo-router/ui';
+import { usePathname } from 'expo-router';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from './ui';
 
 function TabButton({
@@ -74,10 +76,40 @@ export default function AppTabs() {
   const C = useColors();
   const { preference } = useAppearance();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const path = usePathname();
   const compact = width < 850;
   const skinty = preference === 'skinty';
+  const title =
+    path === '/account'
+      ? 'Account'
+      : path === '/running'
+        ? 'Running'
+        : path === '/diet'
+          ? 'Diet'
+          : 'Lifting';
   return (
     <Tabs style={{ flex: 1, flexDirection: compact ? 'column' : 'row', backgroundColor: C.bg }}>
+      {compact && (
+        <View
+          style={{
+            minHeight: 56 + insets.top,
+            paddingTop: insets.top,
+            paddingHorizontal: 20,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: C.bg,
+            borderBottomWidth: 1,
+            borderColor: C.border,
+          }}
+        >
+          <Text style={{ color: C.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.8 }}>
+            Growth<Text style={{ color: C.blue }}>.</Text>
+          </Text>
+          <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>{title}</Text>
+        </View>
+      )}
       <TabList asChild>
         <View
           nativeID="growth-standalone-tab-bar"
