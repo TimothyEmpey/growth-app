@@ -436,6 +436,18 @@ test('untrusted origins, oversized bodies, and attempts to send recovery codes t
   expect(sent).toHaveLength(0);
 });
 
+test('journal sync accepts real journals larger than the generic account request limit', async () => {
+  const { call, env } = setup();
+  const token = await accountSession(env);
+  const journal = emptyJournal();
+  journal.exercises = Array.from({ length: 500 }, (_, index) => ({
+    id: `exercise-${index}`,
+    name: `Exercise ${index} with a descriptive custom name`,
+  }));
+  expect(JSON.stringify({ journal, baseRevision: 0 }).length).toBeGreaterThan(16_384);
+  expect((await call('/journal', { journal, baseRevision: 0 }, token)).response.status).toBe(200);
+});
+
 test('streak endpoint reads distinct run dates across the entire history, not a single page', async () => {
   const { env } = setup();
   await connection(env);

@@ -286,7 +286,8 @@ export default {
       if (request.method === 'POST' && !path.includes('/webhook/')) {
         if (!request.headers.get('Content-Type')?.includes('application/json'))
           throw new ServiceError('Expected a JSON request.');
-        if (Number(request.headers.get('Content-Length') ?? 0) > 16_384)
+        const maximumBodySize = path === '/api/account/journal' ? 2_000_000 : 16_384;
+        if (Number(request.headers.get('Content-Length') ?? 0) > maximumBodySize)
           throw new ServiceError('Request too large.', 413);
       }
       response = await route(request, env);
