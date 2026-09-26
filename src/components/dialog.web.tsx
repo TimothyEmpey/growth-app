@@ -18,6 +18,7 @@ export function Dialog({
   const dismiss = useRef(onDismiss);
   const drag = useRef<{ y: number; time: number } | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
+  const [dragging, setDragging] = useState(false);
   useEffect(() => {
     dismiss.current = onDismiss;
   }, [onDismiss]);
@@ -69,6 +70,7 @@ export function Dialog({
     const touch = event.touches[0];
     if (!touch) return;
     drag.current = { y: touch.clientY, time: performance.now() };
+    setDragging(true);
     setDragOffset(0);
   };
   const moveDrag = (event: TouchEvent<HTMLDivElement>) => {
@@ -83,8 +85,10 @@ export function Dialog({
     const distance = touch ? Math.max(0, touch.clientY - drag.current.y) : dragOffset;
     const elapsed = Math.max(1, performance.now() - drag.current.time);
     drag.current = null;
+    setDragging(false);
     if (distance >= DISMISS_DISTANCE || distance / elapsed >= DISMISS_VELOCITY) {
-      dismiss.current();
+      setDragOffset(window.innerHeight);
+      window.setTimeout(() => dismiss.current(), 180);
       return;
     }
     setDragOffset(0);
@@ -103,7 +107,10 @@ export function Dialog({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        style={{ transform: `translateY(${dragOffset}px)` }}
+        style={{
+          transform: `translateY(${dragOffset}px)`,
+          transition: dragging ? 'none' : undefined,
+        }}
       >
         <div
           className="growth-dialog-drag-handle"
@@ -113,6 +120,7 @@ export function Dialog({
           onTouchEnd={endDrag}
           onTouchCancel={() => {
             drag.current = null;
+            setDragging(false);
             setDragOffset(0);
           }}
         >
