@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { canScroll, reducedMotion, TOUCH_CONTROLS } from './touch.web';
 
 const DISMISS_DISTANCE = 110;
 const DISMISS_VELOCITY = 0.55;
@@ -16,12 +17,100 @@ export function Dialog({
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const dismiss = useRef(onDismiss);
-  const drag = useRef<{ y: number; time: number } | null>(null);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [dragging, setDragging] = useState(false);
   useEffect(() => {
     dismiss.current = onDismiss;
   }, [onDismiss]);
+  useEffect(() => {
+    const element = dialog.current!;
+    const overlay = element.parentElement!;
+    let start: { x: number; y: number; time: number; target: Element; dragging: boolean } | null =
+      null;
+    let offset = 0;
+    let closing = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const reset = () => {
+      start = null;
+      offset = 0;
+      element.style.transition = '';
+      element.style.transform = '';
+    };
+    const begin = (event: TouchEvent) => {
+      if (closing || event.touches.length !== 1) return;
+      const target = event.target as Element;
+      const point = event.touches[0];
+      start = {
+        x: point.clientX,
+        y: point.clientY,
+        time: performance.now(),
+        target,
+        dragging: false,
+      };
+    };
+    const move = (event: TouchEvent) => {
+      if (!start || event.touches.length !== 1) return;
+      const point = event.touches[0];
+      const dy = point.clientY - start.y;
+      const dx = point.clientX - start.x;
+      // Let sheet content scroll first. At its top, a downward pull owns the sheet.
+      if (!start.dragging && canScroll(start.target, element, dy)) {
+        start.y = point.clientY;
+        start.x = point.clientX;
+        start.time = performance.now();
+        return;
+      }
+      if (
+        !start.dragging &&
+        (start.target.closest(TOUCH_CONTROLS) || Math.abs(dx) > Math.abs(dy))
+      ) {
+        if (!canScroll(start.target, element, dy) && event.cancelable) event.preventDefault();
+        return;
+      }
+      if (dy > 8 || start.dragging) {
+        if (event.cancelable) event.preventDefault();
+        start.dragging = true;
+        offset = Math.max(0, dy);
+        element.style.transition = 'none';
+        element.style.transform = `translate3d(0,${offset}px,0)`;
+      } else if (!canScroll(start.target, element, dy) && event.cancelable) event.preventDefault();
+    };
+    const end = () => {
+      if (
+        start?.dragging &&
+        (offset > DISMISS_DISTANCE ||
+          (offset > 35 && offset / Math.max(1, performance.now() - start.time) > DISMISS_VELOCITY))
+      ) {
+        closing = true;
+        start = null;
+        element.style.transition = '';
+        element.style.transform = `translate3d(0,${window.innerHeight}px,0)`;
+        timer = setTimeout(() => dismiss.current(), reducedMotion() ? 0 : 180);
+      } else reset();
+    };
+    const blockBackground = (event: TouchEvent) => {
+      if (!element.contains(event.target as Node) && event.cancelable) event.preventDefault();
+    };
+    const blockWheel = (event: WheelEvent) => {
+      if (!canScroll(event.target as Element, element, -event.deltaY)) event.preventDefault();
+    };
+    overlay.addEventListener('touchstart', begin, { passive: true });
+    overlay.addEventListener('touchmove', move, { passive: false });
+    overlay.addEventListener('touchend', end);
+    overlay.addEventListener('touchcancel', reset);
+    document.addEventListener('touchmove', blockBackground, { passive: false });
+    overlay.addEventListener('wheel', blockWheel, { passive: false });
+    return () => {
+      if (timer) clearTimeout(timer);
+      document.body.style.overflow = previousOverflow;
+      overlay.removeEventListener('touchstart', begin);
+      overlay.removeEventListener('touchmove', move);
+      overlay.removeEventListener('touchend', end);
+      overlay.removeEventListener('touchcancel', reset);
+      document.removeEventListener('touchmove', blockBackground);
+      overlay.removeEventListener('wheel', blockWheel);
+    };
+  }, []);
   useEffect(() => {
     const element = dialog.current!;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -66,33 +155,6 @@ export function Dialog({
       if (previous && !element.contains(previous)) requestAnimationFrame(() => previous.focus());
     };
   }, []);
-  const startDrag = (event: TouchEvent<HTMLDivElement>) => {
-    const touch = event.touches[0];
-    if (!touch) return;
-    drag.current = { y: touch.clientY, time: performance.now() };
-    setDragging(true);
-    setDragOffset(0);
-  };
-  const moveDrag = (event: TouchEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    const touch = event.touches[0];
-    if (!touch) return;
-    setDragOffset(Math.max(0, touch.clientY - drag.current.y));
-  };
-  const endDrag = (event: TouchEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    const touch = event.changedTouches[0];
-    const distance = touch ? Math.max(0, touch.clientY - drag.current.y) : dragOffset;
-    const elapsed = Math.max(1, performance.now() - drag.current.time);
-    drag.current = null;
-    setDragging(false);
-    if (distance >= DISMISS_DISTANCE || distance / elapsed >= DISMISS_VELOCITY) {
-      setDragOffset(window.innerHeight);
-      window.setTimeout(() => dismiss.current(), 180);
-      return;
-    }
-    setDragOffset(0);
-  };
   return (
     <div
       className="growth-dialog-overlay"
@@ -107,23 +169,8 @@ export function Dialog({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        style={{
-          transform: `translateY(${dragOffset}px)`,
-          transition: dragging ? 'none' : undefined,
-        }}
       >
-        <div
-          className="growth-dialog-drag-handle"
-          aria-hidden="true"
-          onTouchStart={startDrag}
-          onTouchMove={moveDrag}
-          onTouchEnd={endDrag}
-          onTouchCancel={() => {
-            drag.current = null;
-            setDragging(false);
-            setDragOffset(0);
-          }}
-        >
+        <div className="growth-dialog-drag-handle" aria-hidden="true">
           <span />
         </div>
         {children}

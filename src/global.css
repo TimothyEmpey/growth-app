@@ -53,8 +53,8 @@ input {
   html,
   body,
   #root {
-    height: 100vh !important;
-    min-height: 100vh;
+    height: 100dvh !important;
+    min-height: 0;
   }
   #growth-standalone-tab-bar {
     position: fixed !important;
@@ -62,6 +62,7 @@ input {
   }
 }
 .growth-dialog-overlay {
+  overscroll-behavior: none;
   position: fixed;
   inset: 0;
   display: flex;
@@ -71,6 +72,7 @@ input {
   background: #000000aa;
 }
 .growth-dialog {
+  overscroll-behavior: contain;
   position: relative;
   display: flex;
   width: min(600px, 100%);
@@ -82,6 +84,37 @@ input {
   background: var(--growth-surface, #191c22);
   box-shadow: 0 24px 100px #00000080;
   transition: transform 180ms ease-out;
+}
+.growth-dialog * {
+  overscroll-behavior-y: contain;
+}
+.growth-swipe-page {
+  view-transition-name: growth-page;
+  animation: growth-page-enter 180ms ease-out;
+}
+::view-transition-old(growth-page) {
+  animation: growth-page-out 220ms ease-out both;
+}
+::view-transition-new(growth-page) {
+  animation: growth-page-in 220ms ease-out both;
+}
+@keyframes growth-page-out {
+  to {
+    transform: translateX(calc(var(--growth-swipe-direction, 1) * -100%));
+  }
+}
+@keyframes growth-page-in {
+  from {
+    transform: translateX(calc(var(--growth-swipe-direction, 1) * 100%));
+  }
+}
+@keyframes growth-page-enter {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .growth-dialog-drag-handle {
   display: none;

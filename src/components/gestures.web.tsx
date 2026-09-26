@@ -1,6 +1,14 @@
 import { useColors } from '@/providers/appearance';
 import { router, usePathname } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type TouchEvent,
+} from 'react';
+import { reducedMotion, TOUCH_CONTROLS } from './touch.web';
 
 const MAIN_ROUTES = ['/', '/running', '/diet', '/account'] as const;
 const PAGE_SWIPE_DISTANCE = 70;
@@ -29,15 +37,13 @@ export function MainPageSwipe({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const routeIndex = MAIN_ROUTES.indexOf(pathname as (typeof MAIN_ROUTES)[number]);
   const touch = useRef<Touch | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
+  useLayoutEffect(() => {
+    setOffset(0);
+    setDragging(false);
+    touch.current = null;
+  }, [pathname]);
 
   const finish = (event: TouchEvent<HTMLDivElement>) => {
     const start = touch.current;
@@ -59,22 +65,49 @@ export function MainPageSwipe({ children }: { children: ReactNode }) {
       setOffset(0);
       return;
     }
-    setOffset(distance < 0 ? -window.innerWidth : window.innerWidth);
-    timer.current = setTimeout(() => router.replace(MAIN_ROUTES[nextIndex]), 150);
+    // Browser snapshots bridge the route change without an empty frame between pages.
+    setOffset(0);
+    const navigate = async () => {
+      router.replace(MAIN_ROUTES[nextIndex]);
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    };
+    if (document.startViewTransition && !reducedMotion()) {
+      document.documentElement.style.setProperty(
+        '--growth-swipe-direction',
+        distance < 0 ? '1' : '-1',
+      );
+      document.startViewTransition(navigate);
+    } else void navigate();
   };
 
   return (
     <div
+      className="growth-swipe-page"
       style={{
-        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
         overflow: 'hidden',
         touchAction: 'pan-y',
         transform: `translateX(${offset}px)`,
-        transition: dragging ? 'none' : 'transform 150ms ease-out',
+        transition:
+          dragging || (typeof window !== 'undefined' && reducedMotion())
+            ? 'none'
+            : 'transform 180ms ease-out',
       }}
       onTouchStart={(event) => {
         const point = event.touches[0];
-        if (!point || routeIndex < 0) return;
+        if (
+          !point ||
+          routeIndex < 0 ||
+          event.touches.length !== 1 ||
+          document.querySelector('[role="dialog"]') ||
+          (event.target as Element).closest(`${TOUCH_CONTROLS},[data-swipe-item]`)
+        )
+          return;
         touch.current = { x: point.clientX, y: point.clientY, time: performance.now() };
       }}
       onTouchMove={(event) => {
@@ -82,7 +115,10 @@ export function MainPageSwipe({ children }: { children: ReactNode }) {
         const movement = direction(touch.current, event);
         if (movement?.axis !== 'horizontal') return;
         setDragging(true);
-        setOffset(movement.x);
+        const atEdge =
+          (routeIndex === 0 && movement.x > 0) ||
+          (routeIndex === MAIN_ROUTES.length - 1 && movement.x < 0);
+        setOffset(movement.x * (atEdge ? 0.12 : 0.35));
       }}
       onTouchEnd={finish}
       onTouchCancel={() => {
@@ -136,6 +172,7 @@ export function SwipeToDelete({
 
   return (
     <div
+      data-swipe-item="true"
       aria-label={accessibilityLabel}
       style={{ overflow: 'hidden', position: 'relative', touchAction: 'pan-y' }}
       onTouchStart={(event) => {
