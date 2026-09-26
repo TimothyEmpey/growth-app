@@ -2,14 +2,14 @@
   "expo": {
     "name": "Growth",
     "slug": "Growth",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./public/icons/icon-512.png",
     "scheme": "growth",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.timempey.growth",
-      "icon": "./assets/expo.icon",
+      "icon": "./public/icons/icon-512.png",
       "config": {
         "usesNonExemptEncryption": false
       }
