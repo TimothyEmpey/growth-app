@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import type { ImageStyle, StyleProp } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 
 export type ServiceName = 'appleHealth' | 'strava' | 'nikeRunClub';
 
@@ -16,14 +16,22 @@ export function ServiceLogo({
 }: {
   service: ServiceName;
   size?: number;
-  style?: StyleProp<ImageStyle>;
+  style?: StyleProp<ViewStyle>;
 }) {
+  const radius = Math.round(size * 0.22);
   return (
-    <Image
-      source={sources[service]}
-      accessibilityLabel={`${service === 'appleHealth' ? 'Apple Health' : service === 'nikeRunClub' ? 'Nike Run Club' : 'Strava'} logo`}
-      contentFit="contain"
-      style={[{ width: size, height: size, borderRadius: Math.round(size * 0.22) }, style]}
-    />
+    <View style={[{ width: size, height: size, borderRadius: radius, overflow: 'hidden' }, style]}>
+      <Image
+        source={sources[service]}
+        accessibilityLabel={`${service === 'appleHealth' ? 'Apple Health' : service === 'nikeRunClub' ? 'Nike Run Club' : 'Strava'} logo`}
+        contentFit="contain"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          transform: service === 'strava' ? [{ scale: 1.13 }] : undefined,
+        }}
+      />
+    </View>
   );
 }

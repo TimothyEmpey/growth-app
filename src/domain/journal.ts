@@ -170,7 +170,8 @@ export function weightsForChart(entries: WeightEntry[], period: Period): ChartWe
   // Aggregation changes only the plotted points; the underlying journal remains untouched.
   return [...buckets.entries()].map(([key, values]) => ({
     id: `average:${period}:${key}`,
-    date: values.at(-1)!.date,
+    // Anchor averages to their calendar bucket so chart spacing does not depend on log day.
+    date: period === 'All' ? `${key}-01-01` : `${key}-01`,
     pounds: values.reduce((total, entry) => total + entry.pounds, 0) / values.length,
     count: values.length,
     periodLabel:

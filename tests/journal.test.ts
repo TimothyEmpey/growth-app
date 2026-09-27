@@ -99,7 +99,14 @@ describe('journal dates and records', () => {
     expect(yearlyView).toHaveLength(3);
     expect(yearlyView[0].pounds).toBeCloseTo(178.33, 2);
     expect(yearlyView.slice(1).map((entry) => entry.pounds)).toEqual([176, 175]);
-    expect(weightsForChart(entries, 'All').map((entry) => entry.pounds)).toEqual([177.75, 175]);
+    expect(yearlyView.map((entry) => entry.date)).toEqual([
+      '2024-01-01',
+      '2024-02-01',
+      '2025-01-01',
+    ]);
+    const allView = weightsForChart(entries, 'All');
+    expect(allView.map((entry) => entry.pounds)).toEqual([177.75, 175]);
+    expect(allView.map((entry) => entry.date)).toEqual(['2024-01-01', '2025-01-01']);
     expect(entries[0]).toEqual({ id: 'first', date: '2024-01-01', pounds: 180 });
   });
   test('latest dated max wins, with backdates and same-day corrections', () => {

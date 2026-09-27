@@ -60,12 +60,18 @@ export function WeightChart({
   const pad = Math.max(2, (max - min) * 0.2),
     low = min - pad,
     high = max + pad;
-  const start = parseDate(points[0].date).getTime(),
-    end = parseDate(points[points.length - 1].date).getTime();
+  const horizontalPosition = (entry: WeightEntry) => {
+    const year = Number(entry.date.slice(0, 4));
+    if (period === 'All') return year;
+    if (period === 'Year') return year * 12 + Number(entry.date.slice(5, 7)) - 1;
+    return parseDate(entry.date).getTime();
+  };
+  const start = horizontalPosition(points[0]),
+    end = horizontalPosition(points[points.length - 1]);
   const x = (e: WeightEntry) =>
     start === end
       ? (left + right) / 2
-      : left + ((parseDate(e.date).getTime() - start) / (end - start)) * (right - left);
+      : left + ((horizontalPosition(e) - start) / (end - start)) * (right - left);
   const y = (e: WeightEntry) => bottom - ((e.pounds - low) / (high - low)) * (bottom - top);
   const line = points.map((e, i) => `${i ? 'L' : 'M'}${x(e)},${y(e)}`).join(' ');
   return (
