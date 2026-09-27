@@ -14,7 +14,8 @@
         "com.apple.developer.healthkit": true
       },
       "infoPlist": {
-        "NSHealthShareUsageDescription": "Growth reads running workouts and body-weight measurements you choose to import from Apple Health."
+        "NSHealthShareUsageDescription": "Growth reads running workouts and body-weight measurements you choose to import from Apple Health.",
+        "NSHealthUpdateUsageDescription": "Growth does not write data to Apple Health; this description supports its read-only HealthKit integration."
       },
       "config": {
         "usesNonExemptEncryption": false
