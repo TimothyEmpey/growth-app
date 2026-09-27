@@ -3,6 +3,8 @@ import { NativeModule, requireNativeModule } from 'expo';
 export type HealthRun = {
   id: string;
   title: string;
+  sourceName: string;
+  sourceBundleIdentifier: string;
   date: string;
   distanceMeters: number;
   movingSeconds: number;

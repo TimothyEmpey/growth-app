@@ -1,15 +1,18 @@
 import { Pressable, Text, View } from 'react-native';
+import type { ReactNode } from 'react';
 import { Body, Icon, Row, type IconName } from './ui';
 import { useColors } from '@/providers/appearance';
 export function SettingsRow({
   title,
   detail,
   icon,
+  leading,
   onPress,
 }: {
   title: string;
   detail: string;
   icon: IconName;
+  leading?: ReactNode;
   onPress: () => void;
 }) {
   const C = useColors();
@@ -25,18 +28,20 @@ export function SettingsRow({
       })}
     >
       <Row>
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            backgroundColor: C.elevated,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Icon name={icon} color={C.blue} />
-        </View>
+        {leading ?? (
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              backgroundColor: C.elevated,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Icon name={icon} color={C.blue} />
+          </View>
+        )}
         <View style={{ flex: 1, gap: 5 }}>
           <Text style={{ color: C.text, fontWeight: '600', fontSize: 17 }}>{title}</Text>
           <Body>{detail}</Body>

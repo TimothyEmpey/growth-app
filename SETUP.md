@@ -119,6 +119,8 @@ Apple Health is implemented through the local `growth-health` Expo module. Expo 
 
 Apple Health is unavailable in Expo Go and requires a development, preview, or production build on a physical iPhone. In Growth, open **Account → Connections → Apple Health** to approve workout access or import weight history. The import copies the latest body-weight measurement from each local calendar day into the Growth journal. A manually entered Growth weight is kept when the same date already exists.
 
+Nike Run Club has no public third-party account OAuth flow. Growth imports NRC workouts through Apple Health using the source app recorded by HealthKit. Enable NRC sharing at iPhone Settings → Privacy & Security → Health → Nike Run Club, then open Account → Connections → Nike Run Club in Growth. Duplicate priority is Strava, then Nike Run Club, then generic Apple Health.
+
 Before App Store submission, enable the HealthKit capability for `com.timempey.growth` if Apple does not enable it automatically during EAS credential setup. In App Store Connect, disclose Health and Fitness data according to `docs/APP_STORE_SUBMISSION.md`, and explain the read-only flows in App Review notes.
 
 ## 7. Test iPhone sign-in

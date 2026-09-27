@@ -13,6 +13,8 @@ import {
   positive,
   positiveAtMost,
   putWeight,
+  recipeAsFood,
+  recipeNutrition,
   importHealthWeights,
   shiftDay,
   sortLifts,
@@ -23,7 +25,7 @@ import {
   weightsForChart,
 } from '../src/domain/journal';
 import { sanitizeNumericInput } from '../src/domain/input';
-import type { Food } from '../src/domain/types';
+import type { Food, Recipe } from '../src/domain/types';
 import {
   mapFatSecretSearchFoods,
   normalizeFatSecretFood,
@@ -79,7 +81,7 @@ describe('journal dates and records', () => {
       { id: 'apple-health:c', date: '2024-01-02', pounds: 177, timestamp: 3 },
     ]);
   });
-  test('weight chart aggregation averages weeks, months, and years without changing entries', () => {
+  test('weight chart aggregation keeps short views and averages months and years', () => {
     const entries = [
       { id: 'first', date: '2024-01-01', pounds: 180 },
       { id: 'same-week', date: '2024-01-03', pounds: 178 },
@@ -91,7 +93,7 @@ describe('journal dates and records', () => {
       180, 178, 177, 176, 175,
     ]);
     expect(weightsForChart(entries, 'Month').map((entry) => entry.pounds)).toEqual([
-      179, 177, 176, 175,
+      180, 178, 177, 176, 175,
     ]);
     const yearlyView = weightsForChart(entries, 'Year');
     expect(yearlyView).toHaveLength(3);
@@ -149,6 +151,12 @@ describe('journal dates and records', () => {
     expect(() => positiveAtMost('5001', 5000, 'weight')).toThrow('no greater than 5000');
   });
 
+  test('older journals gain an empty recipe collection during migration', () => {
+    const legacy = emptyJournal() as Partial<ReturnType<typeof emptyJournal>>;
+    delete legacy.recipes;
+    expect(migrateJournal(legacy).recipes).toEqual([]);
+  });
+
   test('numeric input removes invalid characters and refuses oversized values', () => {
     expect(sanitizeNumericInput('12lb.34', 100, 1)).toBe('12.3');
     expect(sanitizeNumericInput('72,5', 300, 1)).toBe('72.5');
@@ -159,6 +167,45 @@ describe('journal dates and records', () => {
   });
 });
 describe('nutrition calculations', () => {
+  test('recipes total ingredient snapshots and scale nutrition per serving', () => {
+    const recipe: Recipe = {
+      id: 'smoothie',
+      name: 'Morning smoothie',
+      servings: 2,
+      saved: true,
+      ingredients: [
+        {
+          id: 'oats',
+          food,
+          portionId: 'cup',
+          quantity: 1,
+          nutrition: { calories: 304, protein: 10.4, carbs: 54.4, fat: 5.6 },
+        },
+        {
+          id: 'milk',
+          food: { ...food, id: 'milk', name: 'Milk' },
+          portionId: 'grams',
+          quantity: 100,
+          nutrition: { calories: 120, protein: 8, carbs: 12, fat: 4 },
+        },
+      ],
+    };
+    expect(recipeNutrition(recipe)).toEqual({
+      calories: 424,
+      protein: 18.4,
+      carbs: 66.4,
+      fat: 9.6,
+    });
+    const recipeFood = recipeAsFood(recipe);
+    expect(recipeFood.portions[0].nutrition).toEqual({
+      calories: 212,
+      protein: 9.2,
+      carbs: 33.2,
+      fat: 4.8,
+    });
+    expect(nutritionFor(recipeFood, 'serving', 1.5).calories).toBe(318);
+  });
+
   test('condenses serving quantities into readable portions', () => {
     expect(formatServingAmount(1.5, '1 medium banana (118 g)')).toBe('1.5 medium banana');
     expect(formatServingAmount(100, '1 gram')).toBe('100 grams');

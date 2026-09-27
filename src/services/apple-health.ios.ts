@@ -14,12 +14,15 @@ function isoRange(start: string, end: string) {
 }
 
 function normalizeRun(run: HealthRun): Run {
+  const nikeRunClub = `${run.title} ${run.sourceName} ${run.sourceBundleIdentifier}`
+    .toLowerCase()
+    .includes('nike');
   return {
     ...run,
     id: `apple-health:${run.id}`,
     localDate: today(new Date(run.date)),
     sport: 'Run',
-    source: 'appleHealth',
+    source: nikeRunClub ? 'nikeRunClub' : 'appleHealth',
   };
 }
 

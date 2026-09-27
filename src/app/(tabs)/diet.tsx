@@ -8,6 +8,7 @@ import {
   formatDate,
   formatFoodLabel,
   formatServingAmount,
+  newId,
   shiftDay,
   sumNutrition,
   today,
@@ -191,6 +192,24 @@ export default function DietPage() {
         </Row>
         {!goal && <Body>Set your own daily goals whenever you’re ready.</Body>}
       </Card>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <View style={{ gap: 5, flex: 1 }}>
+          <Title size={20}>Recipes</Title>
+          <Body>Save combinations you make often.</Body>
+        </View>
+        <Button
+          quiet
+          icon="plus"
+          onPress={() => {
+            const id = newId();
+            void updateJournal((next) => {
+              next.recipes.push({ id, name: '', servings: 1, ingredients: [], saved: false });
+            }).then(() => router.push({ pathname: '/recipe', params: { id } }));
+          }}
+        >
+          Create recipe
+        </Button>
+      </Row>
       <View style={{ gap: 14 }}>
         {MEALS.map((meal, index) => {
           const foods = entries.filter((e) => e.meal === meal);

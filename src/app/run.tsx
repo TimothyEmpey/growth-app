@@ -9,15 +9,18 @@ import type { Run } from '@/domain/types';
 import { duration, formatDate, pace } from '@/domain/journal';
 import { Body, Button, Card, Label, Notice, Row, Sheet, Title } from '@/components/ui';
 import { getAppleHealthRun } from '@/services/apple-health';
+import { ServiceLogo } from '@/components/service-logo';
 
 export default function RunSheet() {
   const C = useColors();
   const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
-  const appleHealth = source === 'appleHealth';
+  const healthRun = source === 'appleHealth' || source === 'nikeRunClub';
+  const provider =
+    source === 'nikeRunClub' ? 'Nike Run Club' : healthRun ? 'Apple Health' : 'Strava';
   const query = useQuery({
     queryKey: ['run', source ?? 'strava', id],
     queryFn: ({ signal }) =>
-      appleHealth
+      healthRun
         ? getAppleHealthRun(id).then((run) => {
             if (!run) throw new Error('This run is no longer available in Apple Health.');
             return run;
@@ -33,7 +36,7 @@ export default function RunSheet() {
   return (
     <Sheet
       title={run?.title ?? 'Run details'}
-      subtitle={run ? formatDate(run.localDate) : appleHealth ? 'From Apple Health' : 'From Strava'}
+      subtitle={run ? formatDate(run.localDate) : `From ${provider}`}
     >
       {query.isPending && <ActivityIndicator color={C.blue} />}
       {query.error && (
@@ -46,6 +49,15 @@ export default function RunSheet() {
       )}
       {run && (
         <>
+          <Row>
+            <ServiceLogo
+              service={
+                source === 'nikeRunClub' ? 'nikeRunClub' : healthRun ? 'appleHealth' : 'strava'
+              }
+              size={38}
+            />
+            <Label>{provider}</Label>
+          </Row>
           <Card style={{ backgroundColor: C.bg }}>
             <Row style={{ flexWrap: 'wrap', justifyContent: 'space-between', gap: 24 }}>
               {[
@@ -101,11 +113,10 @@ export default function RunSheet() {
             ))
           ) : (
             <Body>
-              {appleHealth ? 'Apple Health' : 'Strava'} hasn’t provided{' '}
-              {metric ? 'kilometer' : 'mile'} splits for this run.
+              {provider} hasn’t provided {metric ? 'kilometer' : 'mile'} splits for this run.
             </Body>
           )}
-          {!appleHealth && (
+          {!healthRun && (
             <Button
               quiet
               icon="arrow"

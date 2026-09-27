@@ -9,6 +9,7 @@ import type {
   Period,
   RepCount,
   RepFilter,
+  Recipe,
   WeightEntry,
 } from './types';
 
@@ -150,7 +151,7 @@ export function importHealthWeights(
 export type ChartWeightPoint = WeightEntry & { periodLabel: string; count: number };
 
 export function weightsForChart(entries: WeightEntry[], period: Period): ChartWeightPoint[] {
-  if (period === 'Week')
+  if (period === 'Week' || period === 'Month')
     return entries.map((entry) => ({
       ...entry,
       periodLabel: formatDate(entry.date),
@@ -159,9 +160,7 @@ export function weightsForChart(entries: WeightEntry[], period: Period): ChartWe
   const bucketFor = (entry: WeightEntry) => {
     if (period === 'All') return entry.date.slice(0, 4);
     if (period === 'Year') return entry.date.slice(0, 7);
-    const date = parseDate(entry.date);
-    date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-    return today(date);
+    return entry.date.slice(0, 7);
   };
   const buckets = new Map<string, WeightEntry[]>();
   for (const entry of entries) {
@@ -175,11 +174,7 @@ export function weightsForChart(entries: WeightEntry[], period: Period): ChartWe
     pounds: values.reduce((total, entry) => total + entry.pounds, 0) / values.length,
     count: values.length,
     periodLabel:
-      period === 'All'
-        ? key
-        : period === 'Year'
-          ? formatDate(`${key}-01`, { month: 'long', year: 'numeric' })
-          : `Week of ${formatDate(key, { month: 'short', day: 'numeric' })}`,
+      period === 'All' ? key : formatDate(`${key}-01`, { month: 'long', year: 'numeric' }),
   }));
 }
 export function nutritionFor(food: Food, portionId: string, quantity: number): Nutrition {
@@ -204,6 +199,25 @@ export function sumNutrition(items: Nutrition[]): Nutrition {
     for (const key of nutritionKeys) total[key] = (total[key] ?? 0) + (item[key] ?? 0);
   return total;
 }
+export function recipeNutrition(recipe: Recipe): Nutrition {
+  return sumNutrition(recipe.ingredients.map((ingredient) => ingredient.nutrition));
+}
+// Treat a saved recipe as a normal food so meal logging keeps the same immutable snapshot flow.
+export function recipeAsFood(recipe: Recipe): Food {
+  const total = recipeNutrition(recipe);
+  const servings = Math.max(recipe.servings, 1);
+  const perServing = Object.fromEntries(
+    nutritionKeys.map((key) => [key, (total[key] ?? 0) / servings]),
+  ) as Nutrition;
+  return {
+    id: `recipe:${recipe.id}`,
+    name: recipe.name,
+    brand: 'Saved recipe',
+    per100g: perServing,
+    portions: [{ id: 'serving', label: '1 serving', grams: 1, nutrition: perServing }],
+    defaultPortionId: 'serving',
+  };
+}
 export function emptyJournal(): Journal {
   return {
     version: 1,
@@ -211,6 +225,7 @@ export function emptyJournal(): Journal {
     lifts: [],
     meals: [],
     foods: [],
+    recipes: [],
     goals: { protein: 100, carbs: 100, fat: 100 },
     preferences: { ...defaultPreferences },
     profile: emptyProfile(),
@@ -239,6 +254,7 @@ export function migrateJournal(value: unknown): Journal {
     throw new Error('Your journal could not be read. Your stored data has not been changed.');
   return {
     ...journal,
+    recipes: Array.isArray(journal.recipes) ? journal.recipes : [],
     exercises: journal.exercises.map((exercise) => ({
       ...exercise,
       repFilter: exerciseRepFilter(exercise),

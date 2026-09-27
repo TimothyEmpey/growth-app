@@ -25,3 +25,9 @@ test('connected runs prefer Strava when Apple Health contains the same workout',
     'strava',
   ]);
 });
+
+test('Nike Run Club wins when it duplicates a generic Apple Health workout', () => {
+  const nike = run('nike', 'nikeRunClub');
+  const appleCopy = run('apple-copy', 'appleHealth', 1);
+  expect(mergeConnectedRuns([], [appleCopy, nike]).map((item) => item.id)).toEqual(['nike']);
+});

@@ -37,6 +37,13 @@ const sections: LegalSection[] = [
     ],
   },
   {
+    title: 'Nike Run Club help',
+    paragraphs: [
+      'Open Account → Connections → Nike Run Club. NRC shares workouts with Growth through Apple Health because Nike does not provide direct third-party account linking.',
+      'In iPhone Settings, open Privacy & Security → Health → Nike Run Club and enable workout sharing. Growth labels workouts created by NRC with Nike Run Club branding and removes matching generic Apple Health copies.',
+    ],
+  },
+  {
     title: 'Food and nutrition data',
     paragraphs: [
       'Typed food searches and serving nutrition come from FatSecret. Barcode lookups come from Open Food Facts. Some provider records may not include every nutrient; missing macro values count as zero.',

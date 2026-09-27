@@ -262,12 +262,20 @@ test('three-way journal merge keeps independent edits and resolves same-field co
   local.weights[0].pounds = 181;
   remote.goals.protein = 150;
   remote.weights.push({ id: 'remote', date: '2025-01-02', pounds: 179 });
+  local.recipes.push({
+    id: 'recipe',
+    name: 'Oatmeal',
+    servings: 1,
+    saved: true,
+    ingredients: [],
+  });
   const merged = mergeJournals(base, local, remote);
   expect(merged.weights).toEqual([
     { id: 'shared', date: '2025-01-01', pounds: 181 },
     { id: 'remote', date: '2025-01-02', pounds: 179 },
   ]);
   expect(merged.goals.protein).toBe(150);
+  expect(merged.recipes.map((recipe) => recipe.name)).toEqual(['Oatmeal']);
 });
 
 test('email changes require both inbox codes and invalidate older sessions', async () => {

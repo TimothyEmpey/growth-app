@@ -57,6 +57,7 @@ export function mergeJournals(base: Journal, local: Journal, remote: Journal): J
     lifts: mergeRecords(base.lifts, local.lifts, remote.lifts),
     meals: mergeRecords(base.meals, local.meals, remote.meals),
     foods: mergeRecords(base.foods, local.foods, remote.foods),
+    recipes: mergeRecords(base.recipes, local.recipes, remote.recipes),
     goals: mergeObject(base.goals, local.goals, remote.goals),
     preferences: mergeObject(base.preferences, local.preferences, remote.preferences),
     profile: mergeObject(base.profile, local.profile, remote.profile),

@@ -10,6 +10,7 @@ import {
   authorizeAppleHealthWeights,
   getAppleHealthWeights,
 } from '@/services/apple-health';
+import { ServiceLogo } from '@/components/service-logo';
 
 export default function AppleHealthSheet() {
   const { journal } = useJournal();
@@ -48,6 +49,7 @@ export default function AppleHealthSheet() {
         <Notice message="Apple Health is available in the Growth iPhone app on a physical iPhone." />
       ) : (
         <>
+          <ServiceLogo service="appleHealth" size={56} />
           <Card>
             <Title size={18}>Running workouts</Title>
             <Body>

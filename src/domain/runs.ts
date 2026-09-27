@@ -14,8 +14,12 @@ function sameWorkout(strava: Run, health: Run) {
 }
 
 export function mergeConnectedRuns(strava: Run[], health: Run[]): Run[] {
-  // Apple Health commonly contains the same watch workout later synced to Strava.
-  const healthOnly = health.filter(
+  // Keep provider detail in priority order when the same workout reaches multiple sources.
+  const nike = health.filter((run) => run.source === 'nikeRunClub');
+  const apple = health.filter(
+    (run) => run.source !== 'nikeRunClub' && !nike.some((nikeRun) => sameWorkout(nikeRun, run)),
+  );
+  const healthOnly = [...nike, ...apple].filter(
     (healthRun) => !strava.some((stravaRun) => sameWorkout(stravaRun, healthRun)),
   );
   return [...strava, ...healthOnly].sort(

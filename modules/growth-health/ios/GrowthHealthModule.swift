@@ -112,6 +112,8 @@ public class GrowthHealthModule: Module {
     return [
       "id": workout.uuid.uuidString,
       "title": workout.sourceRevision.source.name + " Run",
+      "sourceName": workout.sourceRevision.source.name,
+      "sourceBundleIdentifier": workout.sourceRevision.source.bundleIdentifier,
       "date": ISO8601DateFormatter().string(from: workout.startDate),
       "distanceMeters": workout.totalDistance?.doubleValue(for: .meter()) ?? 0,
       "movingSeconds": workout.duration,

@@ -45,6 +45,20 @@ export type MealEntry = {
   // Serving-scaled values saved with the entry, independent of later food database updates.
   nutrition: Nutrition;
 };
+export type RecipeIngredient = {
+  id: string;
+  food: Food;
+  portionId: string;
+  quantity: number;
+  nutrition: Nutrition;
+};
+export type Recipe = {
+  id: string;
+  name: string;
+  servings: number;
+  ingredients: RecipeIngredient[];
+  saved: boolean;
+};
 export type Journal = {
   version: 1;
   weights: WeightEntry[];
@@ -52,6 +66,7 @@ export type Journal = {
   lifts: LiftRecord[];
   meals: MealEntry[];
   foods: Food[];
+  recipes: Recipe[];
   goals: Goals;
   preferences: Preferences;
   profile: Profile;
@@ -74,7 +89,7 @@ export type Run = {
   averageHeartRate: number | null;
   splits?: RunSplit[];
   metricSplits?: RunSplit[];
-  source?: 'strava' | 'appleHealth';
+  source?: 'strava' | 'appleHealth' | 'nikeRunClub';
 };
 export type Connection = {
   configured: boolean;

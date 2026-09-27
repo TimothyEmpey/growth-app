@@ -5,7 +5,8 @@ import { ActivityIndicator, Linking, View } from 'react-native';
 import { api } from '@/services/api';
 import { linkStrava } from '@/services/auth';
 import type { Connection } from '@/domain/types';
-import { Body, Button, Card, Icon, Notice, Sheet, Title, useAction } from '@/components/ui';
+import { Body, Button, Card, Notice, Sheet, Title, useAction } from '@/components/ui';
+import { ServiceLogo } from '@/components/service-logo';
 
 export default function StravaSheet() {
   const C = useColors();
@@ -31,7 +32,7 @@ export default function StravaSheet() {
       subtitle="Your runs and hikes, automatically in your journal."
     >
       <View style={{ gap: 14 }}>
-        <Icon name="run" size={40} color="#fc8a50" />
+        <ServiceLogo service="strava" size={56} />
         <Body>
           Growth reads your running and hiking activities, including private activities, to
           calculate distance and pace. Your activities stay in Strava.
