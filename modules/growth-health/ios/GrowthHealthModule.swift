@@ -93,9 +93,14 @@ public class GrowthHealthModule: Module {
 
   private func serializeWorkout(_ workout: HKWorkout) -> [String: Any] {
     let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate)
-    let heartRate = heartRateType.flatMap { workout.statistics(for: $0)?.averageQuantity() }
-      ?.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
-    let serializedHeartRate: Any = heartRate ?? NSNull()
+    let heartRate = heartRateType.flatMap { type in
+      workout.statistics(for: type)?.averageQuantity()?.doubleValue(
+        for: HKUnit.count().unitDivided(by: .minute())
+      )
+    }
+    let serializedHeartRate: Any
+    if let heartRate { serializedHeartRate = heartRate }
+    else { serializedHeartRate = NSNull() }
     let elevation = (workout.metadata?[HKMetadataKeyElevationAscended] as? HKQuantity)?
       .doubleValue(for: .meter()) ?? 0
     return [
