@@ -13,6 +13,7 @@ import {
   positive,
   positiveAtMost,
   putWeight,
+  importHealthWeights,
   shiftDay,
   sortLifts,
   sumNutrition,
@@ -62,6 +63,20 @@ describe('journal dates and records', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].date).toBe('2024-01-02');
     expect(() => putWeight(entries, { id: 'c', date: '2999-01-01', pounds: 180 })).toThrow();
+  });
+  test('Apple Health imports the latest daily weight without replacing manual entries', () => {
+    const existing = [{ id: 'manual', date: '2024-01-01', pounds: 180 }];
+    const result = importHealthWeights(existing, [
+      { id: 'apple-health:a', date: '2024-01-01', pounds: 179, timestamp: 1 },
+      { id: 'apple-health:b', date: '2024-01-02', pounds: 178, timestamp: 2 },
+      { id: 'apple-health:c', date: '2024-01-02', pounds: 177, timestamp: 3 },
+    ]);
+    expect(result.imported).toBe(1);
+    expect(result.skipped).toBe(1);
+    expect(result.weights).toEqual([
+      existing[0],
+      { id: 'apple-health:c', date: '2024-01-02', pounds: 177, timestamp: 3 },
+    ]);
   });
   test('latest dated max wins, with backdates and same-day corrections', () => {
     const records = [

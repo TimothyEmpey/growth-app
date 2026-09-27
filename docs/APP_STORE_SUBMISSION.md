@@ -70,7 +70,7 @@ fitness,journal,lifting,running,Strava,nutrition,macros,weight,workout,food
 
 ## App Privacy worksheet
 
-Select **Yes, data is collected** because signed-in journals and connected runs are transmitted off-device. The following is the expected disclosure for the current release. Re-evaluate it if analytics, advertising, crash reporting, payments, HealthKit, or another SDK is added.
+Select **Yes, data is collected** because signed-in journals and connected runs are transmitted off-device. The following is the expected disclosure for the current release. Re-evaluate it if analytics, advertising, crash reporting, payments, or another SDK is added.
 
 | Apple data type    | Examples in Growth                                                                                              | Linked to identity                 | Tracking | Purpose                               |
 | ------------------ | --------------------------------------------------------------------------------------------------------------- | ---------------------------------- | -------- | ------------------------------------- |
@@ -81,7 +81,7 @@ Select **Yes, data is collected** because signed-in journals and connected runs 
 | Fitness            | Runs, pace, heart rate, lifting records, exercise history                                                       | Yes when synchronized or connected | No       | App functionality                     |
 | Other User Content | Custom exercise names and journal content, if Apple’s questionnaire does not classify them under Health/Fitness | Yes when synchronized              | No       | App functionality                     |
 
-Current code does not use data for third-party advertising, developer advertising, cross-app tracking, or data-broker sharing. Typed food search terms are sent to FatSecret; barcode identifiers are sent to Open Food Facts. Resend receives email addresses and verification-message content. Cloudflare processes and stores account/service data. Strava provides connected activity data after explicit authorization.
+Current code does not use data for third-party advertising, developer advertising, cross-app tracking, or data-broker sharing. Typed food search terms are sent to FatSecret; barcode identifiers are sent to Open Food Facts. Resend receives email addresses and verification-message content. Cloudflare processes and stores account/service data. Strava provides connected activity data after explicit authorization. Apple Health workouts remain on the iPhone. Body-weight measurements are copied into the Growth journal only when the user chooses Import weight history; signed-in journals may then synchronize them through Growth's service.
 
 ## App Review notes draft
 
@@ -98,6 +98,7 @@ Reviewer path:
 5. Open Account to inspect profile, preferences, themes, synchronization status, Privacy policy, and Support.
 6. Account deletion is available at Account → Edit profile → Delete account. It requires the current password and permanently deletes the account, synchronized journal, sessions, Strava connection, and cached imported runs.
 7. Strava can be disconnected from Running → Link Strava. Disconnecting removes cached runs from Growth but does not delete activities from Strava.
+8. On a physical iPhone, Running → Run source → Apple Health requests read-only access to running workouts. Lifting → Apple Health provides a separate, user-initiated body-weight import. Growth does not write to HealthKit.
 
 Production API: `https://growth-journal.tlegeneral.workers.dev`
 
@@ -128,6 +129,7 @@ Use one consistent theme and status-bar treatment. Avoid empty states, debug UI,
 - [x] Bundle ID, app scheme, icon, version, and EAS project are configured
 - [x] Production builds auto-increment the build number
 - [x] `ITSAppUsesNonExemptEncryption` is generated as false through Expo configuration
+- [x] HealthKit entitlement and a read-purpose description are generated through Expo configuration
 - [ ] Deploy the privacy and support routes before entering their URLs in App Store Connect
 - [ ] Confirm the public support email and add any legally required address or phone information
 - [ ] Create polished, non-personal screenshot fixture data
@@ -152,6 +154,7 @@ Use one consistent theme and status-bar treatment. Avoid empty states, debug UI,
 - [ ] Recover a password and complete an email change with two inboxes
 - [ ] Link, cancel, refresh, reconnect, and disconnect Strava through the native OAuth return flow
 - [ ] Compare imported run totals and details with the source Strava account
+- [ ] On a physical iPhone, approve and deny Health access; compare Apple Health run totals and import body-weight history
 - [ ] Search generic and branded foods and revisit saved meals after restarting
 - [ ] Verify offline edits, cross-device merge, and synchronization recovery
 - [ ] Delete a dedicated test account and verify account, journal, sessions, connection, and runs are gone

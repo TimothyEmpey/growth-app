@@ -16,7 +16,9 @@ export function RunHistoryRow({ run, units }: { run: Run; units: Units }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Open ${run.title} from ${formatDate(run.localDate)}`}
-      onPress={() => router.push({ pathname: '/run', params: { id: run.id } })}
+      onPress={() =>
+        router.push({ pathname: '/run', params: { id: run.id, source: run.source ?? 'strava' } })
+      }
       style={({ pressed }) => ({
         borderBottomWidth: 1,
         borderColor: C.border,

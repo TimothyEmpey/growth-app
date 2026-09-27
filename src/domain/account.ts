@@ -8,6 +8,8 @@ export type Preferences = {
   units: Units;
   defaultPeriod: Period;
   startPage: '/' | '/running' | '/diet' | '/account';
+  runSource: 'strava' | 'appleHealth';
+  appleHealthConnected: boolean;
 };
 export type Profile = {
   name: string;
@@ -22,6 +24,8 @@ export const defaultPreferences: Preferences = {
   units: 'us',
   defaultPeriod: 'Month',
   startPage: '/',
+  runSource: 'strava',
+  appleHealthConnected: false,
 };
 export const emptyProfile = (): Profile => ({
   name: '',
@@ -44,6 +48,8 @@ export function normalizePreferences(value: Partial<Preferences> = {}): Preferen
     startPage: ['/', '/running', '/diet', '/account'].includes(value.startPage ?? '')
       ? value.startPage!
       : '/',
+    runSource: value.runSource === 'appleHealth' ? 'appleHealth' : 'strava',
+    appleHealthConnected: value.appleHealthConnected === true,
   };
 }
 export function validateProfile(value: unknown): Profile {

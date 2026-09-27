@@ -113,7 +113,15 @@ The webhook URL includes an unguessable path secret because Strava does not sign
 
 Sign in to a Growth account, then open Running → Link Strava → Connect with Strava and authorize that user's Strava account. The service imports every page of history, counts Run/TrailRun/VirtualRun activities, and displays incomplete totals while importing. Queue retries resume interrupted pages. A daily reconciliation catches missed activity edits or deletions. The link persists through Growth logout and across devices. It is removed only when the user chooses Disconnect or revokes Growth in Strava. Disconnect removes that account's Strava credentials and cached runs while leaving its journal untouched.
 
-## 6. Test iPhone sign-in
+## 6. Test Apple Health on iPhone
+
+Apple Health is implemented through the local `growth-health` Expo module. Expo prebuild adds the HealthKit entitlement and the read-purpose text from `app.json`; do not hand-edit the generated iOS project. The integration is read-only and requests running workouts, walking/running distance, heart rate, and body mass.
+
+Apple Health is unavailable in Expo Go and requires a development, preview, or production build on a physical iPhone. In Growth, select **Running → Run source → Apple Health** to approve workout access. Open **Lifting → Apple Health → Import weight history** to copy the latest body-weight measurement from each local calendar day into the Growth journal. A manually entered Growth weight is kept when the same date already exists.
+
+Before App Store submission, enable the HealthKit capability for `com.timempey.growth` if Apple does not enable it automatically during EAS credential setup. In App Store Connect, disclose Health and Fitness data according to `docs/APP_STORE_SUBMISSION.md`, and explain the read-only flows in App Review notes.
+
+## 7. Test iPhone sign-in
 
 The `growth://auth/strava` return link requires a development or production build. [Expo Go cannot test custom OAuth return schemes](https://docs.expo.dev/guides/authentication/).
 
@@ -142,6 +150,7 @@ Automated tests use isolated local databases and mock Strava, FatSecret, and Ope
 
 - Link, cancel, reconnect, and disconnect from both web and an iOS development build.
 - Compare imported run count, distance, and weighted pace with your Strava activities; wait for the full import to finish first.
+- On a physical iPhone, test Apple Health with each requested category allowed and denied, compare running totals, and verify weight import across time-zone and same-day measurements.
 - Edit/delete a run in Strava and confirm the webhook updates Growth.
 - Search a generic food and a branded food, confirm FatSecret ordering is unchanged, adjust servings, scan a barcode, log meals, and revisit a past day after restarting.
 - Verify that empty/unavailable nutrients show `—`, and that nutrition snapshots do not change when foods are fetched again.

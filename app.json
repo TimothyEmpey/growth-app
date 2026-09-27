@@ -10,6 +10,12 @@
     "ios": {
       "bundleIdentifier": "com.timempey.growth",
       "icon": "./public/icons/icon-512.png",
+      "entitlements": {
+        "com.apple.developer.healthkit": true
+      },
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Growth reads running workouts and body-weight measurements you choose to import from Apple Health."
+      },
       "config": {
         "usesNonExemptEncryption": false
       }

@@ -8,13 +8,21 @@ import { api } from '@/services/api';
 import type { Run } from '@/domain/types';
 import { duration, formatDate, pace } from '@/domain/journal';
 import { Body, Button, Card, Label, Notice, Row, Sheet, Title } from '@/components/ui';
+import { getAppleHealthRun } from '@/services/apple-health';
 
 export default function RunSheet() {
   const C = useColors();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
+  const appleHealth = source === 'appleHealth';
   const query = useQuery({
-    queryKey: ['run', id],
-    queryFn: ({ signal }) => api<Run>(`/api/runs/${id}`, { signal }),
+    queryKey: ['run', source ?? 'strava', id],
+    queryFn: ({ signal }) =>
+      appleHealth
+        ? getAppleHealthRun(id).then((run) => {
+            if (!run) throw new Error('This run is no longer available in Apple Health.');
+            return run;
+          })
+        : api<Run>(`/api/runs/${id}`, { signal }),
     retry: false,
   });
   const { units } = usePreferences();
@@ -25,7 +33,7 @@ export default function RunSheet() {
   return (
     <Sheet
       title={run?.title ?? 'Run details'}
-      subtitle={run ? formatDate(run.localDate) : 'From Strava'}
+      subtitle={run ? formatDate(run.localDate) : appleHealth ? 'From Apple Health' : 'From Strava'}
     >
       {query.isPending && <ActivityIndicator color={C.blue} />}
       {query.error && (
@@ -92,15 +100,20 @@ export default function RunSheet() {
               </Row>
             ))
           ) : (
-            <Body>Strava hasn’t provided {metric ? 'kilometer' : 'mile'} splits for this run.</Body>
+            <Body>
+              {appleHealth ? 'Apple Health' : 'Strava'} hasn’t provided{' '}
+              {metric ? 'kilometer' : 'mile'} splits for this run.
+            </Body>
           )}
-          <Button
-            quiet
-            icon="arrow"
-            onPress={() => void Linking.openURL(`https://www.strava.com/activities/${run.id}`)}
-          >
-            View on Strava
-          </Button>
+          {!appleHealth && (
+            <Button
+              quiet
+              icon="arrow"
+              onPress={() => void Linking.openURL(`https://www.strava.com/activities/${run.id}`)}
+            >
+              View on Strava
+            </Button>
+          )}
         </>
       )}
     </Sheet>

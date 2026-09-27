@@ -30,6 +30,13 @@ const sections: LegalSection[] = [
     ],
   },
   {
+    title: 'Apple Health help',
+    paragraphs: [
+      'On iPhone, open Running and select Apple Health from Run source, or open Lifting → Apple Health to import body-weight history. Approve the requested read access when iOS presents the Health sheet.',
+      'If expected data is missing, open the Health app and review Sharing → Apps → Growth. Growth reads running workouts only and keeps existing manually logged weight when an imported measurement has the same calendar date.',
+    ],
+  },
+  {
     title: 'Food and nutrition data',
     paragraphs: [
       'Typed food searches and serving nutrition come from FatSecret. Barcode lookups come from Open Food Facts. Some provider records may not include every nutrient; missing macro values count as zero.',

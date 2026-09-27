@@ -33,6 +33,14 @@ const sections: LegalSection[] = [
     ],
   },
   {
+    title: 'Apple Health',
+    paragraphs: [
+      'Connecting Apple Health is optional and available only in the iPhone app. Growth can read running workouts, walking and running distance, heart rate, and body-weight measurements after you approve access in Apple Health. Growth does not write data to Apple Health.',
+      'Apple Health workouts are read directly on your iPhone and are not uploaded to the Growth service. When you choose to import body-weight history, the latest measurement for each day is copied into your Growth weight journal. Imported weights follow the same storage and optional account-sync behavior as weights you enter manually.',
+      'Apple does not tell apps whether access to an individual Health category was denied. An empty result can therefore mean either that no matching records exist or that the category was not shared. You can review or revoke access in the Health app at any time.',
+    ],
+  },
+  {
     title: 'Food search and email delivery',
     paragraphs: [
       'Typed food searches are sent through the Growth service to FatSecret. Barcode lookups are sent to Open Food Facts. Search terms and requested food or barcode identifiers are provided to the applicable food provider, but Growth does not send your Growth password or Strava credentials with those requests. Selected nutrition values are saved with journal entries so historical entries do not change when database results change.',

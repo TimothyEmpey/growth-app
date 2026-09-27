@@ -121,6 +121,31 @@ export function putWeight(weights: WeightEntry[], entry: WeightEntry): WeightEnt
     (a, b) => a.date.localeCompare(b.date),
   );
 }
+
+export function importHealthWeights(
+  weights: WeightEntry[],
+  samples: (WeightEntry & { timestamp: number })[],
+) {
+  // Health can contain several measurements per day; Growth keeps the last one for that day.
+  const latestByDate = new Map<string, WeightEntry & { timestamp: number }>();
+  for (const sample of samples) {
+    const current = latestByDate.get(sample.date);
+    if (!current || sample.timestamp > current.timestamp) latestByDate.set(sample.date, sample);
+  }
+  let imported = 0;
+  let skipped = 0;
+  let next = weights;
+  for (const sample of latestByDate.values()) {
+    const existing = next.find((entry) => entry.date === sample.date);
+    if (existing && !existing.id.startsWith('apple-health:')) {
+      skipped++;
+      continue;
+    }
+    next = putWeight(next, sample);
+    imported++;
+  }
+  return { weights: next, imported, skipped };
+}
 export function nutritionFor(food: Food, portionId: string, quantity: number): Nutrition {
   positive(quantity);
   const portion = food.portions.find((p) => p.id === portionId);

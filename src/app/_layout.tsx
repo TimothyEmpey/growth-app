@@ -95,6 +95,7 @@ function AppNavigation() {
           'food',
           'goals',
           'strava',
+          'health',
           'run',
           'run-history',
           'account/profile',

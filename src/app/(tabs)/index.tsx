@@ -2,7 +2,7 @@ import { usePreferences, useDefaultPeriod } from '@/hooks/use-preferences';
 import { displayWeight } from '@/domain/account';
 import { useColors } from '@/providers/appearance';
 import { useState } from 'react';
-import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useJournal } from '@/data/journal-store';
 import { exerciseRepFilter, formatDate, liftsForRep, periodStart, today } from '@/domain/journal';
@@ -28,9 +28,16 @@ export default function LiftingPage() {
       title="Lifting"
       eyebrow="Build your strength"
       action={
-        <Button icon="plus" onPress={() => router.push('/weight')}>
-          Log weight
-        </Button>
+        <Row>
+          {Platform.OS === 'ios' && (
+            <Button quiet onPress={() => router.push('/health')}>
+              Apple Health
+            </Button>
+          )}
+          <Button icon="plus" onPress={() => router.push('/weight')}>
+            Log weight
+          </Button>
+        </Row>
       }
     >
       <Card style={compact ? { padding: 16, gap: 12 } : undefined}>

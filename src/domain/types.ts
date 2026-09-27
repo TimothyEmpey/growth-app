@@ -74,6 +74,7 @@ export type Run = {
   averageHeartRate: number | null;
   splits?: RunSplit[];
   metricSplits?: RunSplit[];
+  source?: 'strava' | 'appleHealth';
 };
 export type Connection = {
   configured: boolean;
