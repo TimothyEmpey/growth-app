@@ -92,7 +92,6 @@ test('profile validation, unit conversion and old journal migration preserve rea
     units: 'metric',
     defaultPeriod: 'Week',
     startPage: '/account',
-    runSource: 'strava',
     appleHealthConnected: false,
   };
   journal.profile = { name: 'Alex', gender: '', age: 30, heightCm: 180, weightKg: 80 };

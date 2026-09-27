@@ -23,8 +23,8 @@ public class GrowthHealthModule: Module {
     }
 
     AsyncFunction("getRunningWorkouts") { (startDate: String, endDate: String) async throws -> [[String: Any]] in
-      guard let start = ISO8601DateFormatter().date(from: startDate),
-            let end = ISO8601DateFormatter().date(from: endDate) else {
+      guard let start = parseDate(startDate),
+            let end = parseDate(endDate) else {
         throw Exception(name: "InvalidDate", description: "Growth could not read the selected date range.")
       }
       let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
@@ -59,6 +59,12 @@ public class GrowthHealthModule: Module {
       if let type = HKQuantityType.quantityType(forIdentifier: identifier) { types.insert(type) }
     }
     return types
+  }
+
+  private func parseDate(_ value: String) -> Date? {
+    let fractional = ISO8601DateFormatter()
+    fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return fractional.date(from: value) ?? ISO8601DateFormatter().date(from: value)
   }
 
   private func workouts(predicate: NSPredicate, limit: Int = HKObjectQueryNoLimit) async throws -> [HKWorkout] {

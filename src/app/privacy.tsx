@@ -68,7 +68,7 @@ const sections: LegalSection[] = [
     title: 'Retention, deletion, and choices',
     paragraphs: [
       'Growth keeps account and synchronized journal information while your account is active. Short-lived verification, OAuth, and session records expire automatically. Food lookup caches and operational records may be retained temporarily for reliability, security, and rate-limit protection.',
-      'You can disconnect Strava from the Running connection screen. You can permanently delete your Growth account from Account → Edit profile → Delete account. Account deletion removes the active account, synchronized journal, sessions, verification records, Strava connection, and cached runs. Infrastructure providers may retain limited residual records for their normal security, backup, or legal-retention periods.',
+      'You can disconnect Strava from Account → Connections. You can permanently delete your Growth account from Account → Edit profile → Delete account. Account deletion removes the active account, synchronized journal, sessions, verification records, Strava connection, and cached runs. Infrastructure providers may retain limited residual records for their normal security, backup, or legal-retention periods.',
       'You can remove a local-only journal by deleting the app or clearing its browser storage. Contact Growth if you need help exercising a privacy choice.',
     ],
   },

@@ -22,6 +22,7 @@ export default function StravaSheet() {
   const refresh = async () => {
     await client.invalidateQueries({ queryKey: ['strava'] });
     await client.invalidateQueries({ queryKey: ['runs'] });
+    await client.invalidateQueries({ queryKey: ['connected-runs'] });
     await client.invalidateQueries({ queryKey: ['run-days'] });
   };
   return (
@@ -101,6 +102,7 @@ export default function StravaSheet() {
                   void action.run(async () => {
                     await api('/api/strava/disconnect', { method: 'POST', body: '{}' });
                     client.removeQueries({ queryKey: ['runs'] });
+                    client.removeQueries({ queryKey: ['connected-runs'] });
                     client.removeQueries({ queryKey: ['run'] });
                     client.removeQueries({ queryKey: ['run-days'] });
                     setConfirm(false);

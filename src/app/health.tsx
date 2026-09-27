@@ -21,7 +21,6 @@ export default function AppleHealthSheet() {
     action.run(async () => {
       if (!(await authorizeAppleHealthRuns())) throw new Error('Apple Health is unavailable.');
       await updateJournal((next) => {
-        next.preferences.runSource = 'appleHealth';
         next.preferences.appleHealthConnected = true;
       });
       router.back();
@@ -52,12 +51,12 @@ export default function AppleHealthSheet() {
           <Card>
             <Title size={18}>Running workouts</Title>
             <Body>
-              Choose Apple Health as your run source to show running workouts recorded by Apple
-              Watch, iPhone, or another app that saves workouts to Health.
+              Include running workouts recorded by Apple Watch, iPhone, or another app that saves
+              workouts to Health.
             </Body>
             <Button loading={action.busy} onPress={() => void connect()}>
               {journal.preferences.appleHealthConnected
-                ? 'Use Apple Health for runs'
+                ? 'Refresh Apple Health access'
                 : 'Connect Apple Health'}
             </Button>
           </Card>

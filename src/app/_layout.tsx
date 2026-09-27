@@ -101,6 +101,7 @@ function AppNavigation() {
           'account/profile',
           'account/appearance',
           'account/preferences',
+          'account/connections',
           'account/sign-in',
           'account/email',
           'account/password',

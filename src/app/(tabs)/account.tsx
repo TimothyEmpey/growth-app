@@ -188,6 +188,13 @@ export default function AccountPage() {
           detail={`${journal.preferences.units === 'us' ? 'US customary' : 'Metric'} units · Your app, your way`}
           onPress={() => router.push('/account/preferences')}
         />
+        <View style={{ height: 1, backgroundColor: C.border }} />
+        <SettingsRow
+          icon="link"
+          title="Connections"
+          detail="Strava, Apple Health & connected services"
+          onPress={() => router.push('/account/connections')}
+        />
       </Card>
       <Card style={{ paddingVertical: 4, gap: 0 }}>
         <SettingsRow

@@ -25,19 +25,31 @@ function normalizeRun(run: HealthRun): Run {
 
 export async function getAppleHealthRuns(start: string, end: string): Promise<Run[]> {
   const [from, through] = isoRange(start, end);
-  return (await GrowthHealth.getRunningWorkouts(from, through)).map(normalizeRun);
+  try {
+    return (await GrowthHealth.getRunningWorkouts(from, through)).map(normalizeRun);
+  } catch {
+    throw new Error('Apple Health runs could not be loaded. Review Health access and try again.');
+  }
 }
 
 export async function getAppleHealthRun(id: string): Promise<Run | null> {
-  const run = await GrowthHealth.getRunningWorkout(id.replace(/^apple-health:/, ''));
-  return run ? normalizeRun(run) : null;
+  try {
+    const run = await GrowthHealth.getRunningWorkout(id.replace(/^apple-health:/, ''));
+    return run ? normalizeRun(run) : null;
+  } catch {
+    throw new Error('This run could not be loaded from Apple Health.');
+  }
 }
 
 export async function getAppleHealthWeights(): Promise<(WeightEntry & { timestamp: number })[]> {
-  return (await GrowthHealth.getBodyWeights()).map((weight: HealthWeight) => ({
-    id: `apple-health:${weight.id}`,
-    date: today(new Date(weight.date)),
-    pounds: weight.pounds,
-    timestamp: new Date(weight.date).getTime(),
-  }));
+  try {
+    return (await GrowthHealth.getBodyWeights()).map((weight: HealthWeight) => ({
+      id: `apple-health:${weight.id}`,
+      date: today(new Date(weight.date)),
+      pounds: weight.pounds,
+      timestamp: new Date(weight.date).getTime(),
+    }));
+  } catch {
+    throw new Error('Body-weight history could not be loaded from Apple Health.');
+  }
 }

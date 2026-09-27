@@ -20,6 +20,7 @@ import {
   today,
   validDate,
   withOunceFallback,
+  weightsForChart,
 } from '../src/domain/journal';
 import { sanitizeNumericInput } from '../src/domain/input';
 import type { Food } from '../src/domain/types';
@@ -76,6 +77,20 @@ describe('journal dates and records', () => {
     expect(result.weights).toEqual([
       existing[0],
       { id: 'apple-health:c', date: '2024-01-02', pounds: 177, timestamp: 3 },
+    ]);
+  });
+  test('dense weight charts keep real interval measurements and the first point', () => {
+    const entries = [
+      { id: 'first', date: '2024-01-01', pounds: 180 },
+      { id: 'middle', date: '2024-01-15', pounds: 178 },
+      { id: 'month-end', date: '2024-01-31', pounds: 177 },
+      { id: 'latest', date: '2024-02-02', pounds: 176 },
+    ];
+    expect(weightsForChart(entries, 'Month')).toEqual(entries);
+    expect(weightsForChart(entries, 'All').map((entry) => entry.id)).toEqual([
+      'first',
+      'month-end',
+      'latest',
     ]);
   });
   test('latest dated max wins, with backdates and same-day corrections', () => {

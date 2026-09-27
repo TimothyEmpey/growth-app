@@ -146,6 +146,21 @@ export function importHealthWeights(
   }
   return { weights: next, imported, skipped };
 }
+
+export function weightsForChart(entries: WeightEntry[], period: Period): WeightEntry[] {
+  if (period === 'Week' || period === 'Month' || entries.length < 3) return entries;
+  const bucket = (entry: WeightEntry) => {
+    if (period === 'All') return entry.date.slice(0, 7);
+    const first = parseDate(entries[0].date).getTime();
+    return String(Math.floor((parseDate(entry.date).getTime() - first) / (7 * 86_400_000)));
+  };
+  // Dense views retain real measurements while showing one representative point per interval.
+  const points = new Map<string, WeightEntry>();
+  for (const entry of entries) points.set(bucket(entry), entry);
+  const result = [...points.values()];
+  if (result[0]?.id !== entries[0].id) result.unshift(entries[0]);
+  return result;
+}
 export function nutritionFor(food: Food, portionId: string, quantity: number): Nutrition {
   positive(quantity);
   const portion = food.portions.find((p) => p.id === portionId);

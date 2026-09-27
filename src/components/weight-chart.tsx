@@ -12,16 +12,18 @@ import Svg, {
   Line,
   Text as SvgText,
 } from 'react-native-svg';
-import type { WeightEntry } from '@/domain/types';
-import { formatDate, parseDate } from '@/domain/journal';
+import type { Period, WeightEntry } from '@/domain/types';
+import { formatDate, parseDate, weightsForChart } from '@/domain/journal';
 import { Empty } from './ui';
 
 // Plot recorded weights at their actual date positions; no measurements are added for gaps.
 export function WeightChart({
   entries,
+  period,
   onHoldChange,
 }: {
   entries: WeightEntry[];
+  period: Period;
   onHoldChange: (entry: WeightEntry | null) => void;
 }) {
   const C = useColors();
@@ -30,6 +32,7 @@ export function WeightChart({
   const compact = viewportWidth < 600;
   const unit = units === 'metric' ? 'kg' : 'lb';
   const [width, setWidth] = useState(600);
+  const points = weightsForChart(entries, period);
   useEffect(() => () => onHoldChange(null), [onHoldChange]);
   const height = compact ? 140 : 250,
     left = 42,
@@ -52,19 +55,19 @@ export function WeightChart({
         </Empty>
       </View>
     );
-  const min = Math.min(...entries.map((e) => e.pounds)),
-    max = Math.max(...entries.map((e) => e.pounds));
+  const min = Math.min(...points.map((e) => e.pounds)),
+    max = Math.max(...points.map((e) => e.pounds));
   const pad = Math.max(2, (max - min) * 0.2),
     low = min - pad,
     high = max + pad;
-  const start = parseDate(entries[0].date).getTime(),
-    end = parseDate(entries[entries.length - 1].date).getTime();
+  const start = parseDate(points[0].date).getTime(),
+    end = parseDate(points[points.length - 1].date).getTime();
   const x = (e: WeightEntry) =>
     start === end
       ? (left + right) / 2
       : left + ((parseDate(e.date).getTime() - start) / (end - start)) * (right - left);
   const y = (e: WeightEntry) => bottom - ((e.pounds - low) / (high - low)) * (bottom - top);
-  const line = entries.map((e, i) => `${i ? 'L' : 'M'}${x(e)},${y(e)}`).join(' ');
+  const line = points.map((e, i) => `${i ? 'L' : 'M'}${x(e)},${y(e)}`).join(' ');
   return (
     <View
       testID="weight-chart"
@@ -94,30 +97,30 @@ export function WeightChart({
             />
           );
         })}
-        {entries.length > 1 && (
+        {points.length > 1 && (
           <Path
-            d={`${line} L${x(entries.at(-1)!)},${bottom} L${x(entries[0])},${bottom} Z`}
+            d={`${line} L${x(points.at(-1)!)},${bottom} L${x(points[0])},${bottom} Z`}
             fill="url(#weight-fill)"
           />
         )}
         <Path d={line} stroke={C.blue} strokeWidth={2.5} fill="none" strokeLinejoin="round" />
-        {entries.map((e) => (
+        {points.map((e) => (
           <Circle
             key={e.id}
             cx={x(e)}
             cy={y(e)}
-            r={entries.length > 90 ? 2 : 4}
+            r={points.length > 60 ? 2 : 4}
             fill={C.blue}
             stroke={C.surface}
             strokeWidth={2}
           />
         ))}
         <SvgText x={left} y={height - 6} fill={C.muted} fontSize={11}>
-          {formatDate(entries[0].date, { month: 'short', day: 'numeric' })}
+          {formatDate(points[0].date, { month: 'short', day: 'numeric' })}
         </SvgText>
-        {entries.length > 1 && (
+        {points.length > 1 && (
           <SvgText x={right} y={height - 6} textAnchor="end" fill={C.muted} fontSize={11}>
-            {formatDate(entries.at(-1)!.date, { month: 'short', day: 'numeric' })}
+            {formatDate(points.at(-1)!.date, { month: 'short', day: 'numeric' })}
           </SvgText>
         )}
       </Svg>
@@ -125,7 +128,7 @@ export function WeightChart({
         pointerEvents="box-none"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, height }}
       >
-        {entries.map((entry) => (
+        {points.map((entry) => (
           <Pressable
             key={entry.id}
             accessibilityRole="button"

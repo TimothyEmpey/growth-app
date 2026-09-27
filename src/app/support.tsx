@@ -25,14 +25,14 @@ const sections: LegalSection[] = [
   {
     title: 'Strava help',
     paragraphs: [
-      'Open Running → Link Strava to connect, refresh, or disconnect. An initial import can take time because Growth retrieves activity history in pages and respects Strava rate limits.',
+      'Open Account → Connections → Strava to connect, refresh, or disconnect. An initial import can take time because Growth retrieves activity history in pages and respects Strava rate limits.',
       'Growth imports running, trail-running, virtual-running, and hiking activities. Other activity types are not included. Disconnecting removes imported Strava activities from Growth without changing activities in Strava.',
     ],
   },
   {
     title: 'Apple Health help',
     paragraphs: [
-      'On iPhone, open Running and select Apple Health from Run source, or open Lifting → Apple Health to import body-weight history. Approve the requested read access when iOS presents the Health sheet.',
+      'On iPhone, open Account → Connections → Apple Health to include runs or import body-weight history. Approve the requested read access when iOS presents the Health sheet.',
       'If expected data is missing, open the Health app and review Sharing → Apps → Growth. Growth reads running workouts only and keeps existing manually logged weight when an imported measurement has the same calendar date.',
     ],
   },

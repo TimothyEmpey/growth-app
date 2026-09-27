@@ -97,8 +97,8 @@ Reviewer path:
 4. Open Diet to inspect daily meal entries, nutrition totals, goals, and food search.
 5. Open Account to inspect profile, preferences, themes, synchronization status, Privacy policy, and Support.
 6. Account deletion is available at Account → Edit profile → Delete account. It requires the current password and permanently deletes the account, synchronized journal, sessions, Strava connection, and cached imported runs.
-7. Strava can be disconnected from Running → Link Strava. Disconnecting removes cached runs from Growth but does not delete activities from Strava.
-8. On a physical iPhone, Running → Run source → Apple Health requests read-only access to running workouts. Lifting → Apple Health provides a separate, user-initiated body-weight import. Growth does not write to HealthKit.
+7. Strava can be disconnected from Account → Connections → Strava. Disconnecting removes cached runs from Growth but does not delete activities from Strava.
+8. On a physical iPhone, Account → Connections → Apple Health requests read-only access to running workouts and provides a separate, user-initiated body-weight import. Growth does not write to HealthKit.
 
 Production API: `https://growth-journal.tlegeneral.workers.dev`
 
