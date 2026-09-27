@@ -79,19 +79,26 @@ describe('journal dates and records', () => {
       { id: 'apple-health:c', date: '2024-01-02', pounds: 177, timestamp: 3 },
     ]);
   });
-  test('dense weight charts keep real interval measurements and the first point', () => {
+  test('weight chart aggregation averages weeks, months, and years without changing entries', () => {
     const entries = [
       { id: 'first', date: '2024-01-01', pounds: 180 },
-      { id: 'middle', date: '2024-01-15', pounds: 178 },
-      { id: 'month-end', date: '2024-01-31', pounds: 177 },
-      { id: 'latest', date: '2024-02-02', pounds: 176 },
+      { id: 'same-week', date: '2024-01-03', pounds: 178 },
+      { id: 'next-week', date: '2024-01-08', pounds: 177 },
+      { id: 'next-month', date: '2024-02-02', pounds: 176 },
+      { id: 'next-year', date: '2025-01-02', pounds: 175 },
     ];
-    expect(weightsForChart(entries, 'Month')).toEqual(entries);
-    expect(weightsForChart(entries, 'All').map((entry) => entry.id)).toEqual([
-      'first',
-      'month-end',
-      'latest',
+    expect(weightsForChart(entries, 'Week').map((entry) => entry.pounds)).toEqual([
+      180, 178, 177, 176, 175,
     ]);
+    expect(weightsForChart(entries, 'Month').map((entry) => entry.pounds)).toEqual([
+      179, 177, 176, 175,
+    ]);
+    const yearlyView = weightsForChart(entries, 'Year');
+    expect(yearlyView).toHaveLength(3);
+    expect(yearlyView[0].pounds).toBeCloseTo(178.33, 2);
+    expect(yearlyView.slice(1).map((entry) => entry.pounds)).toEqual([176, 175]);
+    expect(weightsForChart(entries, 'All').map((entry) => entry.pounds)).toEqual([177.75, 175]);
+    expect(entries[0]).toEqual({ id: 'first', date: '2024-01-01', pounds: 180 });
   });
   test('latest dated max wins, with backdates and same-day corrections', () => {
     const records = [

@@ -5,10 +5,16 @@ import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useJournal } from '@/data/journal-store';
-import { exerciseRepFilter, formatDate, liftsForRep, periodStart, today } from '@/domain/journal';
+import {
+  exerciseRepFilter,
+  formatDate,
+  liftsForRep,
+  periodStart,
+  today,
+  type ChartWeightPoint,
+} from '@/domain/journal';
 import { Body, Button, Card, Icon, Label, Page, PeriodControl, Row, Title } from '@/components/ui';
 import { WeightChart } from '@/components/weight-chart';
-import type { WeightEntry } from '@/domain/types';
 
 export default function LiftingPage() {
   const C = useColors();
@@ -18,7 +24,7 @@ export default function LiftingPage() {
   const [period, setPeriod] = useDefaultPeriod();
   const { units } = usePreferences();
   const weightUnit = units === 'metric' ? 'kg' : 'lb';
-  const [heldWeight, setHeldWeight] = useState<WeightEntry | null>(null);
+  const [heldWeight, setHeldWeight] = useState<ChartWeightPoint | null>(null);
   // The chart and change use the selected period; the headline weight uses the full history.
   const entries = journal.weights.filter((w) => w.date >= periodStart(period) && w.date <= today());
   const latest = journal.weights.at(-1);
@@ -74,9 +80,11 @@ export default function LiftingPage() {
               </Text>
             </Text>
             <Body>
-              {latest
-                ? `Last recorded ${formatDate(latest.date, { month: 'short', day: 'numeric' })}`
-                : 'No history'}
+              {heldWeight
+                ? heldWeight.periodLabel
+                : latest
+                  ? `Last recorded ${formatDate(latest.date, { month: 'short', day: 'numeric' })}`
+                  : 'No history'}
             </Body>
           </View>
           <View style={{ gap: compact ? 4 : 7, alignItems: 'flex-end' }}>

@@ -13,7 +13,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 import type { Period, WeightEntry } from '@/domain/types';
-import { formatDate, parseDate, weightsForChart } from '@/domain/journal';
+import { formatDate, parseDate, weightsForChart, type ChartWeightPoint } from '@/domain/journal';
 import { Empty } from './ui';
 
 // Plot recorded weights at their actual date positions; no measurements are added for gaps.
@@ -24,7 +24,7 @@ export function WeightChart({
 }: {
   entries: WeightEntry[];
   period: Period;
-  onHoldChange: (entry: WeightEntry | null) => void;
+  onHoldChange: (entry: ChartWeightPoint | null) => void;
 }) {
   const C = useColors();
   const { units } = usePreferences();
@@ -77,7 +77,7 @@ export function WeightChart({
         width="100%"
         height={height}
         viewBox={`0 0 ${width} ${height}`}
-        accessibilityLabel={`Weight history, ${entries.length} entries. Latest ${displayWeight(entries.at(-1)!.pounds, units)} ${unit}.`}
+        accessibilityLabel={`Weight chart, ${points.length} displayed points from ${entries.length} logged entries. Latest ${displayWeight(entries.at(-1)!.pounds, units)} ${unit}.`}
       >
         <Defs>
           <LinearGradient id="weight-fill" x1="0" y1="0" x2="0" y2="1">
@@ -132,8 +132,8 @@ export function WeightChart({
           <Pressable
             key={entry.id}
             accessibilityRole="button"
-            accessibilityLabel={`Weigh-in ${entry.date}: ${displayWeight(entry.pounds, units)} ${unit}`}
-            accessibilityHint="Press and hold to show this value in the main weight indicator."
+            accessibilityLabel={`${entry.periodLabel}: ${displayWeight(entry.pounds, units)} ${unit}${entry.count > 1 ? ` average from ${entry.count} entries` : ''}`}
+            accessibilityHint="Press and hold to show this point above the chart."
             onPressIn={() => onHoldChange(entry)}
             onPressOut={() => onHoldChange(null)}
             style={{

@@ -147,19 +147,40 @@ export function importHealthWeights(
   return { weights: next, imported, skipped };
 }
 
-export function weightsForChart(entries: WeightEntry[], period: Period): WeightEntry[] {
-  if (period === 'Week' || period === 'Month' || entries.length < 3) return entries;
-  const bucket = (entry: WeightEntry) => {
-    if (period === 'All') return entry.date.slice(0, 7);
-    const first = parseDate(entries[0].date).getTime();
-    return String(Math.floor((parseDate(entry.date).getTime() - first) / (7 * 86_400_000)));
+export type ChartWeightPoint = WeightEntry & { periodLabel: string; count: number };
+
+export function weightsForChart(entries: WeightEntry[], period: Period): ChartWeightPoint[] {
+  if (period === 'Week')
+    return entries.map((entry) => ({
+      ...entry,
+      periodLabel: formatDate(entry.date),
+      count: 1,
+    }));
+  const bucketFor = (entry: WeightEntry) => {
+    if (period === 'All') return entry.date.slice(0, 4);
+    if (period === 'Year') return entry.date.slice(0, 7);
+    const date = parseDate(entry.date);
+    date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+    return today(date);
   };
-  // Dense views retain real measurements while showing one representative point per interval.
-  const points = new Map<string, WeightEntry>();
-  for (const entry of entries) points.set(bucket(entry), entry);
-  const result = [...points.values()];
-  if (result[0]?.id !== entries[0].id) result.unshift(entries[0]);
-  return result;
+  const buckets = new Map<string, WeightEntry[]>();
+  for (const entry of entries) {
+    const key = bucketFor(entry);
+    buckets.set(key, [...(buckets.get(key) ?? []), entry]);
+  }
+  // Aggregation changes only the plotted points; the underlying journal remains untouched.
+  return [...buckets.entries()].map(([key, values]) => ({
+    id: `average:${period}:${key}`,
+    date: values.at(-1)!.date,
+    pounds: values.reduce((total, entry) => total + entry.pounds, 0) / values.length,
+    count: values.length,
+    periodLabel:
+      period === 'All'
+        ? key
+        : period === 'Year'
+          ? formatDate(`${key}-01`, { month: 'long', year: 'numeric' })
+          : `Week of ${formatDate(key, { month: 'short', day: 'numeric' })}`,
+  }));
 }
 export function nutritionFor(food: Food, portionId: string, quantity: number): Nutrition {
   positive(quantity);
