@@ -26,7 +26,7 @@ const sections: LegalSection[] = [
     title: 'Strava help',
     paragraphs: [
       'Open Running → Link Strava to connect, refresh, or disconnect. An initial import can take time because Growth retrieves activity history in pages and respects Strava rate limits.',
-      'Growth imports running, trail-running, and virtual-running activities. Other activity types are not included. Disconnecting removes imported Strava runs from Growth without changing activities in Strava.',
+      'Growth imports running, trail-running, virtual-running, and hiking activities. Other activity types are not included. Disconnecting removes imported Strava activities from Growth without changing activities in Strava.',
     ],
   },
   {

@@ -10,6 +10,7 @@ import { Body, Icon, Row } from './ui';
 export function RunHistoryRow({ run, units }: { run: Run; units: Units }) {
   const C = useColors();
   const distanceUnit = units === 'metric' ? 'km' : 'mi';
+  const hiking = run.sport === 'Hike';
 
   return (
     <Pressable
@@ -29,12 +30,12 @@ export function RunHistoryRow({ run, units }: { run: Run; units: Units }) {
             width: 38,
             height: 38,
             borderRadius: 12,
-            backgroundColor: '#71d7b112',
+            backgroundColor: hiking ? `${C.purple}12` : '#71d7b112',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Icon name="run" color={C.green} size={21} />
+          <Icon name={hiking ? 'hike' : 'run'} color={hiking ? C.purple : C.green} size={21} />
         </View>
         <View style={{ flex: 1, gap: 7 }}>
           <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{run.title}</Text>

@@ -27,13 +27,13 @@ export default function StravaSheet() {
   return (
     <Sheet
       title={connection.data?.connected ? 'Your Strava connection' : 'Connect with Strava'}
-      subtitle="Your runs, automatically in your journal."
+      subtitle="Your runs and hikes, automatically in your journal."
     >
       <View style={{ gap: 14 }}>
         <Icon name="run" size={40} color="#fc8a50" />
         <Body>
-          Growth reads your running activities, including private runs, to calculate your distance
-          and pace. Your activities stay in Strava.
+          Growth reads your running and hiking activities, including private activities, to
+          calculate distance and pace. Your activities stay in Strava.
         </Body>
       </View>
       {connection.isPending && <ActivityIndicator color={C.blue} />}
@@ -56,8 +56,8 @@ export default function StravaSheet() {
             </Body>
             <Body>
               {connection.data.complete
-                ? `${connection.data.importedCount ?? 0} runs in your history`
-                : 'Importing your complete running history…'}
+                ? `${connection.data.importedCount ?? 0} activities in your history`
+                : 'Importing your complete running and hiking history…'}
             </Body>
           </Card>
           {connection.data.connected ? (
@@ -71,7 +71,7 @@ export default function StravaSheet() {
                 })
               }
             >
-              Refresh runs
+              Refresh activities
             </Button>
           ) : (
             <Button

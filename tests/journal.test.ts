@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import {
   emptyJournal,
+  exerciseRepFilter,
   formatFoodLabel,
   formatServingAmount,
   formatDate,
   migrateJournal,
+  liftsForRep,
   nutritionFor,
   pace,
   periodStart,
@@ -69,6 +71,34 @@ describe('journal dates and records', () => {
     ];
     expect(sortLifts(records).map((r) => r.id)).toEqual(['tie', 'new', 'old']);
     expect(sortLifts(records.filter((r) => r.id !== 'tie'))[0].pounds).toBe(225);
+  });
+  test('rep maxes migrate safely and filter each exercise history independently', () => {
+    const legacy = emptyJournal();
+    delete legacy.exercises[0].repFilter;
+    legacy.lifts.push({
+      id: 'legacy',
+      exerciseId: 'squat',
+      date: '2024-01-01',
+      pounds: 300,
+      createdAt: 1,
+    });
+    legacy.lifts.push({
+      id: 'five',
+      exerciseId: 'squat',
+      date: '2024-02-01',
+      pounds: 250,
+      createdAt: 2,
+      reps: 5,
+    });
+    const migrated = migrateJournal(JSON.parse(JSON.stringify(legacy)));
+    expect(exerciseRepFilter(migrated.exercises[0])).toBe(1);
+    expect(migrated.lifts.find((record) => record.id === 'legacy')?.reps).toBe(1);
+    expect(liftsForRep(migrated.lifts, 1).map((record) => record.id)).toEqual(['legacy']);
+    expect(liftsForRep(migrated.lifts, 5).map((record) => record.id)).toEqual(['five']);
+    expect(liftsForRep(migrated.lifts, 'all').map((record) => record.id)).toEqual([
+      'five',
+      'legacy',
+    ]);
   });
   test('storage starts empty and refuses unsupported versions without overwriting', () => {
     expect(migrateJournal(null)).toEqual(emptyJournal());

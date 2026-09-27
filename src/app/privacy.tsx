@@ -28,8 +28,8 @@ const sections: LegalSection[] = [
   {
     title: 'Strava',
     paragraphs: [
-      'Connecting Strava is optional. If you connect it, Growth receives your Strava athlete identifier, athlete name, authorization scopes, access credentials, and running activities. Imported activity information may include titles, dates, distance, time, elevation, heart rate, and splits when Strava provides them.',
-      'Growth uses this information to display your running history, summaries, details, and activity streak. Provider credentials are encrypted at rest. Disconnecting Strava revokes the connection and removes its cached runs from Growth. Deleting your Growth account also revokes the Strava connection.',
+      'Connecting Strava is optional. If you connect it, Growth receives your Strava athlete identifier, athlete name, authorization scopes, access credentials, and running or hiking activities. Imported activity information may include titles, dates, distance, time, elevation, heart rate, and splits when Strava provides them.',
+      'Growth uses this information to display your activity history, summaries, details, and activity streak. Provider credentials are encrypted at rest. Disconnecting Strava revokes the connection and removes its cached activities from Growth. Deleting your Growth account also revokes the Strava connection.',
     ],
   },
   {

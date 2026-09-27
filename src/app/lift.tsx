@@ -5,7 +5,18 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useJournal, updateJournal } from '@/data/journal-store';
-import { formatDate, newId, positiveAtMost, sortLifts, today, validDate } from '@/domain/journal';
+import {
+  exerciseRepFilter,
+  formatDate,
+  liftReps,
+  liftsForRep,
+  newId,
+  positiveAtMost,
+  REP_COUNTS,
+  sortLifts,
+  today,
+  validDate,
+} from '@/domain/journal';
 import { INPUT_LIMITS } from '@/domain/input';
 import {
   dismissSheet,
@@ -25,6 +36,14 @@ import {
 } from '@/components/ui';
 import { DateField } from '@/components/date-field';
 import { SwipeToDelete } from '@/components/gestures';
+import { Dropdown } from '@/components/dropdown';
+import type { RepCount, RepFilter } from '@/domain/types';
+
+const repFilterOptions: { value: RepFilter; label: string }[] = [
+  ...REP_COUNTS.map((reps) => ({ value: reps, label: `${reps} rep max` })),
+  { value: 'all', label: 'All rep maxes' },
+];
+const repOptions = REP_COUNTS.map((reps) => ({ value: reps, label: `${reps} reps` }));
 
 export default function LiftSheet() {
   return (
@@ -40,13 +59,17 @@ function LiftForm() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { journal } = useJournal();
   const exercise = journal.exercises.find((e) => e.id === id);
-  const records = sortLifts(journal.lifts.filter((r) => r.exerciseId === id));
+  const allRecords = sortLifts(journal.lifts.filter((r) => r.exerciseId === id));
+  const persistedRepFilter = exerciseRepFilter(exercise);
+  const [repFilter, setRepFilter] = useState<RepFilter>(persistedRepFilter);
+  const records = liftsForRep(allRecords, repFilter);
   const [name, setName] = useState(exercise?.name ?? '');
   const [renaming, setRenaming] = useState(!id);
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [date, setDate] = useState(today());
   const [weight, setWeight] = useState('');
+  const [reps, setReps] = useState<RepCount>(repFilter === 'all' ? 1 : repFilter);
   const action = useAction();
   return (
     <Sheet
@@ -83,7 +106,7 @@ function LiftForm() {
                     j.exercises = j.exercises.map((e) =>
                       e.id === id ? { ...e, name: name.trim() } : e,
                     );
-                  else j.exercises.push({ id: newId(), name: name.trim() });
+                  else j.exercises.push({ id: newId(), name: name.trim(), repFilter: 1 });
                 });
                 if (id) setRenaming(false);
                 else dismissSheet();
@@ -96,7 +119,29 @@ function LiftForm() {
       ) : (
         <>
           <Card style={{ backgroundColor: C.bg }}>
-            <Label>Current max</Label>
+            <Row
+              style={{
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                flexWrap: 'wrap',
+              }}
+            >
+              <Label>Current max</Label>
+              <Dropdown
+                label="Rep range"
+                value={repFilter}
+                options={repFilterOptions}
+                onChange={(next) => {
+                  setRepFilter(next);
+                  if (next !== 'all') setReps(next);
+                  void updateJournal((j) => {
+                    j.exercises = j.exercises.map((item) =>
+                      item.id === id ? { ...item, repFilter: next } : item,
+                    );
+                  });
+                }}
+              />
+            </Row>
             <Text style={{ color: C.text, fontSize: 44, fontWeight: '600' }}>
               {records[0] ? displayWeight(records[0].pounds, units) : '—'}
               <Text style={{ color: C.muted, fontSize: 18 }}> {unit}</Text>
@@ -110,6 +155,7 @@ function LiftForm() {
                   setEditing(null);
                   setDate(today());
                   setWeight('');
+                  setReps(repFilter === 'all' ? 1 : repFilter);
                 }}
               >
                 Add max
@@ -129,6 +175,10 @@ function LiftForm() {
                 max={units === 'metric' ? INPUT_LIMITS.liftKg : INPUT_LIMITS.liftLb}
                 placeholder="0"
               />
+              <View style={{ gap: 7 }}>
+                <Label>Rep count</Label>
+                <Dropdown label="Rep count" value={reps} options={repOptions} onChange={setReps} />
+              </View>
               <DateField value={date} onChange={setDate} />
               <Button
                 loading={action.busy}
@@ -158,6 +208,7 @@ function LiftForm() {
                         pounds,
                         date,
                         createdAt: old?.createdAt ?? Date.now(),
+                        reps,
                       });
                     });
                     setAdding(false);
@@ -189,7 +240,11 @@ function LiftForm() {
           <View style={{ gap: 14 }}>
             <Title size={18}>History</Title>
             {records.length === 0 ? (
-              <Body>Your lifting milestones will appear here.</Body>
+              <Body>
+                {repFilter === 'all'
+                  ? 'Your lifting milestones will appear here.'
+                  : `Your ${repFilter} rep max history will appear here.`}
+              </Body>
             ) : (
               records.map((record, index) => (
                 <SwipeToDelete
@@ -209,6 +264,7 @@ function LiftForm() {
                       setAdding(true);
                       setWeight(String(displayWeight(record.pounds, units)));
                       setDate(record.date);
+                      setReps(liftReps(record));
                     }}
                     style={{ paddingVertical: 16, borderBottomWidth: 1, borderColor: C.border }}
                   >
@@ -220,7 +276,10 @@ function LiftForm() {
                             {index === 0 ? 'CURRENT' : ''}
                           </Text>
                         </Text>
-                        <Body>{formatDate(record.date)}</Body>
+                        <Body>
+                          {liftReps(record)} {liftReps(record) === 1 ? 'rep' : 'reps'} ·{' '}
+                          {formatDate(record.date)}
+                        </Body>
                       </View>
                       <Icon name="right" size={18} />
                     </Row>

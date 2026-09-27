@@ -29,6 +29,7 @@ export type IconName =
   | 'flame'
   | 'lift'
   | 'run'
+  | 'hike'
   | 'food'
   | 'plus'
   | 'arrow'
@@ -100,6 +101,7 @@ export function Icon({
     search: 'm16 16 5 5',
     lock: 'M7 10V7a5 5 0 0 1 10 0v3M12 14v3',
     trash: 'M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',
+    hike: 'M3 19 9 9l3 5 2-3 7 8M8 19h9M15 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4M14 8l-3 4m3-4 3 3 3 1m-6-4 1 6-3 5m4-5 3 5',
   };
   return (
     <Svg

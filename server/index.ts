@@ -24,7 +24,7 @@ import type { Run } from '../src/domain/types';
 async function requestSync(env: Env, athleteId: string) {
   const connection = await getConnection(env, athleteId);
   if (!connection || connection.status !== 'connected')
-    throw new ServiceError('Reconnect Strava to sync your runs.', 401);
+    throw new ServiceError('Reconnect Strava to sync your activities.', 401);
   const generation = connection.generation;
   // Resume unfinished imports at their saved page and cutoff; completed imports start a new pass.
   const before = connection.sync_complete ? now() : connection.sync_before;
@@ -156,7 +156,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     const accountId = await requireAccountId(request, env);
     const connection = await getAccountConnection(env, accountId);
     if (connection?.status !== 'connected')
-      throw new ServiceError('Reconnect Strava to include runs in your streak.', 401);
+      throw new ServiceError('Reconnect Strava to include activities in your streak.', 401);
     const days = await env.DB.prepare(
       'SELECT DISTINCT local_date FROM runs WHERE athlete_id=? ORDER BY local_date',
     )
@@ -171,12 +171,21 @@ async function route(request: Request, env: Env): Promise<Response> {
     const accountId = await requireAccountId(request, env);
     const connection = await getAccountConnection(env, accountId);
     if (connection?.status !== 'connected')
-      throw new ServiceError('Reconnect Strava to view your runs.', 401);
+      throw new ServiceError('Reconnect Strava to view your activities.', 401);
     const athleteId = connection.athlete_id;
     const start = url.searchParams.get('start') ?? '0001-01-01',
-      end = url.searchParams.get('end') ?? '9999-12-31';
+      end = url.searchParams.get('end') ?? '9999-12-31',
+      activity = url.searchParams.get('activity') ?? 'run';
     if (![start, end].every((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)) || start > end)
       throw new ServiceError('Invalid date range.');
+    if (!['run', 'hike', 'all'].includes(activity))
+      throw new ServiceError('Invalid activity filter.');
+    const activitySql =
+      activity === 'run'
+        ? "AND json_extract(data,'$.sport') IN ('Run','TrailRun','VirtualRun')"
+        : activity === 'hike'
+          ? "AND json_extract(data,'$.sport') = 'Hike'"
+          : '';
     let cursorDate = '9999-12-31',
       cursorId = '~';
     if (url.searchParams.has('cursor')) {
@@ -194,7 +203,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       }
     }
     const result = await env.DB.prepare(
-      'SELECT data,local_date,id FROM runs WHERE athlete_id=? AND local_date>=? AND local_date<=? AND (local_date < ? OR (local_date = ? AND id < ?)) ORDER BY local_date DESC,id DESC LIMIT 31',
+      `SELECT data,local_date,id FROM runs WHERE athlete_id=? AND local_date>=? AND local_date<=? ${activitySql} AND (local_date < ? OR (local_date = ? AND id < ?)) ORDER BY local_date DESC,id DESC LIMIT 31`,
     )
       .bind(athleteId, start, end, cursorDate, cursorDate, cursorId)
       .all<{ data: string; local_date: string; id: string }>();
@@ -202,7 +211,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       last = rows.at(-1);
     // Aggregate the full period so pace uses total moving time divided by total distance.
     const summary = await env.DB.prepare(
-      'SELECT COUNT(*) AS count, COALESCE(SUM(distance),0) AS distanceMeters, COALESCE(SUM(moving_seconds),0) AS movingSeconds FROM runs WHERE athlete_id=? AND local_date>=? AND local_date<=?',
+      `SELECT COUNT(*) AS count, COALESCE(SUM(distance),0) AS distanceMeters, COALESCE(SUM(moving_seconds),0) AS movingSeconds FROM runs WHERE athlete_id=? AND local_date>=? AND local_date<=? ${activitySql}`,
     )
       .bind(athleteId, start, end)
       .first();
@@ -221,7 +230,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     const id = path.split('/').at(-1)!;
     const connection = await getAccountConnection(env, accountId);
     if (!connection || connection.status !== 'connected')
-      throw new ServiceError('Reconnect Strava to view your runs.', 401);
+      throw new ServiceError('Reconnect Strava to view your activities.', 401);
     const athleteId = connection.athlete_id;
     const cached = await env.DB.prepare(
       'SELECT data,detailed FROM runs WHERE athlete_id=? AND id=?',
@@ -236,7 +245,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       await env.DB.prepare('DELETE FROM runs WHERE athlete_id=? AND id=?')
         .bind(athleteId, id)
         .run();
-      throw new ServiceError('This activity is no longer a run.', 404);
+      throw new ServiceError('This activity is no longer a supported run or hike.', 404);
     }
     await storeRun(env, athleteId, connection.generation, run, true);
     return json(run);
@@ -329,7 +338,7 @@ export default {
         const reason =
           error instanceof ServiceError
             ? error.message
-            : 'Run sync was interrupted. It will retry automatically.';
+            : 'Activity sync was interrupted. It will retry automatically.';
         await env.DB.prepare(
           'UPDATE connections SET sync_error=? WHERE athlete_id=? AND generation=?',
         )

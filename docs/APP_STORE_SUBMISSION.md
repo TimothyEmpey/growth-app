@@ -49,7 +49,7 @@ Growth brings your lifting, running, nutrition, and body-weight history together
 
 Record weigh-ins and see your progress over time. Keep dated personal records for every lift, including complete history when a newer performance replaces the current one.
 
-Connect a personal Strava account to import running, trail-running, and virtual-running activities. Review distance, moving time, pace, elevation, heart rate, and splits when available.
+Connect a personal Strava account to import running, trail-running, virtual-running, and hiking activities. Review distance, moving time, pace, elevation, heart rate, and splits when available.
 
 Build a daily food journal for breakfast, lunch, dinner, and snacks. Search FatSecret, scan barcodes through Open Food Facts, adjust servings and quantities, and review calories, protein, carbohydrates, and fat. Saved nutrition snapshots keep past journal entries stable.
 

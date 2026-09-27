@@ -13,13 +13,17 @@ export type Nutrition = {
 };
 export type Goals = Partial<Record<keyof Nutrition, number>>;
 export type WeightEntry = { id: string; date: DateKey; pounds: number };
-export type Exercise = { id: string; name: string };
+export type RepCount = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+export type RepFilter = RepCount | 'all';
+export type ActivityFilter = 'run' | 'hike' | 'all';
+export type Exercise = { id: string; name: string; repFilter?: RepFilter };
 export type LiftRecord = {
   id: string;
   exerciseId: string;
   date: DateKey;
   pounds: number;
   createdAt: number;
+  reps?: RepCount;
 };
 export type FoodPortion = { id: string; label: string; grams: number; nutrition?: Nutrition };
 export type Food = {

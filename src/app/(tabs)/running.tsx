@@ -1,13 +1,13 @@
 import { usePreferences, useDefaultPeriod } from '@/hooks/use-preferences';
 import { distanceValue } from '@/domain/account';
 import { useColors } from '@/providers/appearance';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { pace, periodStart, today } from '@/domain/journal';
-import type { Connection, RunPage } from '@/domain/types';
+import type { ActivityFilter, Connection, RunPage } from '@/domain/types';
 import {
   Body,
   Button,
@@ -21,10 +21,18 @@ import {
   Title,
 } from '@/components/ui';
 import { RunHistoryRow } from '@/components/run-history-row';
+import { Dropdown } from '@/components/dropdown';
+
+const activityOptions: { value: ActivityFilter; label: string }[] = [
+  { value: 'run', label: 'Running' },
+  { value: 'hike', label: 'Hiking' },
+  { value: 'all', label: 'All activities' },
+];
 
 export default function RunningPage() {
   const C = useColors();
   const [period, setPeriod] = useDefaultPeriod();
+  const [activity, setActivity] = useState<ActivityFilter>('run');
   const { units } = usePreferences();
   const distanceUnit = units === 'metric' ? 'km' : 'mi';
   const client = useQueryClient();
@@ -43,11 +51,11 @@ export default function RunningPage() {
     }
   }, [params.strava, client]);
   const runs = useInfiniteQuery({
-    queryKey: ['runs', period],
+    queryKey: ['runs', period, activity],
     initialPageParam: '',
     queryFn: ({ pageParam, signal }) =>
       api<RunPage>(
-        `/api/runs?start=${periodStart(period)}&end=${today()}${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ''}`,
+        `/api/runs?start=${periodStart(period)}&end=${today()}&activity=${activity}${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ''}`,
         { signal },
       ),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
@@ -59,6 +67,9 @@ export default function RunningPage() {
   const summary = connected ? runs.data?.pages[0]?.summary : undefined;
   const items = runs.data?.pages.flatMap((p) => p.runs) ?? [];
   const averagePace = summary ? pace(summary.movingSeconds, summary.distanceMeters, units) : '—';
+  const activityNoun = activity === 'run' ? 'runs' : activity === 'hike' ? 'hikes' : 'activities';
+  const activityTitle =
+    activity === 'run' ? 'running' : activity === 'hike' ? 'hiking' : 'activity';
   return (
     <Page
       title="Running"
@@ -69,16 +80,30 @@ export default function RunningPage() {
         </Button>
       }
     >
-      <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-        <Title size={18}>Your running overview</Title>
-        <PeriodControl value={period} onChange={setPeriod} />
+      <Row
+        style={{
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          flexWrap: 'wrap',
+        }}
+      >
+        <Title size={18}>Your {activityTitle} overview</Title>
+        <Row style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <Dropdown
+            label="Activity type"
+            value={activity}
+            options={activityOptions}
+            onChange={setActivity}
+          />
+          <PeriodControl value={period} onChange={setPeriod} />
+        </Row>
       </Row>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
         {[
           {
-            label: 'Total runs',
+            label: `Total ${activityNoun}`,
             value: summary?.count ?? (connected ? '—' : 0),
-            unit: 'runs',
+            unit: activityNoun,
             color: C.blue,
             accent: C.blue,
           },
@@ -131,8 +156,8 @@ export default function RunningPage() {
           <Row>
             <ActivityIndicator color={C.blue} />
             <Body>
-              Importing your history · {connection.data?.importedCount ?? 0} runs found. Totals are
-              incomplete until import finishes.
+              Importing your history · {connection.data?.importedCount ?? 0} activities found.
+              Totals are incomplete until import finishes.
             </Body>
           </Row>
         </Card>
@@ -149,20 +174,22 @@ export default function RunningPage() {
       )}
       <Card>
         <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <Title size={20}>Run history</Title>
+          <Title size={20}>
+            {activity === 'run' ? 'Run' : activity === 'hike' ? 'Hike' : 'Activity'} history
+          </Title>
           <Label>{connected ? 'Powered by Strava' : 'Your miles, in one place'}</Label>
         </Row>
         {!connected ? (
           <Empty
-            icon="run"
-            title="Bring your runs into Growth"
+            icon={activity === 'hike' ? 'hike' : 'run'}
+            title={`Bring your ${activityNoun} into Growth`}
             action={
               <Button icon="link" onPress={() => router.push('/strava')}>
                 Link Strava
               </Button>
             }
           >
-            Connect your Strava account to see your runs, distance, and pace together.
+            Connect your Strava account to see your {activityNoun}, distance, and pace together.
           </Empty>
         ) : runs.isPending ? (
           <ActivityIndicator color={C.blue} />
@@ -174,8 +201,12 @@ export default function RunningPage() {
             </Button>
           </>
         ) : items.length === 0 ? (
-          <Empty icon="run" title="No runs in this period">
-            Your next run will appear here after it syncs from Strava.
+          <Empty
+            icon={activity === 'hike' ? 'hike' : 'run'}
+            title={`No ${activityNoun} in this period`}
+          >
+            Your next {activity === 'all' ? 'activity' : activity.slice(0, -1)} will appear here
+            after it syncs from Strava.
           </Empty>
         ) : (
           <View>
@@ -188,7 +219,9 @@ export default function RunningPage() {
           <Row style={{ justifyContent: 'flex-end' }}>
             <Button
               quiet
-              onPress={() => router.push({ pathname: '/run-history', params: { period } })}
+              onPress={() =>
+                router.push({ pathname: '/run-history', params: { period, activity } })
+              }
             >
               History
             </Button>

@@ -245,7 +245,10 @@ describe('running synchronization', () => {
       return Response.json(
         String(url).includes('page=1&')
           ? Array.from({ length: 25 }, (_, i) =>
-              activity(i + 1, i === 0 ? 'Ride' : i % 2 ? 'TrailRun' : 'VirtualRun'),
+              activity(
+                i + 1,
+                i === 0 ? 'Ride' : i === 1 ? 'Hike' : i % 2 ? 'TrailRun' : 'VirtualRun',
+              ),
             )
           : Array.from({ length: 15 }, (_, i) => activity(i + 26)),
       );
@@ -274,7 +277,7 @@ describe('running synchronization', () => {
     );
     const payload = await page.json();
     expect(payload.runs).toHaveLength(30);
-    expect(payload.summary.count).toBe(39);
+    expect(payload.summary.count).toBe(38);
     expect(payload.nextCursor).toBeTruthy();
     const next = await worker.fetch(
       request(
@@ -285,6 +288,26 @@ describe('running synchronization', () => {
       env,
     );
     expect((await next.json()).runs[0].id).not.toBe(payload.runs[0].id);
+    const hikes = await worker.fetch(
+      request(
+        '/api/runs?start=2024-01-01&end=2024-01-31&activity=hike',
+        undefined,
+        `growth_account=${token}`,
+      ),
+      env,
+    );
+    const hikePayload = await hikes.json();
+    expect(hikePayload.summary.count).toBe(1);
+    expect(hikePayload.runs.map((run: { sport: string }) => run.sport)).toEqual(['Hike']);
+    const all = await worker.fetch(
+      request(
+        '/api/runs?start=2024-01-01&end=2024-01-31&activity=all',
+        undefined,
+        `growth_account=${token}`,
+      ),
+      env,
+    );
+    expect((await all.json()).summary.count).toBe(39);
   });
   test('a refresh preserves queued updates and rejects imports from an earlier connection', async () => {
     const { env, jobs, sqlite } = environment();

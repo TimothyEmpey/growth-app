@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useDefaultPeriod, usePreferences } from '@/hooks/use-preferences';
 import { api } from '@/services/api';
 import { periodStart, today } from '@/domain/journal';
-import type { Connection, Period, RunPage } from '@/domain/types';
+import type { ActivityFilter, Connection, Period, RunPage } from '@/domain/types';
 import { Body, Button, Notice, Sheet } from '@/components/ui';
 import { RunHistoryRow } from '@/components/run-history-row';
 import { useColors } from '@/providers/appearance';
@@ -13,23 +13,26 @@ const PERIODS: Period[] = ['Week', 'Month', 'Year', 'All'];
 
 export default function RunHistorySheet() {
   const C = useColors();
-  const params = useLocalSearchParams<{ period?: string }>();
+  const params = useLocalSearchParams<{ period?: string; activity?: string }>();
   const [defaultPeriod] = useDefaultPeriod();
   const period = PERIODS.includes(params.period as Period)
     ? (params.period as Period)
     : defaultPeriod;
   const { units } = usePreferences();
+  const activity: ActivityFilter = ['run', 'hike', 'all'].includes(params.activity ?? '')
+    ? (params.activity as ActivityFilter)
+    : 'run';
   const connection = useQuery({
     queryKey: ['strava'],
     queryFn: ({ signal }) => api<Connection>('/api/strava/status', { signal }),
     retry: false,
   });
   const runs = useInfiniteQuery({
-    queryKey: ['runs', period],
+    queryKey: ['runs', period, activity],
     initialPageParam: '',
     queryFn: ({ pageParam, signal }) =>
       api<RunPage>(
-        `/api/runs?start=${periodStart(period)}&end=${today()}${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ''}`,
+        `/api/runs?start=${periodStart(period)}&end=${today()}&activity=${activity}${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ''}`,
         { signal },
       ),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
@@ -38,7 +41,10 @@ export default function RunHistorySheet() {
   const items = runs.data?.pages.flatMap((page) => page.runs) ?? [];
 
   return (
-    <Sheet title="Run history" subtitle={`${period} · newest runs first`}>
+    <Sheet
+      title={`${activity === 'run' ? 'Run' : activity === 'hike' ? 'Hike' : 'Activity'} history`}
+      subtitle={`${period} · newest ${activity === 'all' ? 'activities' : `${activity}s`} first`}
+    >
       {connection.isPending || (connection.data?.connected && runs.isPending) ? (
         <ActivityIndicator color={C.blue} />
       ) : connection.error ? (
@@ -53,7 +59,7 @@ export default function RunHistorySheet() {
           </Button>
         </>
       ) : items.length === 0 ? (
-        <Body>No runs in this period.</Body>
+        <Body>No {activity === 'all' ? 'activities' : `${activity}s`} in this period.</Body>
       ) : (
         <View>
           {items.map((run) => (
@@ -63,7 +69,7 @@ export default function RunHistorySheet() {
       )}
       {runs.hasNextPage && (
         <Button quiet loading={runs.isFetchingNextPage} onPress={() => void runs.fetchNextPage()}>
-          Load more runs
+          Load more {activity === 'all' ? 'activities' : `${activity}s`}
         </Button>
       )}
     </Sheet>

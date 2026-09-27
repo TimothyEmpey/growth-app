@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useJournal } from '@/data/journal-store';
-import { formatDate, periodStart, sortLifts, today } from '@/domain/journal';
+import { exerciseRepFilter, formatDate, liftsForRep, periodStart, today } from '@/domain/journal';
 import { Body, Button, Card, Icon, Label, Page, PeriodControl, Row, Title } from '@/components/ui';
 import { WeightChart } from '@/components/weight-chart';
 import type { WeightEntry } from '@/domain/types';
@@ -109,7 +109,11 @@ export default function LiftingPage() {
         </Row>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
           {journal.exercises.map((exercise, index) => {
-            const records = sortLifts(journal.lifts.filter((r) => r.exerciseId === exercise.id));
+            const repFilter = exerciseRepFilter(exercise);
+            const records = liftsForRep(
+              journal.lifts.filter((r) => r.exerciseId === exercise.id),
+              repFilter,
+            );
             const current = records[0];
             return (
               <Pressable
@@ -161,7 +165,7 @@ export default function LiftingPage() {
                   </Text>
                   <Label>
                     {records.length
-                      ? `${records.length} ${records.length === 1 ? 'entry' : 'entries'}`
+                      ? `${repFilter === 'all' ? 'All reps' : `${repFilter}RM`} · ${records.length} ${records.length === 1 ? 'entry' : 'entries'}`
                       : 'Add a max'}
                   </Label>
                 </Row>

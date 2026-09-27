@@ -1,5 +1,16 @@
 import { defaultPreferences, emptyProfile, normalizePreferences } from './account';
-import type { DateKey, Food, Journal, LiftRecord, Nutrition, Period, WeightEntry } from './types';
+import type {
+  DateKey,
+  Exercise,
+  Food,
+  Journal,
+  LiftRecord,
+  Nutrition,
+  Period,
+  RepCount,
+  RepFilter,
+  WeightEntry,
+} from './types';
 
 export const nutritionKeys = ['calories', 'protein', 'carbs', 'fat'] as const;
 export const emptyNutrition = (): Nutrition => ({ calories: 0, protein: 0, carbs: 0, fat: 0 });
@@ -89,6 +100,19 @@ export function sortLifts(records: LiftRecord[]): LiftRecord[] {
     (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt || b.id.localeCompare(a.id),
   );
 }
+export const REP_COUNTS: RepCount[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+export function liftReps(record: LiftRecord): RepCount {
+  return REP_COUNTS.includes(record.reps as RepCount) ? (record.reps as RepCount) : 1;
+}
+export function exerciseRepFilter(exercise?: Exercise): RepFilter {
+  const filter = exercise?.repFilter;
+  return filter === 'all' || REP_COUNTS.includes(filter as RepCount) ? filter! : 1;
+}
+export function liftsForRep(records: LiftRecord[], filter: RepFilter): LiftRecord[] {
+  return sortLifts(
+    filter === 'all' ? records : records.filter((record) => liftReps(record) === filter),
+  );
+}
 export function putWeight(weights: WeightEntry[], entry: WeightEntry): WeightEntry[] {
   if (!validDate(entry.date)) throw new Error('Choose a valid date, today or earlier.');
   positiveAtMost(entry.pounds, 1433, 'weight');
@@ -116,8 +140,7 @@ export function nutritionFor(food: Food, portionId: string, quantity: number): N
 export function sumNutrition(items: Nutrition[]): Nutrition {
   const total = emptyNutrition();
   for (const item of items)
-    for (const key of nutritionKeys)
-      total[key] = (total[key] ?? 0) + (item[key] ?? 0);
+    for (const key of nutritionKeys) total[key] = (total[key] ?? 0) + (item[key] ?? 0);
   return total;
 }
 export function emptyJournal(): Journal {
@@ -131,10 +154,10 @@ export function emptyJournal(): Journal {
     preferences: { ...defaultPreferences },
     profile: emptyProfile(),
     exercises: [
-      { id: 'squat', name: 'Squat' },
-      { id: 'bench', name: 'Bench press' },
-      { id: 'deadlift', name: 'Deadlift' },
-      { id: 'overhead', name: 'Overhead press' },
+      { id: 'squat', name: 'Squat', repFilter: 1 },
+      { id: 'bench', name: 'Bench press', repFilter: 1 },
+      { id: 'deadlift', name: 'Deadlift', repFilter: 1 },
+      { id: 'overhead', name: 'Overhead press', repFilter: 1 },
     ],
   };
 }
@@ -155,6 +178,11 @@ export function migrateJournal(value: unknown): Journal {
     throw new Error('Your journal could not be read. Your stored data has not been changed.');
   return {
     ...journal,
+    exercises: journal.exercises.map((exercise) => ({
+      ...exercise,
+      repFilter: exerciseRepFilter(exercise),
+    })),
+    lifts: journal.lifts.map((record) => ({ ...record, reps: liftReps(record) })),
     foods: journal.foods.map((food) => ({
       ...food,
       per100g: Object.fromEntries(
