@@ -36,7 +36,7 @@ const activityOptions: { value: ActivityFilter; label: string }[] = [
 export default function RunningPage() {
   const C = useColors();
   const [period, setPeriod] = useDefaultPeriod();
-  const [activity, setActivity] = useState<ActivityFilter>('run');
+  const [activity, setActivity] = useState<ActivityFilter>('all');
   const { units } = usePreferences();
   const distanceUnit = units === 'metric' ? 'km' : 'mi';
   const client = useQueryClient();
