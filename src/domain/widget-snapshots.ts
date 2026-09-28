@@ -1,0 +1,128 @@
+import { displayWeight, distanceValue } from './account';
+import {
+  exerciseRepFilter,
+  liftsForRep,
+  sumNutrition,
+  today,
+} from './journal';
+import { summarizeRuns } from './runs';
+import type { Journal, Run } from './types';
+
+export type WeightWidgetSnapshot = {
+  value: string;
+  unit: string;
+  date: string;
+  change: string;
+  history: number[];
+};
+
+export type DietWidgetSnapshot = {
+  calories: number;
+  calorieGoal: number;
+  protein: number;
+  proteinGoal: number;
+  carbs: number;
+  carbsGoal: number;
+  fat: number;
+  fatGoal: number;
+};
+
+export type MaxesWidgetSnapshot = {
+  unit: string;
+  lifts: { name: string; value: string; date: string }[];
+};
+
+export type ActivityWidgetSnapshot = {
+  count: number;
+  distance: string;
+  distanceUnit: string;
+  movingMinutes: number;
+  recent: { title: string; distance: string; date: string }[];
+};
+
+const conciseDate = (date: string) =>
+  new Date(`${date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+
+export function journalWidgetSnapshots(journal: Journal): {
+  weight: WeightWidgetSnapshot;
+  diet: DietWidgetSnapshot;
+  maxes: MaxesWidgetSnapshot;
+} {
+  const units = journal.preferences.units;
+  const weightUnit = units === 'metric' ? 'kg' : 'lb';
+  const weights = [...journal.weights].sort((a, b) => a.date.localeCompare(b.date));
+  const latestWeight = weights.at(-1);
+  const previousWeight = weights.at(-2);
+  const displayedWeight = latestWeight ? displayWeight(latestWeight.pounds, units) : 0;
+  const displayedPrevious = previousWeight ? displayWeight(previousWeight.pounds, units) : null;
+  const delta = displayedPrevious === null ? null : displayedWeight - displayedPrevious;
+  const meals = journal.meals.filter((entry) => entry.date === today());
+  const nutrition = sumNutrition(meals.map((entry) => entry.nutrition));
+  const currentMaxes = journal.exercises
+    .map((exercise) => {
+      const current = liftsForRep(
+        journal.lifts.filter((record) => record.exerciseId === exercise.id),
+        exerciseRepFilter(exercise),
+      )[0];
+      return current ? { exercise, current } : null;
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => !!entry)
+    .sort((a, b) => b.current.pounds - a.current.pounds)
+    .slice(0, 4);
+
+  return {
+    weight: {
+      value: latestWeight ? displayedWeight.toFixed(1) : '—',
+      unit: weightUnit,
+      date: latestWeight ? conciseDate(latestWeight.date) : 'No entries yet',
+      change:
+        delta === null
+          ? 'Log another entry to see change'
+          : `${delta > 0 ? '+' : ''}${delta.toFixed(1)} ${weightUnit}`,
+      history: weights.slice(-7).map((entry) => displayWeight(entry.pounds, units)),
+    },
+    diet: {
+      calories: Math.round(nutrition.calories ?? 0),
+      calorieGoal: Math.round(journal.goals.calories ?? 0),
+      protein: Math.round(nutrition.protein ?? 0),
+      proteinGoal: Math.round(journal.goals.protein ?? 0),
+      carbs: Math.round(nutrition.carbs ?? 0),
+      carbsGoal: Math.round(journal.goals.carbs ?? 0),
+      fat: Math.round(nutrition.fat ?? 0),
+      fatGoal: Math.round(journal.goals.fat ?? 0),
+    },
+    maxes: {
+      unit: weightUnit,
+      lifts: currentMaxes.map(({ exercise, current }) => ({
+        name: exercise.name,
+        value: displayWeight(current.pounds, units).toFixed(1).replace(/\.0$/, ''),
+        date: conciseDate(current.date),
+      })),
+    },
+  };
+}
+
+export function activityWidgetSnapshot(
+  runs: Run[],
+  units: Journal['preferences']['units'],
+): ActivityWidgetSnapshot {
+  const summary = summarizeRuns(runs);
+  const distanceUnit = units === 'metric' ? 'km' : 'mi';
+  return {
+    count: summary.count,
+    distance: distanceValue(summary.distanceMeters, units).toFixed(1),
+    distanceUnit,
+    movingMinutes: Math.round(summary.movingSeconds / 60),
+    recent: [...runs]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 4)
+      .map((run) => ({
+        title: run.title,
+        distance: `${distanceValue(run.distanceMeters, units).toFixed(1)} ${distanceUnit}`,
+        date: conciseDate(run.localDate),
+      })),
+  };
+}
