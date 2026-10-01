@@ -1,32 +1,27 @@
-import { HStack, Image, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { background, font, foregroundStyle, lineLimit, padding } from '@expo/ui/swift-ui/modifiers';
+import { Circle, HStack, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { containerBackground, font, foregroundStyle, frame, lineLimit, offset, padding, strokeBorder } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { MaxesWidgetSnapshot } from '@/domain/widget-snapshots';
 
 function MaxesView(props: MaxesWidgetSnapshot, environment: WidgetEnvironment) {
   'widget';
-  const navy = '#121C31';
-  const white = '#F8FAFF';
-  const muted = '#A9B4C8';
-  const purple = '#B99AFF';
+  const surface = '#595959';
+  const white = '#FFFFFF';
+  const muted = '#D7D7D7';
+  const colors = ['#4F82F5', '#A586EC', '#F2B766', '#F2D45E'];
   const lifts = props.lifts.slice(0, 4);
   const strongest = lifts[0];
-  const header = (
-    <HStack spacing={8}>
-      <Image systemName="dumbbell.fill" size={18} color={purple} />
-      <Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(white)]}>Maxes</Text>
-    </HStack>
-  );
+  const header = <Text modifiers={[font({ size: 22, weight: 'semibold' }), foregroundStyle(white)]}>Maxes</Text>;
   if (environment.widgetFamily === 'systemSmall') {
     return (
-      <VStack alignment="leading" spacing={9} modifiers={[padding({ all: 16 }), background(navy)]}>
+      <VStack alignment="leading" spacing={7} modifiers={[padding({ all: 16 }), containerBackground(surface, 'widget')]}>
         {header}
         <Spacer />
         {lifts.length ? lifts.map((lift) => (
           <HStack key={lift.name}>
-            <Text modifiers={[font({ size: 12, weight: 'medium' }), foregroundStyle(white), lineLimit(1)]}>{lift.name}</Text>
+            <Text modifiers={[font({ size: 12, weight: 'regular' }), foregroundStyle(muted), lineLimit(1)]}>{lift.name}</Text>
             <Spacer />
-            <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(purple)]}>{lift.value}</Text>
+            <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(white)]}>{lift.value}</Text>
           </HStack>
         )) : (
           <Text modifiers={[font({ size: 12 }), foregroundStyle(muted)]}>Log a lift to see your maxes.</Text>
@@ -36,48 +31,41 @@ function MaxesView(props: MaxesWidgetSnapshot, environment: WidgetEnvironment) {
   }
   if (environment.widgetFamily === 'systemMedium') {
     return (
-      <HStack spacing={18} modifiers={[padding({ all: 18 }), background(navy)]}>
-        <VStack alignment="leading" spacing={5}>
-          <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(muted)]}>STRONGEST LIFT</Text>
-          <Text modifiers={[font({ size: 21, weight: 'bold' }), foregroundStyle(white), lineLimit(1)]}>
+      <VStack alignment="leading" spacing={7} modifiers={[padding({ all: 17 }), containerBackground(surface, 'widget')]}>
+          <Text modifiers={[font({ size: 22, weight: 'semibold' }), foregroundStyle(white), lineLimit(1)]}>
             {strongest?.name ?? 'No max yet'}
           </Text>
-          <Spacer />
-          <Text modifiers={[font({ size: 34, weight: 'bold', design: 'rounded' }), foregroundStyle(purple)]}>
-            {strongest ? `${strongest.value} ${props.unit}` : '—'}
-          </Text>
-          <Text modifiers={[font({ size: 12 }), foregroundStyle(muted)]}>
-            {strongest ? `Logged ${strongest.date}` : 'Open Growth to log one'}
-          </Text>
-        </VStack>
-        <Spacer />
-        <VStack alignment="trailing" spacing={9}>
-          {lifts.slice(1).map((lift) => (
-            <VStack key={lift.name} alignment="trailing" spacing={1}>
-              <Text modifiers={[font({ size: 11 }), foregroundStyle(muted), lineLimit(1)]}>{lift.name}</Text>
-              <Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(white)]}>{lift.value} {props.unit}</Text>
-            </VStack>
-          ))}
-        </VStack>
-      </HStack>
+          <HStack alignment="bottom" spacing={16}>
+            {lifts.map((lift, index) => {
+              const ratio = Number(lift.value) / Math.max(Number(strongest?.value ?? 1), 1);
+              return <VStack key={lift.name} spacing={3}><Spacer /><RoundedRectangle cornerRadius={7} modifiers={[frame({ width: 48, height: Math.max(18, ratio * 67) }), foregroundStyle(colors[index])]} /><Text modifiers={[font({ size: 9 }), foregroundStyle(muted), lineLimit(1)]}>{lift.name}</Text></VStack>;
+            })}
+          </HStack>
+          <Text modifiers={[font({ size: 11 }), foregroundStyle(muted)]}>{strongest?.date ?? 'No entries yet'}</Text>
+      </VStack>
     );
   }
   return (
-    <VStack alignment="leading" spacing={16} modifiers={[padding({ all: 20 }), background(navy)]}>
+    <VStack alignment="leading" spacing={8} modifiers={[padding({ all: 20 }), containerBackground(surface, 'widget')]}>
       {header}
-      <Text modifiers={[font({ size: 12 }), foregroundStyle(muted)]}>Current records</Text>
-      {lifts.length ? lifts.map((lift, index) => (
-        <HStack key={lift.name}>
-          <VStack alignment="leading" spacing={2}>
-            <Text modifiers={[font({ size: 16, weight: 'semibold' }), foregroundStyle(white)]}>{lift.name}</Text>
-            <Text modifiers={[font({ size: 11 }), foregroundStyle(muted)]}>Logged {lift.date}</Text>
-          </VStack>
-          <Spacer />
-          <Text modifiers={[font({ size: index === 0 ? 22 : 18, weight: 'bold', design: 'rounded' }), foregroundStyle(index === 0 ? purple : white)]}>
-            {lift.value} {props.unit}
-          </Text>
-        </HStack>
-      )) : (
+      {lifts.length ? (
+        <ZStack modifiers={[frame({ height: 280, maxWidth: 500 })]}>
+          {lifts.map((lift, index) => {
+            const sizes = [166, 146, 128, 108];
+            const x = [-66, 64, 10, 12][index];
+            const y = [4, 16, 85, -82][index];
+            return (
+              <ZStack key={lift.name} modifiers={[offset({ x, y })]}>
+                <Circle modifiers={[frame({ width: sizes[index], height: sizes[index] }), foregroundStyle('#666666'), strokeBorder({ content: colors[index], style: { lineWidth: 11 }, shape: 'circle' })]} />
+                <VStack spacing={3}>
+                  <Text modifiers={[font({ size: index === 3 ? 11 : 13, weight: 'semibold' }), foregroundStyle(white), lineLimit(1)]}>{lift.name}</Text>
+                  <Text modifiers={[font({ size: index === 3 ? 18 : 23, weight: 'regular', design: 'rounded' }), foregroundStyle(white)]}>{lift.value}</Text>
+                </VStack>
+              </ZStack>
+            );
+          })}
+        </ZStack>
+      ) : (
         <Text modifiers={[font({ size: 14 }), foregroundStyle(muted)]}>Your current maxes will appear after you log a lift.</Text>
       )}
     </VStack>

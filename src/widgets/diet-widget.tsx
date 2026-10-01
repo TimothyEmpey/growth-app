@@ -1,83 +1,76 @@
-import { HStack, Image, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import { Chart, HStack, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
-  background,
+  containerBackground,
   font,
   foregroundStyle,
   frame,
   padding,
-  progressViewStyle,
-  tint,
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { DietWidgetSnapshot } from '@/domain/widget-snapshots';
 
 function DietView(props: DietWidgetSnapshot, environment: WidgetEnvironment) {
   'widget';
-  const navy = '#121C31';
-  const white = '#F8FAFF';
-  const muted = '#A9B4C8';
-  const blue = '#62A8FF';
-  const gold = '#F5C76A';
-  const purple = '#B99AFF';
-  const green = '#6FD0A0';
-  const caloriesRatio = props.calorieGoal ? Math.min(props.calories / props.calorieGoal, 1) : 0;
-  const title = (
-    <HStack spacing={8}>
-      <Image systemName="fork.knife" size={17} color={gold} />
-      <Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(white)]}>Diet</Text>
-    </HStack>
-  );
+  const surface = '#595959';
+  const white = '#FFFFFF';
+  const blue = '#4F82F5';
+  const orange = '#F2B766';
+  const purple = '#A586EC';
+  const title = <Text modifiers={[font({ size: 22, weight: 'semibold' }), foregroundStyle(white)]}>Diet</Text>;
   const macroRows = [
     { name: 'Protein', value: props.protein, goal: props.proteinGoal, color: blue },
-    { name: 'Carbs', value: props.carbs, goal: props.carbsGoal, color: gold },
+    { name: 'Carbs', value: props.carbs, goal: props.carbsGoal, color: orange },
     { name: 'Fat', value: props.fat, goal: props.fatGoal, color: purple },
   ];
   if (environment.widgetFamily === 'systemSmall') {
     return (
-      <VStack alignment="leading" spacing={9} modifiers={[padding({ all: 16 }), background(navy)]}>
+      <VStack alignment="leading" spacing={5} modifiers={[padding({ all: 16 }), containerBackground(surface, 'widget')]}>
         {title}
         <Spacer />
-        <Text modifiers={[font({ size: 34, weight: 'bold', design: 'rounded' }), foregroundStyle(white)]}>
+        <Text modifiers={[font({ size: 38, weight: 'regular', design: 'rounded' }), foregroundStyle(white)]}>
           {props.calories}
         </Text>
-        <Text modifiers={[font({ size: 12 }), foregroundStyle(muted)]}>
-          {props.calorieGoal ? `of ${props.calorieGoal} cal` : 'calories today'}
-        </Text>
-        <ProgressView value={caloriesRatio} modifiers={[progressViewStyle('linear'), tint(green)]} />
+        <Text modifiers={[font({ size: 20 }), foregroundStyle(white)]}>calories</Text>
+      </VStack>
+    );
+  }
+  const macroBars = macroRows.map((macro) => Math.max(12, Math.min(78, macro.goal ? (macro.value / macro.goal) * 78 : macro.value / 2)));
+  if (environment.widgetFamily === 'systemMedium') {
+    return (
+      <VStack alignment="leading" spacing={7} modifiers={[padding({ all: 17 }), containerBackground(surface, 'widget')]}>
+        {title}
+        <HStack alignment="bottom" spacing={11}>
+          <HStack alignment="bottom" spacing={4}>
+            {macroBars.map((height, index) => <RoundedRectangle key={macroRows[index].name} cornerRadius={4} modifiers={[frame({ width: 18, height }), foregroundStyle(macroRows[index].color)]} />)}
+          </HStack>
+          <Spacer />
+          <VStack alignment="leading" spacing={10}>
+            {macroRows.map((macro) => <Text key={macro.name} modifiers={[font({ size: 13 }), foregroundStyle(macro.color)]}>{macro.name} · {macro.value}g</Text>)}
+          </VStack>
+        </HStack>
       </VStack>
     );
   }
   return (
-    <VStack alignment="leading" spacing={environment.widgetFamily === 'systemLarge' ? 16 : 10} modifiers={[padding({ all: 18 }), background(navy)]}>
+    <VStack alignment="leading" spacing={16} modifiers={[padding({ all: 20 }), containerBackground(surface, 'widget')]}>
       {title}
-      <HStack alignment="firstTextBaseline">
-        <Text modifiers={[font({ size: 34, weight: 'bold', design: 'rounded' }), foregroundStyle(white)]}>
-          {props.calories}
-        </Text>
-        <Text modifiers={[font({ size: 13 }), foregroundStyle(muted)]}>
-          {props.calorieGoal ? ` / ${props.calorieGoal} cal` : ' cal'}
-        </Text>
-        <Spacer />
-        <Text modifiers={[font({ size: 12, weight: 'medium' }), foregroundStyle(green)]}>Today</Text>
+      <ZStack modifiers={[frame({ height: 245, maxWidth: 500 })]}>
+        <Chart
+          data={macroRows.map((macro) => ({ x: macro.name, y: Math.max(macro.value, 0.01), color: macro.color }))}
+          type="pie"
+          pieStyle={{ innerRadius: 0.62, angularInset: 2 }}
+          modifiers={[frame({ height: 245, maxWidth: 500 })]}
+        />
+        <VStack spacing={2}>
+          <Text modifiers={[font({ size: 40, weight: 'regular', design: 'rounded' }), foregroundStyle(white)]}>{props.calories}</Text>
+          <Text modifiers={[font({ size: 16 }), foregroundStyle(white)]}>calories</Text>
+        </VStack>
+      </ZStack>
+      <HStack>
+        <Text modifiers={[font({ size: 14 }), foregroundStyle(blue)]}>Protein {props.protein}g</Text><Spacer />
+        <Text modifiers={[font({ size: 14 }), foregroundStyle(purple)]}>Carbs {props.carbs}g</Text><Spacer />
+        <Text modifiers={[font({ size: 14 }), foregroundStyle(orange)]}>Fat {props.fat}g</Text>
       </HStack>
-      <ProgressView value={caloriesRatio} modifiers={[progressViewStyle('linear'), tint(green)]} />
-      <VStack alignment="leading" spacing={environment.widgetFamily === 'systemLarge' ? 14 : 8}>
-        {macroRows.map((macro) => (
-          <VStack key={macro.name} alignment="leading" spacing={4}>
-            <HStack>
-              <Text modifiers={[font({ size: 12, weight: 'medium' }), foregroundStyle(white)]}>{macro.name}</Text>
-              <Spacer />
-              <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(macro.color)]}>
-                {macro.value}{macro.goal ? ` / ${macro.goal}` : ''} g
-              </Text>
-            </HStack>
-            <ProgressView
-              value={macro.goal ? Math.min(macro.value / macro.goal, 1) : 0}
-              modifiers={[progressViewStyle('linear'), tint(macro.color), frame({ maxWidth: 500 })]}
-            />
-          </VStack>
-        ))}
-      </VStack>
     </VStack>
   );
 }

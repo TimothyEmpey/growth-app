@@ -40,8 +40,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#121c31",
-          "image": "./public/icons/icon-512.png",
-          "imageWidth": 430
+          "image": "./assets/images/growth-wordmark.png",
+          "imageWidth": 260
         }
       ],
       "expo-sqlite",

@@ -38,6 +38,16 @@ export type ActivityWidgetSnapshot = {
   distanceUnit: string;
   movingMinutes: number;
   recent: { title: string; distance: string; date: string }[];
+  categories: {
+    running: string;
+    hiking: string;
+    walking: string;
+  };
+  trends: {
+    running: number[];
+    hiking: number[];
+    walking: number[];
+  };
 };
 
 const conciseDate = (date: string) =>
@@ -111,11 +121,36 @@ export function activityWidgetSnapshot(
 ): ActivityWidgetSnapshot {
   const summary = summarizeRuns(runs);
   const distanceUnit = units === 'metric' ? 'km' : 'mi';
+  const category = (run: Run): keyof ActivityWidgetSnapshot['categories'] => {
+    const sport = run.sport.toLowerCase();
+    if (sport.includes('hike')) return 'hiking';
+    if (sport.includes('walk')) return 'walking';
+    return 'running';
+  };
+  const categories = { running: 0, hiking: 0, walking: 0 };
+  const dates = [...new Set(runs.map((run) => run.localDate))].sort().slice(-7);
+  const trends = {
+    running: dates.map(() => 0),
+    hiking: dates.map(() => 0),
+    walking: dates.map(() => 0),
+  };
+  runs.forEach((run) => {
+    const key = category(run);
+    categories[key] += run.distanceMeters;
+    const index = dates.indexOf(run.localDate);
+    if (index >= 0) trends[key][index] += distanceValue(run.distanceMeters, units);
+  });
   return {
     count: summary.count,
     distance: distanceValue(summary.distanceMeters, units).toFixed(1),
     distanceUnit,
     movingMinutes: Math.round(summary.movingSeconds / 60),
+    categories: {
+      running: distanceValue(categories.running, units).toFixed(1),
+      hiking: distanceValue(categories.hiking, units).toFixed(1),
+      walking: distanceValue(categories.walking, units).toFixed(1),
+    },
+    trends,
     recent: [...runs]
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 4)
