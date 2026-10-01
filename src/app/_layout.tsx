@@ -13,7 +13,6 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppearanceProvider, useAppearance } from '@/providers/appearance';
 import { JournalSyncProvider } from '@/providers/journal-sync';
-import { WidgetSyncProvider } from '@/providers/widget-sync';
 import { useJournal } from '@/data/journal-store';
 import { ApiError } from '@/services/api';
 import '@/global.css';
@@ -34,9 +33,7 @@ export default function RootLayout() {
       <QueryClientProvider client={client}>
         <AppearanceProvider>
           <JournalSyncProvider>
-            <WidgetSyncProvider>
-              <AppNavigation />
-            </WidgetSyncProvider>
+            <AppNavigation />
           </JournalSyncProvider>
         </AppearanceProvider>
       </QueryClientProvider>
