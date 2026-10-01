@@ -1,66 +1,11 @@
-import { Chart, HStack, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
-import { containerBackground, font, foregroundStyle, frame, lineLimit, padding } from '@expo/ui/swift-ui/modifiers';
-import { createWidget, type WidgetEnvironment } from 'expo-widgets';
+import { Chart,HStack,Image,RoundedRectangle,Spacer,Text,VStack,ZStack } from '@expo/ui/swift-ui';
+import { containerBackground,font,foregroundStyle,frame,lineLimit,padding } from '@expo/ui/swift-ui/modifiers';
+import { createWidget,type WidgetEnvironment } from 'expo-widgets';
 import type { ActivityWidgetSnapshot } from '@/domain/widget-snapshots';
-
-function ActivityView(props: ActivityWidgetSnapshot, environment: WidgetEnvironment) {
-  'widget';
-  const surface = '#595959';
-  const white = '#FFFFFF';
-  const muted = '#D7D7D7';
-  const blue = '#4F82F5';
-  const purple = '#A586EC';
-  const orange = '#F2B766';
-  const title = <Text modifiers={[font({ size: 22, weight: 'semibold' }), foregroundStyle(white)]}>Activity</Text>;
-  const chartData = (values: number[]) => (values.length ? values : [0]).map((value, index) => ({ x: index, y: value }));
-  if (environment.widgetFamily === 'systemSmall') {
-    return (
-      <VStack alignment="leading" spacing={6} modifiers={[padding({ all: 16 }), containerBackground(surface, 'widget')]}>
-        {title}
-        <Spacer />
-        <HStack spacing={8}>
-          <VStack spacing={3}><Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(blue)]}>Running</Text><Text modifiers={[font({ size: 16 }), foregroundStyle(white), lineLimit(1)]}>{props.categories.running} {props.distanceUnit}</Text></VStack>
-          <VStack spacing={3}><Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(purple)]}>Hiking</Text><Text modifiers={[font({ size: 16 }), foregroundStyle(white), lineLimit(1)]}>{props.categories.hiking} {props.distanceUnit}</Text></VStack>
-        </HStack>
-        <VStack spacing={3}><Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(orange)]}>Walking</Text><Text modifiers={[font({ size: 16 }), foregroundStyle(white), lineLimit(1)]}>{props.categories.walking} {props.distanceUnit}</Text></VStack>
-      </VStack>
-    );
-  }
-  if (environment.widgetFamily === 'systemMedium') {
-    return (
-      <VStack alignment="leading" spacing={6} modifiers={[padding({ all: 17 }), containerBackground(surface, 'widget')]}>
-        {title}
-        <HStack spacing={14}>
-          <Text modifiers={[font({ size: 11 }), foregroundStyle(blue)]}>Running</Text>
-          <Text modifiers={[font({ size: 11 }), foregroundStyle(purple)]}>Hiking</Text>
-          <Text modifiers={[font({ size: 11 }), foregroundStyle(orange)]}>Walking</Text>
-        </HStack>
-        <ZStack modifiers={[frame({ height: 75, maxWidth: 500 })]}>
-          <Chart data={chartData(props.trends.running)} type="line" showGrid lineStyle={{ color: blue, width: 3, pointStyle: 'circle', pointSize: 4 }} modifiers={[frame({ height: 75, maxWidth: 500 })]} />
-          <Chart data={chartData(props.trends.hiking)} type="line" lineStyle={{ color: purple, width: 3, pointStyle: 'circle', pointSize: 4 }} modifiers={[frame({ height: 75, maxWidth: 500 })]} />
-          <Chart data={chartData(props.trends.walking)} type="line" lineStyle={{ color: orange, width: 3, pointStyle: 'circle', pointSize: 4 }} modifiers={[frame({ height: 75, maxWidth: 500 })]} />
-        </ZStack>
-      </VStack>
-    );
-  }
-  return (
-    <VStack alignment="leading" spacing={16} modifiers={[padding({ all: 20 }), containerBackground(surface, 'widget')]}>
-      {title}
-      <HStack spacing={10}>
-        <VStack spacing={6}><Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(blue)]}>Running</Text><Text modifiers={[font({ size: 22 }), foregroundStyle(white)]}>{props.categories.running} {props.distanceUnit}</Text></VStack>
-        <Spacer />
-        <VStack spacing={6}><Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(purple)]}>Hiking</Text><Text modifiers={[font({ size: 22 }), foregroundStyle(white)]}>{props.categories.hiking} {props.distanceUnit}</Text></VStack>
-        <Spacer />
-        <VStack spacing={6}><Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(orange)]}>Walking</Text><Text modifiers={[font({ size: 22 }), foregroundStyle(white)]}>{props.categories.walking} {props.distanceUnit}</Text></VStack>
-      </HStack>
-      <ZStack modifiers={[frame({ height: 190, maxWidth: 500 })]}>
-        <Chart data={chartData(props.trends.running)} type="line" showGrid lineStyle={{ color: blue, width: 4, pointStyle: 'circle', pointSize: 5 }} modifiers={[frame({ height: 190, maxWidth: 500 })]} />
-        <Chart data={chartData(props.trends.hiking)} type="line" lineStyle={{ color: purple, width: 3, pointStyle: 'circle', pointSize: 5 }} modifiers={[frame({ height: 190, maxWidth: 500 })]} />
-        <Chart data={chartData(props.trends.walking)} type="line" lineStyle={{ color: orange, width: 3, pointStyle: 'circle', pointSize: 5 }} modifiers={[frame({ height: 190, maxWidth: 500 })]} />
-      </ZStack>
-      <Text modifiers={[font({ size: 11 }), foregroundStyle(muted)]}>Last 7 days</Text>
-    </VStack>
-  );
-}
-
-export default createWidget('ActivityWidget', ActivityView);
+const surface='#191C22',text='#F4F6FB',muted='#969FAD',blue='#719BFF',green='#71D7B1',gold='#E5BB73',purple='#B69BFA';
+function Header({eye=false}:{eye?:boolean}){'widget';return <HStack spacing={10}><ZStack><RoundedRectangle cornerRadius={10} modifiers={[frame({width:32,height:32}),foregroundStyle('#213733')]}/><Image systemName="waveform.path.ecg" size={17} color={green}/></ZStack><VStack alignment="leading" spacing={2}>{eye?<Text modifiers={[font({size:10,weight:'medium'}),foregroundStyle(muted)]}>{eye?'30 DAYS':''}</Text>:null}<Text modifiers={[font({size:eye?19:18,weight:'medium'}),foregroundStyle(text)]}>Activity</Text></VStack></HStack>}
+function ActivityView(p:ActivityWidgetSnapshot,e:WidgetEnvironment){'widget';const chart=(v:number[])=>(v.length?v:[0]).map((y,x)=>({x,y}));const total=p.distance;if(e.widgetFamily==='systemSmall')return <VStack alignment="leading" spacing={10} modifiers={[padding({all:17}),containerBackground(surface,'widget')]}><Header/><Spacer/><HStack alignment="firstTextBaseline" spacing={4}><Text modifiers={[font({size:39,weight:'medium',design:'rounded'}),foregroundStyle(text)]}>{total}</Text><Text modifiers={[font({size:15}),foregroundStyle(muted)]}>{p.distanceUnit}</Text></HStack><Text modifiers={[font({size:13}),foregroundStyle(muted)]}>Last 30 days</Text><HStack spacing={12}><Text modifiers={[font({size:12}),foregroundStyle(muted)]}><Text modifiers={[foregroundStyle(blue)]}>{p.categories.running}</Text> run</Text><Text modifiers={[font({size:12}),foregroundStyle(muted)]}><Text modifiers={[foregroundStyle(purple)]}>{p.categories.hiking}</Text> hike</Text></HStack><Text modifiers={[font({size:12,weight:'medium'}),foregroundStyle(green)]}>{p.count} activities</Text></VStack>;
+const graphs=<ZStack><Chart data={chart(p.trends.running)} type="line" showGrid lineStyle={{color:blue,width:3}} modifiers={[frame({height:e.widgetFamily==='systemLarge'?170:125,maxWidth:500})]}/><Chart data={chart(p.trends.hiking)} type="line" lineStyle={{color:purple,width:3}} modifiers={[frame({height:e.widgetFamily==='systemLarge'?170:125,maxWidth:500})]}/><Chart data={chart(p.trends.walking)} type="line" lineStyle={{color:gold,width:3}} modifiers={[frame({height:e.widgetFamily==='systemLarge'?170:125,maxWidth:500})]}/></ZStack>;
+if(e.widgetFamily==='systemMedium')return <HStack spacing={18} modifiers={[padding({all:18}),containerBackground(surface,'widget')]}><VStack alignment="leading"><Header eye/><Spacer/><HStack alignment="firstTextBaseline" spacing={4}><Text modifiers={[font({size:35,weight:'medium',design:'rounded'}),foregroundStyle(text)]}>{total}</Text><Text modifiers={[font({size:15}),foregroundStyle(muted)]}>{p.distanceUnit}</Text></HStack><Text modifiers={[font({size:13}),foregroundStyle(muted)]}>Across {p.count} activities</Text></VStack>{graphs}</HStack>;
+return <VStack alignment="leading" spacing={12} modifiers={[padding({all:22}),containerBackground(surface,'widget')]}><Header eye/><HStack alignment="bottom"><VStack alignment="leading"><HStack alignment="firstTextBaseline" spacing={4}><Text modifiers={[font({size:49,weight:'medium',design:'rounded'}),foregroundStyle(text)]}>{total}</Text><Text modifiers={[font({size:16}),foregroundStyle(muted)]}>{p.distanceUnit}</Text></HStack><Text modifiers={[font({size:13}),foregroundStyle(muted)]}>Total distance</Text></VStack><Spacer/><HStack spacing={15}><VStack><Text modifiers={[font({size:17,weight:'medium'}),foregroundStyle(blue)]}>{p.categories.running} {p.distanceUnit}</Text><Text modifiers={[font({size:12}),foregroundStyle(muted)]}>Running</Text></VStack><VStack><Text modifiers={[font({size:17,weight:'medium'}),foregroundStyle(purple)]}>{p.categories.hiking} {p.distanceUnit}</Text><Text modifiers={[font({size:12}),foregroundStyle(muted)]}>Hiking</Text></VStack><VStack><Text modifiers={[font({size:17,weight:'medium'}),foregroundStyle(gold)]}>{p.categories.walking} {p.distanceUnit}</Text><Text modifiers={[font({size:12}),foregroundStyle(muted)]}>Walking</Text></VStack></HStack></HStack>{graphs}<HStack spacing={13}><Text modifiers={[font({size:11}),foregroundStyle(blue)]}>● Running</Text><Text modifiers={[font({size:11}),foregroundStyle(purple)]}>● Hiking</Text><Text modifiers={[font({size:11}),foregroundStyle(gold)]}>● Walking</Text></HStack></VStack>}
+export default createWidget('ActivityWidget',ActivityView);

@@ -21,7 +21,7 @@ export function syncJournalWidgets(journal: Journal) {
 }
 
 export async function syncActivityWidget(journal: Journal) {
-  const start = shiftDay(today(), -6);
+  const start = shiftDay(today(), -29);
   const end = today();
   let stravaRuns: Run[] = [];
   let healthRuns: Run[] = [];

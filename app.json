@@ -39,9 +39,10 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#121c31",
-          "image": "./assets/images/growth-wordmark.png",
-          "imageWidth": 260
+          "backgroundColor": "#001334",
+          "image": "./assets/images/growth-loading-screen.png",
+          "imageWidth": 430,
+          "resizeMode": "cover"
         }
       ],
       "expo-sqlite",

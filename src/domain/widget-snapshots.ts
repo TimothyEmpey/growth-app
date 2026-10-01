@@ -2,6 +2,7 @@ import { displayWeight, distanceValue } from './account';
 import {
   exerciseRepFilter,
   liftsForRep,
+  shiftDay,
   sumNutrition,
   today,
 } from './journal';
@@ -69,6 +70,11 @@ export function journalWidgetSnapshots(journal: Journal): {
   const displayedWeight = latestWeight ? displayWeight(latestWeight.pounds, units) : 0;
   const displayedPrevious = previousWeight ? displayWeight(previousWeight.pounds, units) : null;
   const delta = displayedPrevious === null ? null : displayedWeight - displayedPrevious;
+  const recentWeights = weights.filter((entry) => entry.date >= shiftDay(today(), -29));
+  const firstRecentWeight = recentWeights[0];
+  const monthlyDelta = firstRecentWeight
+    ? displayedWeight - displayWeight(firstRecentWeight.pounds, units)
+    : delta;
   const meals = journal.meals.filter((entry) => entry.date === today());
   const nutrition = sumNutrition(meals.map((entry) => entry.nutrition));
   const currentMaxes = journal.exercises
@@ -89,10 +95,10 @@ export function journalWidgetSnapshots(journal: Journal): {
       unit: weightUnit,
       date: latestWeight ? conciseDate(latestWeight.date) : 'No entries yet',
       change:
-        delta === null
+        monthlyDelta === null
           ? 'Log another entry to see change'
-          : `${delta > 0 ? '+' : ''}${delta.toFixed(1)} ${weightUnit}`,
-      history: weights.slice(-7).map((entry) => displayWeight(entry.pounds, units)),
+          : `${monthlyDelta > 0 ? '+' : ''}${monthlyDelta.toFixed(1)} ${weightUnit}`,
+      history: recentWeights.map((entry) => displayWeight(entry.pounds, units)),
     },
     diet: {
       calories: Math.round(nutrition.calories ?? 0),

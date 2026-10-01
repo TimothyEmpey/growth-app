@@ -1,78 +1,13 @@
-import { Chart, HStack, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
-import {
-  containerBackground,
-  font,
-  foregroundStyle,
-  frame,
-  padding,
-} from '@expo/ui/swift-ui/modifiers';
+import { Chart, HStack, Image, ProgressView, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { containerBackground, font, foregroundStyle, frame, padding, progressViewStyle, tint } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { DietWidgetSnapshot } from '@/domain/widget-snapshots';
 
-function DietView(props: DietWidgetSnapshot, environment: WidgetEnvironment) {
-  'widget';
-  const surface = '#595959';
-  const white = '#FFFFFF';
-  const blue = '#4F82F5';
-  const orange = '#F2B766';
-  const purple = '#A586EC';
-  const title = <Text modifiers={[font({ size: 22, weight: 'semibold' }), foregroundStyle(white)]}>Diet</Text>;
-  const macroRows = [
-    { name: 'Protein', value: props.protein, goal: props.proteinGoal, color: blue },
-    { name: 'Carbs', value: props.carbs, goal: props.carbsGoal, color: orange },
-    { name: 'Fat', value: props.fat, goal: props.fatGoal, color: purple },
-  ];
-  if (environment.widgetFamily === 'systemSmall') {
-    return (
-      <VStack alignment="leading" spacing={5} modifiers={[padding({ all: 16 }), containerBackground(surface, 'widget')]}>
-        {title}
-        <Spacer />
-        <Text modifiers={[font({ size: 38, weight: 'regular', design: 'rounded' }), foregroundStyle(white)]}>
-          {props.calories}
-        </Text>
-        <Text modifiers={[font({ size: 20 }), foregroundStyle(white)]}>calories</Text>
-      </VStack>
-    );
-  }
-  const macroBars = macroRows.map((macro) => Math.max(12, Math.min(78, macro.goal ? (macro.value / macro.goal) * 78 : macro.value / 2)));
-  if (environment.widgetFamily === 'systemMedium') {
-    return (
-      <VStack alignment="leading" spacing={7} modifiers={[padding({ all: 17 }), containerBackground(surface, 'widget')]}>
-        {title}
-        <HStack alignment="bottom" spacing={11}>
-          <HStack alignment="bottom" spacing={4}>
-            {macroBars.map((height, index) => <RoundedRectangle key={macroRows[index].name} cornerRadius={4} modifiers={[frame({ width: 18, height }), foregroundStyle(macroRows[index].color)]} />)}
-          </HStack>
-          <Spacer />
-          <VStack alignment="leading" spacing={10}>
-            {macroRows.map((macro) => <Text key={macro.name} modifiers={[font({ size: 13 }), foregroundStyle(macro.color)]}>{macro.name} · {macro.value}g</Text>)}
-          </VStack>
-        </HStack>
-      </VStack>
-    );
-  }
-  return (
-    <VStack alignment="leading" spacing={16} modifiers={[padding({ all: 20 }), containerBackground(surface, 'widget')]}>
-      {title}
-      <ZStack modifiers={[frame({ height: 245, maxWidth: 500 })]}>
-        <Chart
-          data={macroRows.map((macro) => ({ x: macro.name, y: Math.max(macro.value, 0.01), color: macro.color }))}
-          type="pie"
-          pieStyle={{ innerRadius: 0.62, angularInset: 2 }}
-          modifiers={[frame({ height: 245, maxWidth: 500 })]}
-        />
-        <VStack spacing={2}>
-          <Text modifiers={[font({ size: 40, weight: 'regular', design: 'rounded' }), foregroundStyle(white)]}>{props.calories}</Text>
-          <Text modifiers={[font({ size: 16 }), foregroundStyle(white)]}>calories</Text>
-        </VStack>
-      </ZStack>
-      <HStack>
-        <Text modifiers={[font({ size: 14 }), foregroundStyle(blue)]}>Protein {props.protein}g</Text><Spacer />
-        <Text modifiers={[font({ size: 14 }), foregroundStyle(purple)]}>Carbs {props.carbs}g</Text><Spacer />
-        <Text modifiers={[font({ size: 14 }), foregroundStyle(orange)]}>Fat {props.fat}g</Text>
-      </HStack>
-    </VStack>
-  );
-}
-
-export default createWidget('DietWidget', DietView);
+const surface='#191C22', text='#F4F6FB', muted='#969FAD', blue='#719BFF', gold='#E5BB73', purple='#B69BFA';
+function Header({ eyebrow=false }: { eyebrow?: boolean }) { 'widget'; return <HStack spacing={10}><ZStack><RoundedRectangle cornerRadius={10} modifiers={[frame({width:32,height:32}),foregroundStyle('#342F27')]} /><Image systemName="fork.knife" size={17} color={gold}/></ZStack><VStack alignment="leading" spacing={2}>{eyebrow?<Text modifiers={[font({size:10,weight:'medium'}),foregroundStyle(muted)]}>TODAY</Text>:null}<Text modifiers={[font({size:eyebrow?19:18,weight:'medium'}),foregroundStyle(text)]}>Diet</Text></VStack></HStack>; }
+function Macro({name,value,goal,color}:{name:string;value:number;goal:number;color:string}){'widget';return <VStack alignment="leading" spacing={5}><HStack><Text modifiers={[font({size:13}),foregroundStyle(text)]}>{name}</Text><Spacer/><Text modifiers={[font({size:13,weight:'medium'}),foregroundStyle(color)]}>{value}{goal?` / ${goal}`:''} g</Text></HStack><ProgressView value={goal?Math.min(value/goal,1):0} modifiers={[progressViewStyle('linear'),tint(color)]}/></VStack>}
+function Ring({p,medium=false}:{p:DietWidgetSnapshot;medium?:boolean}){'widget';const ratio=p.calorieGoal?Math.min(p.calories/p.calorieGoal,1):0;return <ZStack modifiers={[frame({width:medium?108:172,height:medium?108:172})]}><Chart data={[{x:'eaten',y:Math.max(ratio,.001),color:blue},{x:'left',y:Math.max(1-ratio,.001),color:'#30353F'}]} type="pie" pieStyle={{innerRadius:.84,angularInset:0}} modifiers={[frame({width:medium?108:172,height:medium?108:172})]}/><VStack spacing={3}><Text modifiers={[font({size:medium?25:34,weight:'medium',design:'rounded'}),foregroundStyle(text)]}>{p.calories.toLocaleString()}</Text><Text modifiers={[font({size:12}),foregroundStyle(muted)]}>{medium?'calories':`of ${p.calorieGoal.toLocaleString()} cal`}</Text></VStack></ZStack>}
+function DietView(p:DietWidgetSnapshot,e:WidgetEnvironment){'widget';const left=Math.max(p.calorieGoal-p.calories,0);if(e.widgetFamily==='systemSmall')return <VStack alignment="leading" spacing={9} modifiers={[padding({all:17}),containerBackground(surface,'widget')]}><Header/><Spacer/><Text modifiers={[font({size:40,weight:'medium',design:'rounded'}),foregroundStyle(text)]}>{p.calories.toLocaleString()}</Text><Text modifiers={[font({size:13}),foregroundStyle(muted)]}>of {p.calorieGoal.toLocaleString()} calories</Text><HStack spacing={4}><RoundedRectangle cornerRadius={3} modifiers={[frame({width:48,height:5}),foregroundStyle(blue)]}/><RoundedRectangle cornerRadius={3} modifiers={[frame({width:60,height:5}),foregroundStyle(gold)]}/><RoundedRectangle cornerRadius={3} modifiers={[frame({width:34,height:5}),foregroundStyle(purple)]}/></HStack><Text modifiers={[font({size:12,weight:'medium'}),foregroundStyle(gold)]}>{left} remaining</Text></VStack>;
+if(e.widgetFamily==='systemMedium')return <HStack spacing={20} modifiers={[padding({all:18}),containerBackground(surface,'widget')]}><VStack alignment="leading" spacing={10}><Header eyebrow/><Ring p={p} medium/></VStack><VStack alignment="leading" spacing={10}><Macro name="Protein" value={p.protein} goal={p.proteinGoal} color={blue}/><Macro name="Carbs" value={p.carbs} goal={p.carbsGoal} color={gold}/><Macro name="Fat" value={p.fat} goal={p.fatGoal} color={purple}/></VStack></HStack>;
+return <VStack alignment="leading" spacing={16} modifiers={[padding({all:22}),containerBackground(surface,'widget')]}><Header eyebrow/><HStack spacing={22}><Ring p={p}/><VStack alignment="leading" spacing={17}><Macro name="Protein" value={p.protein} goal={p.proteinGoal} color={blue}/><Macro name="Carbs" value={p.carbs} goal={p.carbsGoal} color={gold}/><Macro name="Fat" value={p.fat} goal={p.fatGoal} color={purple}/></VStack></HStack><Spacer/><Text modifiers={[font({size:13}),foregroundStyle(muted)]}>{left} calories remaining</Text></VStack>}
+export default createWidget('DietWidget',DietView);
