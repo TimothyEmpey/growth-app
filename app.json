@@ -54,7 +54,39 @@
           "recordAudioAndroid": false
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.timempey.growth",
+          "widgets": [
+            {
+              "name": "BodyWeightWidget",
+              "displayName": "Body Weight",
+              "description": "See your latest body weight and recent trend.",
+              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"] }
+            },
+            {
+              "name": "DietWidget",
+              "displayName": "Diet",
+              "description": "Track today's calories and macros.",
+              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"] }
+            },
+            {
+              "name": "ActivityWidget",
+              "displayName": "Activity",
+              "description": "See your activity over the last 30 days.",
+              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"] }
+            },
+            {
+              "name": "MaxesWidget",
+              "displayName": "Maxes",
+              "description": "Keep your current lifting maxes close by.",
+              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"] }
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
