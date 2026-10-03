@@ -274,7 +274,8 @@ async function route(request: Request, env: Env): Promise<Response> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin');
-    const accepted = [env.APP_ORIGIN, env.DEV_CLIENT_ORIGIN].filter(Boolean);
+    // Keep the previous web origin usable while clients migrate to the custom domain.
+    const accepted = [env.APP_ORIGIN, env.LEGACY_APP_ORIGIN, env.DEV_CLIENT_ORIGIN].filter(Boolean);
     const path = new URL(request.url).pathname;
     if (path.startsWith('/api/') && origin && !accepted.includes(origin))
       return json({ error: 'Origin not allowed.' }, 403);

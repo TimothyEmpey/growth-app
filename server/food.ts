@@ -129,7 +129,7 @@ export function normalizeOpenFoodFacts(raw: OpenFoodFactsProduct): Food {
 const openFoodFactsFields =
   'code,product_name,brands,nutriments,serving_size,serving_quantity';
 const openFoodFactsUserAgent = (env: Env) =>
-  env.OPEN_FOOD_FACTS_USER_AGENT || 'Growth/1.0 (https://growth-journal.tlegeneral.workers.dev)';
+  env.OPEN_FOOD_FACTS_USER_AGENT || 'Growth/1.0 (https://growth-journal.com)';
 
 async function openFoodFacts(url: URL, env: Env) {
   const response = await fetch(url, {

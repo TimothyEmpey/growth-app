@@ -34,7 +34,7 @@ bunx wrangler queues create growth-sync
 bunx wrangler queues create growth-sync-failed
 ```
 
-Replace the placeholder `database_id` in `server/wrangler.jsonc` with the D1 ID. Set `APP_ORIGIN` to your deployed origin, for example `https://growth-journal.YOUR-SUBDOMAIN.workers.dev`, without a trailing slash. Remove `DEV_CLIENT_ORIGIN` from production unless you actively need that local origin.
+Replace the placeholder `database_id` in `server/wrangler.jsonc` with the D1 ID. Set `APP_ORIGIN` to the deployed origin, `https://growth-journal.com`, without a trailing slash. Remove `DEV_CLIENT_ORIGIN` from production unless you actively need that local origin.
 
 The web export is served by the same Worker. Do not change the app's web output to `server`: the API lives in `server/` and the Expo web output remains static.
 
@@ -42,10 +42,10 @@ The web export is served by the same Worker. Do not change the app's web output 
 
 Create one API application at [Strava API settings](https://www.strava.com/settings/api). Its client credentials configure the Growth service; each signed-in Growth user then authorizes and links their own Strava account. Strava currently requires a subscription to create an application and initially allows the registering athlete in single-player mode. Request expanded access from Strava before inviting more athletes than the application's current limit. See the [current getting-started guide](https://developers.strava.com/docs/getting-started/).
 
-Set the Strava **Authorization Callback Domain** to your Worker hostname, without a scheme or path. The callback URL used by Growth is:
+Set the Strava **Authorization Callback Domain** to `growth-journal.com`, without a scheme or path. The callback URL used by Growth is:
 
 ```text
-https://YOUR-WORKER-HOST/api/strava/callback
+https://growth-journal.com/api/strava/callback
 ```
 
 Record the application's client ID and client secret. Growth requests `activity:read` and `activity:read_all` so each user's private runs and activity webhooks are included. It does not request permission to create or edit activities. Provider tokens are encrypted and stored per Growth account; signing out does not disconnect Strava, so the connection and imported runs remain available when that Growth account signs in on another device.
@@ -98,7 +98,7 @@ bunx wrangler deploy --config server/wrangler.jsonc
 Register the Strava webhook after the Worker is live:
 
 ```sh
-bun --env-file=server/.dev.vars scripts/register-strava-webhook.ts https://YOUR-WORKER-HOST
+bun --env-file=server/.dev.vars scripts/register-strava-webhook.ts https://growth-journal.com
 ```
 
 This script needs `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_VERIFY_TOKEN`, and `WEBHOOK_PATH_SECRET` in its environment. It checks for an existing subscription and reuses a matching callback instead of deleting anything. Strava permits one subscription per API application.

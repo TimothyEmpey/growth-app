@@ -3,6 +3,7 @@ export interface Env {
   ASSETS: Fetcher;
   SYNC_QUEUE: Queue<SyncJob>;
   APP_ORIGIN: string;
+  LEGACY_APP_ORIGIN?: string;
   DEV_CLIENT_ORIGIN?: string;
   STRAVA_CLIENT_ID?: string;
   STRAVA_CLIENT_SECRET?: string;

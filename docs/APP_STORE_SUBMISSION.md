@@ -12,8 +12,8 @@ This document prepares the information that can be completed before Apple Develo
 - Primary category: Health & Fitness
 - Price: Free
 - Platforms for the first release: iPhone
-- Privacy policy URL after deployment: `https://growth-journal.tlegeneral.workers.dev/privacy`
-- Support URL after deployment: `https://growth-journal.tlegeneral.workers.dev/support`
+- Privacy policy URL after deployment: `https://growth-journal.com/privacy`
+- Support URL after deployment: `https://growth-journal.com/support`
 - Copyright: `2026 TimothyEmpey`
 - Export compliance: the app declares that it uses no non-exempt encryption. Confirm this remains accurate before every release.
 
@@ -100,7 +100,7 @@ Reviewer path:
 7. Strava can be disconnected from Account → Connections → Strava. Disconnecting removes cached runs from Growth but does not delete activities from Strava.
 8. On a physical iPhone, Account → Connections → Apple Health requests read-only access to running workouts and provides a separate, user-initiated body-weight import. Growth does not write to HealthKit.
 
-Production API: `https://growth-journal.tlegeneral.workers.dev`
+Production API: `https://growth-journal.com`
 
 Add any temporary review-specific service conditions here before submission. Never place production provider secrets or private encryption keys in review notes.
 
