@@ -1,5 +1,5 @@
 import { Chart, HStack, Image, ProgressView, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
-import { containerBackground, font, foregroundStyle, frame, minimumScaleFactor, padding, progressViewStyle, tint } from '@expo/ui/swift-ui/modifiers';
+import { containerBackground, font, foregroundStyle, frame, lineLimit, minimumScaleFactor, padding, progressViewStyle, tint } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { DietWidgetSnapshot } from '@/domain/widget-snapshots';
 
@@ -32,7 +32,7 @@ function DietView(props: DietWidgetSnapshot, environment: WidgetEnvironment) {
       </ZStack>
       <VStack alignment="leading" spacing={0}>
         {environment.widgetFamily === 'systemSmall' ? null : <Text modifiers={[font({ size: 10, weight: 'medium' }), foregroundStyle(muted)]}>TODAY</Text>}
-        <Text modifiers={[font({ size: 18, weight: 'semibold' }), foregroundStyle(text)]}>Diet</Text>
+        <Text modifiers={[font({ size: 18, weight: 'semibold' }), foregroundStyle(text), lineLimit(1), minimumScaleFactor(0.75)]}>Diet</Text>
       </VStack>
     </HStack>
   );

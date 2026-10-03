@@ -31,7 +31,7 @@ function MaxesView(props: MaxesWidgetSnapshot, environment: WidgetEnvironment) {
         <RoundedRectangle cornerRadius={10} modifiers={[frame({ width: 34, height: 34 }), foregroundStyle(iconSurface)]} />
         <Image systemName="dumbbell" size={17} color={purple} />
       </ZStack>
-      <Text modifiers={[font({ size: 18, weight: 'semibold' }), foregroundStyle(text)]}>Maxes</Text>
+      <Text modifiers={[font({ size: 18, weight: 'semibold' }), foregroundStyle(text), lineLimit(1), minimumScaleFactor(0.75)]}>Maxes</Text>
     </HStack>
   );
 

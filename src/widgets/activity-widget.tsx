@@ -20,18 +20,26 @@ function ActivityView(props: ActivityWidgetSnapshot, environment: WidgetEnvironm
     startPoint: { x: 0, y: 1 },
     endPoint: { x: 1, y: 0 },
   };
+  const allHistory = [...props.runningHistory, ...props.hikingHistory, ...props.walkingHistory];
+  const historyLow = allHistory.length ? Math.min(...allHistory) : 0;
+  const historyHigh = allHistory.length ? Math.max(...allHistory) : 0;
+  const visibleSpan = Math.max(historyHigh - historyLow, 1);
+  const chartBounds = [
+    { x: 'lower-bound', y: Math.max(0, historyLow - visibleSpan * 0.12), color: '#00000000' },
+    { x: 'upper-bound', y: historyHigh + visibleSpan * 0.12, color: '#00000000' },
+  ];
   const running = props.runningHistory.map((value, index) => ({ x: index, y: value }));
   const hiking = props.hikingHistory.map((value, index) => ({ x: index, y: value }));
   const walking = props.walkingHistory.map((value, index) => ({ x: index, y: value }));
   const header = (
-    <HStack spacing={10}>
-      <ZStack modifiers={[frame({ width: 34, height: 34 })]}>
-        <RoundedRectangle cornerRadius={10} modifiers={[frame({ width: 34, height: 34 }), foregroundStyle(iconSurface)]} />
-        <Image systemName="waveform.path.ecg" size={17} color={green} />
+    <HStack spacing={environment.widgetFamily === 'systemSmall' ? 8 : 10}>
+      <ZStack modifiers={[frame({ width: environment.widgetFamily === 'systemSmall' ? 30 : 34, height: environment.widgetFamily === 'systemSmall' ? 30 : 34 })]}>
+        <RoundedRectangle cornerRadius={10} modifiers={[frame({ width: environment.widgetFamily === 'systemSmall' ? 30 : 34, height: environment.widgetFamily === 'systemSmall' ? 30 : 34 }), foregroundStyle(iconSurface)]} />
+        <Image systemName="waveform.path.ecg" size={environment.widgetFamily === 'systemSmall' ? 15 : 17} color={green} />
       </ZStack>
       <VStack alignment="leading" spacing={0}>
         {environment.widgetFamily === 'systemSmall' ? null : <Text modifiers={[font({ size: 10, weight: 'medium' }), foregroundStyle(muted)]}>{environment.widgetFamily === 'systemLarge' ? 'LAST 30 DAYS' : '30 DAYS'}</Text>}
-        <Text modifiers={[font({ size: 18, weight: 'semibold' }), foregroundStyle(text)]}>Activity</Text>
+        <Text modifiers={[font({ size: environment.widgetFamily === 'systemSmall' ? 16 : 18, weight: 'semibold' }), foregroundStyle(text), lineLimit(1), minimumScaleFactor(0.72)]}>Activity</Text>
       </VStack>
     </HStack>
   );
@@ -59,16 +67,16 @@ function ActivityView(props: ActivityWidgetSnapshot, environment: WidgetEnvironm
 
   const graph = (
     <ZStack modifiers={[frame({ maxWidth: 230, height: environment.widgetFamily === 'systemLarge' ? 155 : 92 })]}>
-      <Chart data={running} type="line" showGrid lineStyle={{ color: blue, width: 3 }} modifiers={[frame({ maxWidth: 230, height: environment.widgetFamily === 'systemLarge' ? 155 : 92 })]} />
-      <Chart data={hiking} type="line" showGrid={false} lineStyle={{ color: purple, width: 3 }} modifiers={[frame({ maxWidth: 230, height: environment.widgetFamily === 'systemLarge' ? 155 : 92 })]} />
-      <Chart data={walking} type="line" showGrid={false} lineStyle={{ color: gold, width: 3 }} modifiers={[frame({ maxWidth: 230, height: environment.widgetFamily === 'systemLarge' ? 155 : 92 })]} />
+      <Chart data={running} type="line" showGrid referenceLines={chartBounds} lineStyle={{ color: blue, width: 3 }} modifiers={[frame({ maxWidth: 230, height: environment.widgetFamily === 'systemLarge' ? 155 : 92 })]} />
+      <Chart data={hiking} type="line" showGrid={false} referenceLines={chartBounds} lineStyle={{ color: purple, width: 3 }} modifiers={[frame({ maxWidth: 230, height: environment.widgetFamily === 'systemLarge' ? 155 : 92 })]} />
+      <Chart data={walking} type="line" showGrid={false} referenceLines={chartBounds} lineStyle={{ color: gold, width: 3 }} modifiers={[frame({ maxWidth: 230, height: environment.widgetFamily === 'systemLarge' ? 155 : 92 })]} />
     </ZStack>
   );
 
   if (environment.widgetFamily === 'systemMedium') {
     return (
       <HStack spacing={18} modifiers={[padding({ all: 18 }), containerBackground(background, 'widget')] }>
-        <VStack alignment="leading" spacing={2} modifiers={[frame({ width: 120, alignment: 'leading' })]}>
+        <VStack alignment="leading" spacing={2} modifiers={[frame({ width: 128, alignment: 'leading' })]}>
           {header}
           <Spacer />
           <HStack alignment="lastTextBaseline" spacing={4}>

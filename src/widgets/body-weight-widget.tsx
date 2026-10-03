@@ -25,13 +25,24 @@ function BodyWeightView(props: WeightWidgetSnapshot, environment: WidgetEnvironm
   };
   const history = props.history.length ? props.history : [0, 0];
   const chart = history.map((value, index) => ({ x: index, y: value }));
+  const historyLow = Math.min(...history);
+  const historyHigh = Math.max(...history);
+  const visibleSpan = Math.max(historyHigh - historyLow, 1);
+  const chartLow = historyLow - visibleSpan * 0.18;
+  const chartHigh = historyHigh + visibleSpan * 0.18;
+  const chartBounds = [
+    { x: 'lower-bound', y: chartLow, color: '#00000000' },
+    { x: 'upper-bound', y: chartHigh, color: '#00000000' },
+  ];
+  const axisLabels = [chartHigh, chartHigh - (chartHigh - chartLow) / 3, chartHigh - ((chartHigh - chartLow) * 2) / 3, chartLow]
+    .map((value) => value.toFixed(1).replace('.0', ''));
   const header = (
     <HStack spacing={10}>
       <ZStack modifiers={[frame({ width: 34, height: 34 })]}>
         <RoundedRectangle cornerRadius={10} modifiers={[frame({ width: 34, height: 34 }), foregroundStyle(iconSurface)]} />
         <Image systemName="scalemass" size={17} color={blue} />
       </ZStack>
-      <Text modifiers={[font({ size: 18, weight: 'semibold' }), foregroundStyle(text)]}>
+      <Text modifiers={[font({ size: 18, weight: 'semibold' }), foregroundStyle(text), lineLimit(1), minimumScaleFactor(0.72)]}>
         {environment.widgetFamily === 'systemSmall' ? 'Weight' : 'Body weight'}
       </Text>
     </HStack>
@@ -58,7 +69,16 @@ function BodyWeightView(props: WeightWidgetSnapshot, environment: WidgetEnvironm
     return (
       <HStack spacing={20} modifiers={[padding({ all: 18 }), containerBackground(background, 'widget')] }>
         <VStack alignment="leading" spacing={3} modifiers={[frame({ width: 128, alignment: 'leading' })]}>
-          {header}
+          <HStack alignment="top" spacing={9}>
+            <ZStack modifiers={[frame({ width: 34, height: 34 })]}>
+              <RoundedRectangle cornerRadius={10} modifiers={[frame({ width: 34, height: 34 }), foregroundStyle(iconSurface)]} />
+              <Image systemName="scalemass" size={17} color={blue} />
+            </ZStack>
+            <VStack alignment="leading" spacing={0}>
+              <Text modifiers={[font({ size: 17, weight: 'semibold' }), foregroundStyle(text), lineLimit(1)]}>Body</Text>
+              <Text modifiers={[font({ size: 17, weight: 'semibold' }), foregroundStyle(text), lineLimit(1)]}>weight</Text>
+            </VStack>
+          </HStack>
           <Spacer />
           <HStack alignment="lastTextBaseline" spacing={4}>
             <Text modifiers={[font({ size: 39 }), foregroundStyle(text), minimumScaleFactor(0.8), lineLimit(1)]}>{props.value}</Text>
@@ -70,6 +90,7 @@ function BodyWeightView(props: WeightWidgetSnapshot, environment: WidgetEnvironm
           data={chart}
           type="line"
           showGrid={false}
+          referenceLines={chartBounds}
           lineStyle={{ color: blue, width: 3, pointStyle: 'circle', pointSize: 5 }}
           modifiers={[frame({ maxWidth: 170, height: 92 })]}
         />
@@ -96,18 +117,19 @@ function BodyWeightView(props: WeightWidgetSnapshot, environment: WidgetEnvironm
       </HStack>
       <HStack spacing={10}>
         <VStack spacing={0} modifiers={[frame({ width: 26, height: 150 })]}>
-          <Text modifiers={[font({ size: 10 }), foregroundStyle(muted)]}>184</Text>
+          <Text modifiers={[font({ size: 10 }), foregroundStyle(muted)]}>{axisLabels[0]}</Text>
           <Spacer />
-          <Text modifiers={[font({ size: 10 }), foregroundStyle(muted)]}>182</Text>
+          <Text modifiers={[font({ size: 10 }), foregroundStyle(muted)]}>{axisLabels[1]}</Text>
           <Spacer />
-          <Text modifiers={[font({ size: 10 }), foregroundStyle(muted)]}>180</Text>
+          <Text modifiers={[font({ size: 10 }), foregroundStyle(muted)]}>{axisLabels[2]}</Text>
           <Spacer />
-          <Text modifiers={[font({ size: 10 }), foregroundStyle(muted)]}>178</Text>
+          <Text modifiers={[font({ size: 10 }), foregroundStyle(muted)]}>{axisLabels[3]}</Text>
         </VStack>
         <Chart
           data={chart}
           type="line"
           showGrid
+          referenceLines={chartBounds}
           lineStyle={{ color: blue, width: 3, pointStyle: 'circle', pointSize: 5 }}
           modifiers={[frame({ maxWidth: 500, height: 150 })]}
         />
