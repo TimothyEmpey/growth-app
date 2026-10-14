@@ -2,7 +2,7 @@ import { usePreferences } from '@/hooks/use-preferences';
 import { displayWeight, weightToPounds } from '@/domain/account';
 import { useColors } from '@/providers/appearance';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useJournal, updateJournal } from '@/data/journal-store';
 import {
@@ -71,6 +71,25 @@ function LiftForm() {
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState<RepCount>(repFilter === 'all' ? 1 : repFilter);
   const action = useAction();
+  const deleteExercise = () =>
+    void action.run(async () => {
+      await updateJournal((j) => {
+        j.exercises = j.exercises.filter((item) => item.id !== id);
+        j.lifts = j.lifts.filter((record) => record.exerciseId !== id);
+      });
+      dismissSheet();
+    });
+  const confirmExerciseDeletion = () => {
+    const message = 'This removes the exercise and all of its saved max history.';
+    if (process.env.EXPO_OS === 'web') {
+      if (globalThis.confirm(`${message}\n\nDelete ${exercise?.name ?? 'exercise'}?`)) deleteExercise();
+      return;
+    }
+    Alert.alert(`Delete ${exercise?.name ?? 'exercise'}?`, message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete exercise', style: 'destructive', onPress: deleteExercise },
+    ]);
+  };
   return (
     <Sheet
       title={exercise?.name ?? 'Add an exercise'}
@@ -164,6 +183,15 @@ function LiftForm() {
                 Rename
               </Button>
             </Row>
+            <Button
+              quiet
+              danger
+              icon="trash"
+              loading={action.busy}
+              onPress={confirmExerciseDeletion}
+            >
+              Delete exercise
+            </Button>
           </Card>
           {adding && (
             <View style={{ gap: 16 }}>
