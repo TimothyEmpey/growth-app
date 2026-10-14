@@ -139,16 +139,58 @@ test('registration requires email verification; sessions are HttpOnly and passwo
   expect(confirmed.response.status).toBe(200);
   expect(confirmed.data.token).toBeUndefined();
   expect(confirmed.response.headers.get('Set-Cookie')).toContain('HttpOnly');
+  expect(confirmed.response.headers.get('Set-Cookie')).toContain('Max-Age=34560000');
   expect(confirmed.response.headers.get('Cache-Control')).toBe('no-store');
   expect(confirmed.data.account.email).toBe('test@example.invalid');
   expect(JSON.stringify(confirmed.data)).not.toContain('password');
   const row = sqlite.query('SELECT password_hash FROM accounts').get() as any;
   expect(row.password_hash).toStartWith('scrypt-v1:');
   expect(row.password_hash).not.toContain('strong-passphrase');
+  const storedSession = sqlite.query('SELECT expires_at FROM account_sessions').get() as any;
+  expect(storedSession.expires_at).toBe(253402300799);
   expect(
     (await call('/verify', { challengeId: requested.data.challengeId, code: code() })).response
       .status,
   ).toBe(400);
+});
+
+test('browser sessions stay persistent while account checks refresh their cookie', async () => {
+  const { call, code } = setup();
+  const requested = await call('/register', {
+    name: 'Test',
+    email: 'test@example.invalid',
+    password: 'strong-passphrase-123',
+  });
+  const confirmed = await call(
+    '/verify',
+    { challengeId: requested.data.challengeId, code: code() },
+    undefined,
+    { 'X-Growth-Platform': 'web' },
+  );
+  const cookie = confirmed.response.headers.get('Set-Cookie')!.split(';')[0];
+  const checked = await call('', undefined, undefined, {
+    'X-Growth-Platform': 'web',
+    Cookie: cookie,
+  });
+  expect(checked.data.account.email).toBe('test@example.invalid');
+  expect(checked.response.headers.get('Set-Cookie')).toContain('Max-Age=34560000');
+});
+
+test('signing in on another device keeps every existing device session active', async () => {
+  const { call, register, sqlite } = setup();
+  const firstDevice = await register();
+  const secondDevice = await call('/login', {
+    email: 'test@example.invalid',
+    password: 'strong-passphrase-123',
+  });
+  expect(firstDevice.data.token).not.toBe(secondDevice.data.token);
+  expect(sqlite.query('SELECT * FROM account_sessions').all()).toHaveLength(2);
+  expect((await call('', undefined, firstDevice.data.token)).data.account.email).toBe(
+    'test@example.invalid',
+  );
+  expect((await call('', undefined, secondDevice.data.token)).data.account.email).toBe(
+    'test@example.invalid',
+  );
 });
 
 test('verification codes expire, cap attempts and do not leak through API responses', async () => {

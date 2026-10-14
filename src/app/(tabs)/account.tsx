@@ -1,5 +1,5 @@
 import { ActivityIndicator, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import {
   Body,
@@ -187,6 +187,13 @@ export default function AccountPage() {
           title="Preferences"
           detail={`${journal.preferences.units === 'us' ? 'US customary' : 'Metric'} units · Your app, your way`}
           onPress={() => router.push('/account/preferences')}
+        />
+        <View style={{ height: 1, backgroundColor: C.border }} />
+        <SettingsRow
+          icon="calendar"
+          title="Notifications"
+          detail="Weight, meal & workout reminders"
+          onPress={() => router.push('/account/notifications' as Href)}
         />
         <View style={{ height: 1, backgroundColor: C.border }} />
         <SettingsRow

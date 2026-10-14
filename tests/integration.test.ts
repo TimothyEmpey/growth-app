@@ -37,6 +37,32 @@ const mockTokens = () => {
     })) as typeof fetch;
 };
 
+test('food search retries a transient provider failure before returning an error', async () => {
+  const { env } = environment();
+  env.FATSECRET_PROXY_URL = 'https://foods.example.invalid';
+  env.FATSECRET_PROXY_SECRET = 'proxy-secret';
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    if (calls === 1) return new Response('', { status: 503 });
+    return Response.json({
+      foods: {
+        food: [{ food_id: '1', food_name: 'Apple' }],
+        max_results: '10',
+        total_results: '1',
+        page_number: '0',
+      },
+    });
+  }) as typeof fetch;
+  const response = await worker.fetch(request('/api/foods/search?q=apple&page=1'), env);
+  expect(response.status).toBe(200);
+  expect((await response.json()) as any).toMatchObject({
+    foods: [{ id: 'fs:1', name: 'Apple' }],
+    hasMore: false,
+  });
+  expect(calls).toBe(2);
+});
+
 describe('OAuth and session security', () => {
   test('web state is browser-bound, single-use, and tied to a Growth account', async () => {
     const { env } = environment();

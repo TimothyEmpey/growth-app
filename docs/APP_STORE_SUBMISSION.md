@@ -5,7 +5,8 @@ This document prepares the information that can be completed before Apple Develo
 ## Current release configuration
 
 - App name: Growth
-- Version: 1.0.0
+- App Store version: 1.0
+- Release binary: 1.3.0
 - Bundle ID: `com.timempey.growth`
 - Expo owner: `empey`
 - EAS project ID: `f13d7bc4-9adc-41c6-a747-9028cc143770`
@@ -56,6 +57,8 @@ Build a daily food journal for breakfast, lunch, dinner, and snacks. Search FatS
 Growth also includes optional nutrition goals, activity streaks, unit preferences, appearance themes, and cross-device synchronization through a verified Growth account. The core lifting and diet journal can be used locally without creating an account.
 
 Growth is a personal fitness journal and does not provide medical diagnosis or individualized medical advice.
+
+Powered by fatsecret nutrition API (www.fatsecret.com)
 
 ### Keywords
 
@@ -130,7 +133,7 @@ Use one consistent theme and status-bar treatment. Avoid empty states, debug UI,
 - [x] Production builds auto-increment the build number
 - [x] `ITSAppUsesNonExemptEncryption` is generated as false through Expo configuration
 - [x] HealthKit entitlement and a read-purpose description are generated through Expo configuration
-- [ ] Deploy the privacy and support routes before entering their URLs in App Store Connect
+- [x] Deploy the privacy and support routes before entering their URLs in App Store Connect
 - [ ] Confirm the public support email and add any legally required address or phone information
 - [ ] Create polished, non-personal screenshot fixture data
 - [ ] Obtain sufficient Strava athlete capacity and complete Strava branding review before broad public release
@@ -138,13 +141,13 @@ Use one consistent theme and status-bar treatment. Avoid empty states, debug UI,
 ### Requires Apple Developer access
 
 - [ ] Confirm the paid membership is active and accept current agreements
-- [ ] Create the App Store Connect record for `com.timempey.growth`
+- [x] Create the App Store Connect record for `com.timempey.growth`
 - [ ] Complete category, age rating, regulated-device, content-rights, DSA, pricing, and availability questions
 - [ ] Publish the App Privacy answers and privacy-policy URL
 - [ ] Add description, keywords, subtitle, screenshots, support URL, copyright, and review contact
-- [ ] Create Apple distribution credentials through EAS
-- [ ] Build the production iOS binary with the production API environment
-- [ ] Upload the build to App Store Connect and complete export-compliance processing
+- [x] Create Apple distribution credentials through EAS
+- [x] Build the production iOS binary with the production API environment
+- [x] Upload build 38 to App Store Connect; Apple processing must finish before selection
 - [ ] Add internal TestFlight testers, then submit for external beta review if external testing is desired
 - [ ] Provide the non-expiring reviewer account and final review notes
 

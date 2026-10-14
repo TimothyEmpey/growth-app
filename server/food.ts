@@ -211,10 +211,29 @@ async function fatSecretGet<T>(path: string, params: Record<string, string>, env
       signal: AbortSignal.timeout(15_000),
     });
   };
-  let response = await request();
+  const requestWithRetry = async (forceToken = false) => {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const response = await request(forceToken);
+        if (response.status < 500 || attempt === 1) return response;
+      } catch (error) {
+        lastError = error;
+        if (attempt === 1) break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    throw new ServiceError(
+      lastError instanceof Error && lastError.name === 'TimeoutError'
+        ? 'Food search timed out. Please try again.'
+        : 'Food search is temporarily unavailable. Please try again.',
+      502,
+    );
+  };
+  let response = await requestWithRetry();
   if (response.status === 401) {
     fatSecretToken = null;
-    response = await request(true);
+    response = await requestWithRetry(true);
   }
   if (response.status === 429)
     throw new ServiceError(

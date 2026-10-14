@@ -26,7 +26,7 @@ import {
 } from '@/domain/journal';
 import { INPUT_LIMITS } from '@/domain/input';
 import { MEALS, type Food, type FoodSearchItem, type Meal } from '@/domain/types';
-import { api } from '@/services/api';
+import { api, ApiError } from '@/services/api';
 import {
   dismissSheet,
   Body,
@@ -108,7 +108,10 @@ function FoodForm() {
         { signal },
       ),
     enabled: debounced.length >= 2 && !selected,
-    retry: false,
+    // Typed searches may cross a waking provider proxy; retry only temporary failures.
+    retry: (failureCount, error) =>
+      failureCount < 2 && error instanceof ApiError && error.status >= 500,
+    retryDelay: (attempt) => 400 * 2 ** attempt,
   });
   let nutrition = selected?.per100g;
   if (selected && Number(quantity) > 0 && Number.isFinite(Number(quantity)))

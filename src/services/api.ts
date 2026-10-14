@@ -34,7 +34,12 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       },
     });
   } catch (e) {
-    if (e instanceof Error && e.name === 'AbortError') throw e;
+    // expo/fetch can report an aborted native request as a generic network error.
+    if (options.signal?.aborted || (e instanceof Error && e.name === 'AbortError')) {
+      const aborted = new Error('The request was cancelled.');
+      aborted.name = 'AbortError';
+      throw aborted;
+    }
     throw new ApiError('Could not connect. Check your connection and try again.', 503);
   }
   if (!response.headers.get('content-type')?.includes('application/json'))

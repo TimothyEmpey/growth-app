@@ -16,6 +16,7 @@ import { JournalSyncProvider } from '@/providers/journal-sync';
 import { WidgetSyncProvider } from '@/providers/widget-sync';
 import { useJournal } from '@/data/journal-store';
 import { ApiError } from '@/services/api';
+import '@/services/reminders';
 import '@/global.css';
 
 export const unstable_settings = { anchor: '(tabs)' };
@@ -107,6 +108,7 @@ function AppNavigation() {
           'account/profile',
           'account/appearance',
           'account/preferences',
+          'account/notifications',
           'account/connections',
           'account/sign-in',
           'account/email',

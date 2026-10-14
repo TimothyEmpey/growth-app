@@ -33,6 +33,9 @@ type Challenge = {
   security_version: number;
 };
 type JournalRow = { payload: string; revision: number; updated_at: string };
+const PERMANENT_SESSION_EXPIRY = 253402300799;
+// Browsers cap persistent cookies, so refresh the longest broadly supported lifetime on use.
+const BROWSER_SESSION_SECONDS = 400 * 86400;
 export const accountsConfigured = (env: Env) => !!(env.RESEND_API_KEY && env.EMAIL_FROM);
 const publicAccount = (a: AccountRow): Account => ({
   id: a.id,
@@ -168,7 +171,7 @@ async function session(request: Request, env: Env, account: AccountRow) {
   await env.DB.prepare(
     'INSERT INTO account_sessions (token_hash,account_id,expires_at,security_version) VALUES (?,?,?,?)',
   )
-    .bind(await hash(token), account.id, now() + 30 * 86400, account.security_version)
+    .bind(await hash(token), account.id, PERMANENT_SESSION_EXPIRY, account.security_version)
     .run();
   // Browsers receive only an HttpOnly cookie. Native callers request a secure-store token.
   return json(
@@ -178,7 +181,7 @@ async function session(request: Request, env: Env, account: AccountRow) {
     },
     200,
     {
-      'Set-Cookie': setCookie(env, 'growth_account', token, 30 * 86400),
+      'Set-Cookie': setCookie(env, 'growth_account', token, BROWSER_SESSION_SECONDS),
       'Cache-Control': 'no-store',
     },
   );
@@ -357,10 +360,23 @@ export async function accountRoute(request: Request, env: Env): Promise<Response
   const path = new URL(request.url).pathname;
   if (request.method === 'GET' && path === '/api/account') {
     const account = await signedIn(request, env);
+    const browserToken = cookie(request, 'growth_account');
     return json(
       { account: account ? publicAccount(account) : null, configured: accountsConfigured(env) },
       200,
-      { 'Cache-Control': 'no-store' },
+      {
+        'Cache-Control': 'no-store',
+        ...(account && browserToken
+          ? {
+              'Set-Cookie': setCookie(
+                env,
+                'growth_account',
+                browserToken,
+                BROWSER_SESSION_SECONDS,
+              ),
+            }
+          : {}),
+      },
     );
   }
   if (path === '/api/account/journal') {
