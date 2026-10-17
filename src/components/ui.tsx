@@ -473,10 +473,12 @@ export function Sheet({
   title,
   subtitle,
   children,
+  onDismiss,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
+  onDismiss?: () => void;
 }) {
   const C = useColors();
   const pathname = usePathname();
@@ -490,7 +492,7 @@ export function Sheet({
           ? '/running'
           : '/';
   return (
-    <Dialog title={title} onDismiss={() => dismissSheet(fallback)}>
+    <Dialog title={title} onDismiss={onDismiss ?? (() => dismissSheet(fallback))}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentInsetAdjustmentBehavior="automatic"

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import {
   Body,
   Button,
@@ -18,6 +19,12 @@ import { accountRequest, useAccountActions, type Verification } from '@/services
 
 type Mode = 'login' | 'register' | 'reset';
 export default function SignInSheet() {
+  const params = useLocalSearchParams<{
+    returnTo?: string;
+    meal?: string;
+    date?: string;
+    addToRecipeId?: string;
+  }>();
   const { journal } = useJournal();
   const [mode, setMode] = useState<Mode>('login');
   const [name, setName] = useState(journal.profile.name);
@@ -29,6 +36,20 @@ export default function SignInSheet() {
   const [sentAt, setSentAt] = useState(0);
   const action = useAction();
   const actions = useAccountActions();
+  const leaveSignIn = () => {
+    if (params.returnTo === 'my-foods') {
+      router.replace({
+        pathname: '/my-foods',
+        params: {
+          meal: params.meal,
+          date: params.date,
+          addToRecipeId: params.addToRecipeId,
+        },
+      } as never);
+      return;
+    }
+    dismissSheet('/account');
+  };
   const changeMode = (next: Mode) => {
     setMode(next);
     setPassword('');
@@ -63,7 +84,7 @@ export default function SignInSheet() {
     });
     setPassword('');
     setConfirm('');
-    dismissSheet('/account');
+    leaveSignIn();
   };
   return (
     <Sheet
@@ -77,6 +98,7 @@ export default function SignInSheet() {
               : 'Welcome back'
       }
       subtitle={challenge ? `A code was requested for ${email}.` : 'Your next chapter starts here.'}
+      onDismiss={leaveSignIn}
     >
       {challenge ? (
         <>

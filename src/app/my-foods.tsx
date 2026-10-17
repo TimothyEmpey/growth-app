@@ -92,7 +92,21 @@ export default function MyFoodsSheet() {
             A Growth account keeps your food contributions tied to you across devices and lets your
             matches appear first in search.
           </Body>
-          <Button onPress={() => router.push('/account/sign-in')}>Sign in</Button>
+          <Button
+            onPress={() =>
+              router.replace({
+                pathname: '/account/sign-in',
+                params: {
+                  returnTo: 'my-foods',
+                  meal: params.meal,
+                  date: params.date,
+                  addToRecipeId: params.addToRecipeId,
+                },
+              })
+            }
+          >
+            Sign in
+          </Button>
         </Card>
       </Sheet>
     );
