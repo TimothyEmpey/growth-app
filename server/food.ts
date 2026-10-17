@@ -1,6 +1,29 @@
 import type { Food, FoodPortion, FoodSearchItem, Nutrition } from '../src/domain/types';
 import { type Env, now, ServiceError } from './types';
 
+type CommunityFoodRow = {
+  id: string;
+  creator_account_id: string | null;
+  name: string;
+  brand: string | null;
+  serving_label: string;
+  serving_grams: number;
+  nutrition: string;
+  created_at: number;
+  updated_at: number;
+};
+
+export type CommunityFoodInput = {
+  name?: unknown;
+  brand?: unknown;
+  servingLabel?: unknown;
+  servingGrams?: unknown;
+  calories?: unknown;
+  protein?: unknown;
+  carbs?: unknown;
+  fat?: unknown;
+};
+
 type OpenFoodFactsProduct = {
   code?: string;
   product_name?: string;
@@ -166,6 +189,124 @@ export function mapFatSecretSearchFoods(foods: FatSecretSearchFood[]): FoodSearc
   }));
 }
 
+const cleanText = (value: unknown, label: string, maximum: number, required = true) => {
+  if (typeof value !== 'string') throw new ServiceError(`Enter a valid ${label}.`);
+  const cleaned = value.trim().replace(/\s+/g, ' ');
+  if ((required && !cleaned) || cleaned.length > maximum)
+    throw new ServiceError(`Enter a ${label} up to ${maximum} characters.`);
+  return cleaned;
+};
+
+const requiredNumber = (value: unknown, label: string, maximum: number, allowZero = true) => {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed < (allowZero ? 0 : Number.EPSILON) || parsed > maximum)
+    throw new ServiceError(`Enter a valid ${label}.`);
+  return parsed;
+};
+
+function communityFood(row: CommunityFoodRow): Food {
+  const servingNutrition = JSON.parse(row.nutrition) as Nutrition;
+  const per100g = Object.fromEntries(
+    Object.entries(servingNutrition).map(([key, value]) => [
+      key,
+      value === null ? null : (value / row.serving_grams) * 100,
+    ]),
+  ) as Nutrition;
+  return {
+    id: `community:${row.id}`,
+    name: row.name,
+    brand: row.brand || undefined,
+    per100g,
+    portions: [
+      { id: 'grams', label: '1 gram', grams: 1 },
+      {
+        id: 'serving',
+        label: row.serving_label,
+        grams: row.serving_grams,
+        nutrition: servingNutrition,
+      },
+    ],
+    defaultPortionId: 'serving',
+  };
+}
+
+export async function createCommunityFood(
+  input: CommunityFoodInput,
+  accountId: string,
+  env: Env,
+) {
+  const name = cleanText(input.name, 'food name', 120);
+  const brand = cleanText(input.brand ?? '', 'brand', 80, false);
+  const servingLabel = cleanText(input.servingLabel, 'serving description', 80);
+  const servingGrams = requiredNumber(input.servingGrams, 'serving weight', 100_000, false);
+  const nutrition: Nutrition = {
+    calories: requiredNumber(input.calories, 'calories', 100_000),
+    protein: requiredNumber(input.protein, 'protein', 10_000),
+    carbs: requiredNumber(input.carbs, 'carbohydrates', 10_000),
+    fat: requiredNumber(input.fat, 'fat', 10_000),
+  };
+  const id = crypto.randomUUID();
+  const timestamp = now();
+  await env.DB.prepare(
+    `INSERT INTO community_foods
+      (id,creator_account_id,name,brand,serving_label,serving_grams,nutrition,search_text,created_at,updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`,
+  )
+    .bind(
+      id,
+      accountId,
+      name,
+      brand || null,
+      servingLabel,
+      servingGrams,
+      JSON.stringify(nutrition),
+      `${name} ${brand}`.toLocaleLowerCase(),
+      timestamp,
+      timestamp,
+    )
+    .run();
+  return communityFood({
+    id,
+    creator_account_id: accountId,
+    name,
+    brand: brand || null,
+    serving_label: servingLabel,
+    serving_grams: servingGrams,
+    nutrition: JSON.stringify(nutrition),
+    created_at: timestamp,
+    updated_at: timestamp,
+  });
+}
+
+export async function communityFoodsForAccount(accountId: string, env: Env) {
+  const result = await env.DB.prepare(
+    'SELECT * FROM community_foods WHERE creator_account_id=? ORDER BY updated_at DESC LIMIT 200',
+  )
+    .bind(accountId)
+    .all<CommunityFoodRow>();
+  return result.results.map(communityFood);
+}
+
+async function communitySearch(query: string, accountId: string | null, env: Env) {
+  const pattern = `%${query.toLocaleLowerCase().replace(/[\\%_]/g, '\\$&')}%`;
+  const result = await env.DB.prepare(
+    // Creator ownership affects ranking only; every matching contribution remains public.
+    `SELECT * FROM community_foods
+     WHERE search_text LIKE ? ESCAPE '\\'
+     ORDER BY CASE WHEN creator_account_id=? THEN 0 ELSE 1 END, updated_at DESC
+     LIMIT 10`,
+  )
+    .bind(pattern, accountId ?? '')
+    .all<CommunityFoodRow>();
+  return result.results.map((row) => ({
+    id: `community:${row.id}`,
+    name: row.name,
+    brand: row.brand || undefined,
+    source: 'community' as const,
+    createdByYou: !!accountId && row.creator_account_id === accountId,
+  }));
+}
+
 async function accessToken(env: Env, force = false) {
   if (!env.FATSECRET_CLIENT_ID || !env.FATSECRET_CLIENT_SECRET)
     throw new ServiceError('Food search is not configured.', 503);
@@ -268,8 +409,10 @@ async function cached<T>(key: string, env: Env, load: () => Promise<T>): Promise
   return data;
 }
 
-export function searchFoods(query: string, page: number, env: Env) {
-  return cached(`search:fatsecret:v1:${page}:${query}`, env, async () => {
+export async function searchFoods(query: string, page: number, env: Env, accountId: string | null) {
+  // Community matches augment FatSecret instead of changing its cached data or result order.
+  const community = page === 1 ? await communitySearch(query, accountId, env) : [];
+  const provider = await cached(`search:fatsecret:v1:${page}:${query}`, env, async () => {
     const result = await fatSecretGet<{
       foods?: {
         food?: FatSecretSearchFood | FatSecretSearchFood[];
@@ -292,6 +435,7 @@ export function searchFoods(query: string, page: number, env: Env) {
       hasMore: (pageNumber + 1) * maxResults < total,
     };
   });
+  return { foods: [...community, ...provider.foods], hasMore: provider.hasMore };
 }
 
 async function fatSecretFoodDetail(id: string, env: Env) {
@@ -331,5 +475,17 @@ async function openFoodFactsBarcodeDetail(id: string, env: Env) {
 export function foodDetail(id: string, env: Env) {
   if (id.startsWith('fs:')) return fatSecretFoodDetail(id, env);
   if (id.startsWith('off:')) return openFoodFactsBarcodeDetail(id, env);
+  if (id.startsWith('community:')) {
+    const communityId = id.slice('community:'.length);
+    if (!/^[0-9a-f-]{36}$/i.test(communityId))
+      throw new ServiceError('This community food is no longer available.', 404);
+    return env.DB.prepare('SELECT * FROM community_foods WHERE id=?')
+      .bind(communityId)
+      .first<CommunityFoodRow>()
+      .then((row) => {
+        if (!row) throw new ServiceError('This community food is no longer available.', 404);
+        return communityFood(row);
+      });
+  }
   throw new ServiceError('This food is no longer available. Please search again.', 404);
 }

@@ -97,6 +97,7 @@ function AppNavigation() {
           'weight-history',
           'lift',
           'food',
+          'my-foods',
           'recipe',
           'recipes',
           'goals',

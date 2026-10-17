@@ -4,7 +4,13 @@ import {
   accountsConfigured,
   requireAccountId,
 } from './accounts';
-import { fatSecretConfigured, foodDetail, searchFoods } from './food';
+import {
+  communityFoodsForAccount,
+  createCommunityFood,
+  fatSecretConfigured,
+  foodDetail,
+  searchFoods,
+} from './food';
 import { authorize, nativeExchange, oauthCallback } from './oauth';
 import { hash, rateLimit } from './security';
 import {
@@ -262,9 +268,22 @@ async function route(request: Request, env: Env): Promise<Response> {
     )
       throw new ServiceError('Enter a food name between 2 and 120 characters.');
     await rateLimit(request, env, 'food', 60);
-    return json(await searchFoods(query, page, env));
+    return json(await searchFoods(query, page, env, await accountIdForRequest(request, env)));
+  }
+  if (path === '/api/foods/mine' && method === 'GET') {
+    const accountId = await requireAccountId(request, env);
+    return json({ foods: await communityFoodsForAccount(accountId, env) });
+  }
+  if (path === '/api/foods/community' && method === 'POST') {
+    const accountId = await requireAccountId(request, env);
+    await rateLimit(request, env, `community-food:${accountId}`, 20);
+    return json(await createCommunityFood((await request.json()) as Record<string, unknown>, accountId, env), 201);
   }
   if (/^\/api\/foods\/(?:fs|off):\d+$/.test(path) && method === 'GET') {
+    await rateLimit(request, env, 'food', 60);
+    return json(await foodDetail(path.split('/').at(-1)!, env));
+  }
+  if (/^\/api\/foods\/community:[0-9a-f-]{36}$/i.test(path) && method === 'GET') {
     await rateLimit(request, env, 'food', 60);
     return json(await foodDetail(path.split('/').at(-1)!, env));
   }

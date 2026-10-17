@@ -11,7 +11,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useJournal, updateJournal } from '@/data/journal-store';
 import {
@@ -62,6 +62,7 @@ function FoodForm() {
     date?: string;
     recipeId?: string;
     addToRecipeId?: string;
+    communityFoodId?: string;
   }>();
   const { journal } = useJournal();
   const existing = journal.meals.find((e) => e.id === params.id);
@@ -73,26 +74,26 @@ function FoodForm() {
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<Food | null>(() =>
+  const [selectedFood, setSelected] = useState<Food | null>(() =>
     existing
       ? withOunceFallback(existing.food)
       : selectedRecipe
         ? recipeAsFood(selectedRecipe)
         : null,
   );
+  const [communityDismissed, setCommunityDismissed] = useState(false);
   const queryClient = useQueryClient();
   const [portionId, setPortionId] = useState(
-    existing?.portionId ?? (selectedRecipe ? 'serving' : 'grams'),
+    existing?.portionId ?? (selectedRecipe || params.communityFoodId ? 'serving' : 'grams'),
   );
   const [portionMenuOpen, setPortionMenuOpen] = useState(false);
   const [quantity, setQuantity] = useState(
-    existing?.quantity.toString() ?? (selectedRecipe ? '1' : '100'),
+    existing?.quantity.toString() ?? (selectedRecipe || params.communityFoodId ? '1' : '100'),
   );
   const [scanning, setScanning] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const barcodeHandled = useRef(false);
   const action = useAction();
-  const currentPortion = selected?.portions.find((portion) => portion.id === portionId);
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounced(query.trim());
@@ -107,17 +108,28 @@ function FoodForm() {
         `/api/foods/search?q=${encodeURIComponent(debounced)}&page=${page}`,
         { signal },
       ),
-    enabled: debounced.length >= 2 && !selected,
+    enabled: debounced.length >= 2 && !selectedFood && !params.communityFoodId,
     // Typed searches may cross a waking provider proxy; retry only temporary failures.
     retry: (failureCount, error) =>
       failureCount < 2 && error instanceof ApiError && error.status >= 500,
     retryDelay: (attempt) => 400 * 2 ** attempt,
   });
+  const communitySelection = useQuery({
+    queryKey: ['food', params.communityFoodId],
+    queryFn: ({ signal }) =>
+      api<Food>(`/api/foods/community:${params.communityFoodId}`, { signal }),
+    enabled: !!params.communityFoodId && !selectedFood && !communityDismissed,
+    retry: false,
+  });
+  const selected =
+    selectedFood ?? (!communityDismissed ? (communitySelection.data ?? null) : null);
+  const currentPortion = selected?.portions.find((portion) => portion.id === portionId);
   let nutrition = selected?.per100g;
   if (selected && Number(quantity) > 0 && Number.isFinite(Number(quantity)))
     nutrition = nutritionFor(selected, portionId, Number(quantity));
   const recents = journal.foods;
   const choose = (food: Food) => {
+    setCommunityDismissed(false);
     setSelected(withOunceFallback(food));
     setPortionMenuOpen(false);
     const portion =
@@ -170,6 +182,7 @@ function FoodForm() {
                 icon="left"
                 onPress={() => {
                   setSelected(null);
+                  setCommunityDismissed(true);
                   setPortionMenuOpen(false);
                 }}
               >
@@ -376,15 +389,46 @@ function FoodForm() {
               </View>
             </View>
             {!params.addToRecipeId && (
+              <Row style={{ flexWrap: 'wrap' }}>
+                <Button
+                  quiet
+                  onPress={() => router.push({ pathname: '/recipes', params: { meal, date } })}
+                >
+                  View Recipes
+                </Button>
+                <Button
+                  quiet
+                  onPress={() =>
+                    router.push(
+                      {
+                        pathname: '/my-foods',
+                        params: { meal, date, addToRecipeId: params.addToRecipeId },
+                      } as unknown as Href,
+                    )
+                  }
+                >
+                  My Foods
+                </Button>
+              </Row>
+            )}
+            {params.addToRecipeId && (
               <Button
                 quiet
-                onPress={() => router.push({ pathname: '/recipes', params: { meal, date } })}
+                onPress={() =>
+                  router.push(
+                    {
+                      pathname: '/my-foods',
+                      params: { meal, date, addToRecipeId: params.addToRecipeId },
+                    } as unknown as Href,
+                  )
+                }
               >
-                View Recipes
+                My Foods
               </Button>
             )}
             {action.busy && <ActivityIndicator color={C.blue} />}
             {action.error && <Notice message={action.error} />}
+            {communitySelection.error && <Notice message={communitySelection.error.message} />}
             {!query && recents.length > 0 && (
               <View style={{ gap: 8 }}>
                 <Label>Recent foods · available offline</Label>
@@ -440,6 +484,22 @@ function FoodForm() {
                     </Button>
                   )}
                 </Row>
+                {!params.addToRecipeId && (
+                  <Button
+                    quiet
+                    icon="plus"
+                    onPress={() =>
+                      router.push(
+                        {
+                          pathname: '/my-foods',
+                          params: { meal, date, create: '1' },
+                        } as unknown as Href,
+                      )
+                    }
+                  >
+                    Add a missing food
+                  </Button>
+                )}
               </View>
             )}
             {!query && !recents.length && (
@@ -454,7 +514,9 @@ function FoodForm() {
             )}
           </>
         )}
-        {selected?.id.startsWith('off:') ? (
+        {selected?.id.startsWith('community:') ? (
+          <Body>Growth community food.</Body>
+        ) : selected?.id.startsWith('off:') ? (
           <Body>Barcode data from Open Food Facts.</Body>
         ) : (
           <FatSecretAttribution />
@@ -685,6 +747,11 @@ function FoodResult({ food, onPress }: { food: FoodSearchItem; onPress: () => vo
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={{ color: C.text, fontSize: 15, lineHeight: 22 }}>{food.name}</Text>
           {food.brand && <Body>{food.brand}</Body>}
+          {food.source === 'community' && (
+            <Label color={food.createdByYou ? C.blue : C.muted}>
+              {food.createdByYou ? 'Your Growth food' : 'Growth community'}
+            </Label>
+          )}
         </View>
         <Icon name="right" size={18} />
       </Row>

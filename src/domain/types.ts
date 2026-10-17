@@ -34,7 +34,13 @@ export type Food = {
   portions: FoodPortion[];
   defaultPortionId?: string;
 };
-export type FoodSearchItem = { id: string; name: string; brand?: string };
+export type FoodSearchItem = {
+  id: string;
+  name: string;
+  brand?: string;
+  source?: 'community';
+  createdByYou?: boolean;
+};
 export type MealEntry = {
   id: string;
   date: DateKey;

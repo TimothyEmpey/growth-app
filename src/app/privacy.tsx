@@ -44,7 +44,7 @@ const sections: LegalSection[] = [
   {
     title: 'Food search and email delivery',
     paragraphs: [
-      'Typed food searches are sent through the Growth service to FatSecret. Barcode lookups are sent to Open Food Facts. Search terms and requested food or barcode identifiers are provided to the applicable food provider, but Growth does not send your Growth password or Strava credentials with those requests. Selected nutrition values are saved with journal entries so historical entries do not change when database results change.',
+      'Typed food searches are sent through the Growth service to FatSecret and are also matched against foods contributed to Growth. Barcode lookups are sent to Open Food Facts. Search terms and requested food or barcode identifiers are provided to the applicable food provider, but Growth does not send your Growth password or Strava credentials with those requests. Selected nutrition values are saved with journal entries so historical entries do not change when database results change.',
       'Growth uses Resend to deliver account-verification, password-recovery, and email-change messages. Resend receives the destination email address and message content needed to deliver those messages.',
     ],
   },
@@ -62,6 +62,7 @@ const sections: LegalSection[] = [
   {
     title: 'Service providers',
     paragraphs: [
+      'Foods you add to the Growth community, including their names, brands, servings, calories, and macros, are stored with your account and become searchable by other Growth users. Your identity and email are not shown with a contributed food. Your own matching contributions are ranked first for you. If you delete your account, the foods may remain available without a link to your account.',
       'Growth relies on Cloudflare for application hosting, API processing, queues, and database storage; Strava for connected running information; FatSecret for typed food search and nutrition information; Open Food Facts for barcode information; and Resend for account email delivery. These providers process only the information needed for their role and operate under their own terms and privacy practices.',
     ],
   },

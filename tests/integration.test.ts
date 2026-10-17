@@ -63,6 +63,76 @@ test('food search retries a transient provider failure before returning an error
   expect(calls).toBe(2);
 });
 
+test('community foods are shared while the creator receives matching foods first', async () => {
+  const { env } = environment();
+  env.FATSECRET_PROXY_URL = 'https://foods.example.invalid';
+  env.FATSECRET_PROXY_SECRET = 'proxy-secret';
+  globalThis.fetch = (async () =>
+    Response.json({
+      foods: {
+        food: [{ food_id: '9', food_name: 'Chili from FatSecret' }],
+        max_results: '10',
+        total_results: '1',
+        page_number: '0',
+      },
+    })) as typeof fetch;
+  const creatorToken = await accountSession(env, 'creator');
+  const otherToken = await accountSession(env, 'other');
+  const input = {
+    name: 'Family turkey chili',
+    brand: 'Home recipe',
+    servingLabel: '1 bowl',
+    servingGrams: 300,
+    calories: 420,
+    protein: 34,
+    carbs: 40,
+    fat: 13,
+  };
+  expect((await worker.fetch(request('/api/foods/community', input), env)).status).toBe(401);
+  const created = await worker.fetch(
+    request('/api/foods/community', input, `growth_account=${creatorToken}`),
+    env,
+  );
+  expect(created.status).toBe(201);
+  const food = (await created.json()) as any;
+  expect(food).toMatchObject({
+    name: 'Family turkey chili',
+    defaultPortionId: 'serving',
+    portions: [{ id: 'grams' }, { id: 'serving', label: '1 bowl', grams: 300 }],
+  });
+  await worker.fetch(
+    request(
+      '/api/foods/community',
+      { ...input, name: 'Community beef chili' },
+      `growth_account=${otherToken}`,
+    ),
+    env,
+  );
+  const search = await worker.fetch(
+    request('/api/foods/search?q=chili&page=1', undefined, `growth_account=${creatorToken}`),
+    env,
+  );
+  expect(search.status).toBe(200);
+  const results = (await search.json()) as any;
+  expect(results.foods.map((item: any) => item.name)).toEqual([
+    'Family turkey chili',
+    'Community beef chili',
+    'Chili from FatSecret',
+  ]);
+  expect(results.foods[0]).toMatchObject({ source: 'community', createdByYou: true });
+  expect(results.foods[1]).toMatchObject({ source: 'community', createdByYou: false });
+  const mine = await worker.fetch(
+    request('/api/foods/mine', undefined, `growth_account=${creatorToken}`),
+    env,
+  );
+  expect(((await mine.json()) as any).foods.map((item: any) => item.name)).toEqual([
+    'Family turkey chili',
+  ]);
+  const detail = await worker.fetch(request(`/api/foods/${food.id}`), env);
+  expect(detail.status).toBe(200);
+  expect((await detail.json()) as any).toMatchObject({ name: 'Family turkey chili' });
+});
+
 describe('OAuth and session security', () => {
   test('web state is browser-bound, single-use, and tied to a Growth account', async () => {
     const { env } = environment();
