@@ -399,7 +399,7 @@ function FoodForm() {
                 <Button
                   quiet
                   onPress={() =>
-                    router.push(
+                    router.replace(
                       {
                         pathname: '/my-foods',
                         params: { meal, date, addToRecipeId: params.addToRecipeId },
@@ -415,7 +415,7 @@ function FoodForm() {
               <Button
                 quiet
                 onPress={() =>
-                  router.push(
+                  router.replace(
                     {
                       pathname: '/my-foods',
                       params: { meal, date, addToRecipeId: params.addToRecipeId },
@@ -489,7 +489,7 @@ function FoodForm() {
                     quiet
                     icon="plus"
                     onPress={() =>
-                      router.push(
+                      router.replace(
                         {
                           pathname: '/my-foods',
                           params: { meal, date, create: '1' },

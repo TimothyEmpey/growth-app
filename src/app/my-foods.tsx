@@ -55,6 +55,15 @@ export default function MyFoodsSheet() {
     carbs: Number(carbs) || 0,
     fat: Number(fat) || 0,
   };
+  const returnToSearch = () =>
+    router.replace({
+      pathname: '/food',
+      params: {
+        meal: params.meal,
+        date: params.date,
+        addToRecipeId: params.addToRecipeId,
+      },
+    });
   // Return through the existing food detail flow so servings and journal snapshots stay identical.
   const select = (food: Food) =>
     router.replace({
@@ -213,6 +222,9 @@ export default function MyFoodsSheet() {
         </>
       ) : (
         <>
+          <Button quiet icon="left" onPress={returnToSearch}>
+            Back to food search
+          </Button>
           <Button icon="plus" onPress={() => setCreating(true)}>
             Add a food
           </Button>
