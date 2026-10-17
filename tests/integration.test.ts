@@ -116,11 +116,29 @@ test('community foods are shared while the creator receives matching foods first
   const results = (await search.json()) as any;
   expect(results.foods.map((item: any) => item.name)).toEqual([
     'Family turkey chili',
-    'Community beef chili',
     'Chili from FatSecret',
+    'Community beef chili',
   ]);
   expect(results.foods[0]).toMatchObject({ source: 'community', createdByYou: true });
-  expect(results.foods[1]).toMatchObject({ source: 'community', createdByYou: false });
+  expect(results.foods[2]).toMatchObject({ source: 'community', createdByYou: false });
+  const otherSearch = await worker.fetch(
+    request('/api/foods/search?q=chili&page=1', undefined, `growth_account=${otherToken}`),
+    env,
+  );
+  const otherResults = (await otherSearch.json()) as any;
+  expect(otherResults.foods.map((item: any) => item.name)).toEqual([
+    'Community beef chili',
+    'Chili from FatSecret',
+    'Family turkey chili',
+  ]);
+  expect(otherResults.foods[0]).toMatchObject({ source: 'community', createdByYou: true });
+  const publicSearch = await worker.fetch(request('/api/foods/search?q=chili&page=1'), env);
+  const publicResults = (await publicSearch.json()) as any;
+  expect(publicResults.foods.map((item: any) => item.name)).toEqual([
+    'Chili from FatSecret',
+    'Family turkey chili',
+    'Community beef chili',
+  ]);
   const mine = await worker.fetch(
     request('/api/foods/mine', undefined, `growth_account=${creatorToken}`),
     env,

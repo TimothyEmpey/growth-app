@@ -307,6 +307,29 @@ async function communitySearch(query: string, accountId: string | null, env: Env
   }));
 }
 
+function searchRelevance(food: FoodSearchItem, query: string) {
+  const needle = query.trim().toLocaleLowerCase();
+  const name = food.name.trim().toLocaleLowerCase();
+  const combined = `${name} ${food.brand ?? ''}`.trim().toLocaleLowerCase();
+  if (name === needle) return 0;
+  if (name.startsWith(needle)) return 1;
+  if (name.split(/\s+/).some((word) => word.startsWith(needle))) return 2;
+  if (combined.includes(needle)) return 3;
+  return 4;
+}
+
+function mergeFoodSearch(
+  community: FoodSearchItem[],
+  provider: FoodSearchItem[],
+  query: string,
+) {
+  const createdByYou = community.filter((food) => food.createdByYou);
+  const publicMatches = [...provider, ...community.filter((food) => !food.createdByYou)];
+  // Stable relevance sorting keeps provider order and prevents another user's food from being promoted.
+  publicMatches.sort((left, right) => searchRelevance(left, query) - searchRelevance(right, query));
+  return [...createdByYou, ...publicMatches];
+}
+
 async function accessToken(env: Env, force = false) {
   if (!env.FATSECRET_CLIENT_ID || !env.FATSECRET_CLIENT_SECRET)
     throw new ServiceError('Food search is not configured.', 503);
@@ -435,7 +458,7 @@ export async function searchFoods(query: string, page: number, env: Env, account
       hasMore: (pageNumber + 1) * maxResults < total,
     };
   });
-  return { foods: [...community, ...provider.foods], hasMore: provider.hasMore };
+  return { foods: mergeFoodSearch(community, provider.foods, query), hasMore: provider.hasMore };
 }
 
 async function fatSecretFoodDetail(id: string, env: Env) {
