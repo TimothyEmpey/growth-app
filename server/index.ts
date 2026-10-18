@@ -7,6 +7,7 @@ import {
 import {
   communityFoodsForAccount,
   createCommunityFood,
+  deleteCommunityFood,
   fatSecretConfigured,
   foodDetail,
   searchFoods,
@@ -287,6 +288,11 @@ async function route(request: Request, env: Env): Promise<Response> {
     await rateLimit(request, env, 'food', 60);
     return json(await foodDetail(path.split('/').at(-1)!, env));
   }
+  if (/^\/api\/foods\/community:[0-9a-f-]{36}$/i.test(path) && method === 'DELETE') {
+    const accountId = await requireAccountId(request, env);
+    await deleteCommunityFood(path.split(':').at(-1)!, accountId, env);
+    return json({ ok: true });
+  }
   if (path.startsWith('/api/')) throw new ServiceError('Endpoint not found.', 404);
   return env.ASSETS.fetch(request);
 }
@@ -306,7 +312,7 @@ export default {
             ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Credentials': 'true' }
             : {}),
           'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Growth-Platform',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
           Vary: 'Origin',
         },
       });

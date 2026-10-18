@@ -287,6 +287,15 @@ export async function communityFoodsForAccount(accountId: string, env: Env) {
   return result.results.map(communityFood);
 }
 
+export async function deleteCommunityFood(id: string, accountId: string, env: Env) {
+  const result = await env.DB.prepare(
+    'DELETE FROM community_foods WHERE id=? AND creator_account_id=?',
+  )
+    .bind(id, accountId)
+    .run();
+  if (!result.meta.changes) throw new ServiceError('Food not found.', 404);
+}
+
 async function communitySearch(query: string, accountId: string | null, env: Env) {
   const pattern = `%${query.toLocaleLowerCase().replace(/[\\%_]/g, '\\$&')}%`;
   const result = await env.DB.prepare(

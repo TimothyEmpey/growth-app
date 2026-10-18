@@ -17,9 +17,9 @@ const originalFetch = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = originalFetch;
 });
-const request = (path: string, body?: unknown, cookie?: string) =>
+const request = (path: string, body?: unknown, cookie?: string, method?: string) =>
   new Request(`http://localhost:8787${path}`, {
-    method: body ? 'POST' : 'GET',
+    method: method ?? (body ? 'POST' : 'GET'),
     headers: {
       ...(body ? { 'Content-Type': 'application/json' } : {}),
       ...(cookie ? { Cookie: cookie } : {}),
@@ -146,9 +146,27 @@ test('community foods are shared while the creator receives matching foods first
   expect(((await mine.json()) as any).foods.map((item: any) => item.name)).toEqual([
     'Family turkey chili',
   ]);
+  expect(
+    (
+      await worker.fetch(
+        request(`/api/foods/${food.id}`, undefined, `growth_account=${otherToken}`, 'DELETE'),
+        env,
+      )
+    ).status,
+  ).toBe(404);
+  expect(
+    (
+      await worker.fetch(
+        request(`/api/foods/${food.id}`, undefined, `growth_account=${creatorToken}`, 'DELETE'),
+        env,
+      )
+    ).status,
+  ).toBe(200);
+  expect(
+    ((await (await worker.fetch(request('/api/foods/mine', undefined, `growth_account=${creatorToken}`), env)).json()) as any).foods,
+  ).toEqual([]);
   const detail = await worker.fetch(request(`/api/foods/${food.id}`), env);
-  expect(detail.status).toBe(200);
-  expect((await detail.json()) as any).toMatchObject({ name: 'Family turkey chili' });
+  expect(detail.status).toBe(404);
 });
 
 describe('OAuth and session security', () => {

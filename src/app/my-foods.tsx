@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useColors } from '@/providers/appearance';
@@ -75,6 +75,25 @@ export default function MyFoodsSheet() {
         communityFoodId: food.id.slice('community:'.length),
       },
     });
+  const deleteFood = (food: Food) =>
+    void action.run(async () => {
+      await api(`/api/foods/${food.id}`, { method: 'DELETE' });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ['community-foods'] }),
+        client.invalidateQueries({ queryKey: ['foods'] }),
+      ]);
+    });
+  const confirmFoodDeletion = (food: Food) => {
+    const message = 'This permanently removes the food from Growth search for everyone.';
+    if (process.env.EXPO_OS === 'web') {
+      if (globalThis.confirm(`${message}\n\nDelete ${food.name}?`)) deleteFood(food);
+      return;
+    }
+    Alert.alert(`Delete ${food.name}?`, message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete food', style: 'destructive', onPress: () => deleteFood(food) },
+    ]);
+  };
 
   if (account.isPending)
     return (
@@ -242,6 +261,7 @@ export default function MyFoodsSheet() {
           <Button icon="plus" onPress={() => setCreating(true)}>
             Add a food
           </Button>
+          {action.error && <Notice message={action.error} />}
           {foods.isFetching && <ActivityIndicator color={C.blue} />}
           {foods.error && <Notice message={foods.error.message} />}
           {foods.data?.foods.length ? (
@@ -249,30 +269,39 @@ export default function MyFoodsSheet() {
               {foods.data.foods.map((food) => {
                 const serving = food.portions.find((portion) => portion.id === 'serving');
                 return (
-                  <Pressable
+                  <Row
                     key={food.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Use ${food.name}`}
-                    onPress={() => select(food)}
-                    style={({ pressed }) => ({
-                      paddingVertical: 16,
-                      borderBottomWidth: 1,
-                      borderColor: C.border,
-                      opacity: pressed ? 0.65 : 1,
-                    })}
+                    style={{ paddingVertical: 16, borderBottomWidth: 1, borderColor: C.border }}
                   >
-                    <Row>
-                      <View style={{ flex: 1, gap: 4 }}>
-                        <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
-                          {food.name}
-                        </Text>
-                        <Body>
-                          {[food.brand, serving?.label].filter(Boolean).join(' · ')}
-                        </Body>
-                      </View>
-                      <Icon name="right" size={18} />
-                    </Row>
-                  </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use ${food.name}`}
+                      onPress={() => select(food)}
+                      style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.65 : 1 })}
+                    >
+                      <Row>
+                        <View style={{ flex: 1, gap: 4 }}>
+                          <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
+                            {food.name}
+                          </Text>
+                          <Body>
+                            {[food.brand, serving?.label].filter(Boolean).join(' · ')}
+                          </Body>
+                        </View>
+                        <Icon name="right" size={18} />
+                      </Row>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete ${food.name}`}
+                      disabled={action.busy}
+                      onPress={() => confirmFoodDeletion(food)}
+                      hitSlop={10}
+                      style={({ pressed }) => ({ padding: 8, opacity: pressed ? 0.6 : 1 })}
+                    >
+                      <Icon name="trash" color={C.red} size={19} />
+                    </Pressable>
+                  </Row>
                 );
               })}
             </View>
