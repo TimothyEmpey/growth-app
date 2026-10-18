@@ -62,7 +62,7 @@ const sections: LegalSection[] = [
   {
     title: 'Service providers',
     paragraphs: [
-      'Foods you add to the Growth community, including their names, brands, servings, calories, and macros, are stored with your account and become searchable by other Growth users. Your identity and email are not shown with a contributed food. Your own matching contributions are ranked first for you. If you delete your account, the foods may remain available without a link to your account.',
+      'Foods you add to the Growth community, including their names, brands, servings, calories, macros, and an associated barcode when provided, are stored with your account and become searchable by other Growth users. Your identity and email are not shown with a contributed food. Your own matching contributions are ranked first for you. If you delete your account, the foods may remain available without a link to your account.',
       'Growth relies on Cloudflare for application hosting, API processing, queues, and database storage; Strava for connected running information; FatSecret for typed food search and nutrition information; Open Food Facts for barcode information; and Resend for account email delivery. These providers process only the information needed for their role and operate under their own terms and privacy practices.',
     ],
   },

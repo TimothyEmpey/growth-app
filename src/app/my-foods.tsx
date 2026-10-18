@@ -33,6 +33,7 @@ export default function MyFoodsSheet() {
     date?: string;
     addToRecipeId?: string;
     create?: string;
+    barcode?: string;
   }>();
   const [creating, setCreating] = useState(params.create === '1');
   const [name, setName] = useState('');
@@ -120,6 +121,8 @@ export default function MyFoodsSheet() {
                   meal: params.meal,
                   date: params.date,
                   addToRecipeId: params.addToRecipeId,
+                  create: params.create,
+                  barcode: params.barcode,
                 },
               })
             }
@@ -144,6 +147,12 @@ export default function MyFoodsSheet() {
           <Button quiet icon="left" onPress={() => setCreating(false)}>
             Back to My Foods
           </Button>
+          {params.barcode && (
+            <Card style={{ backgroundColor: C.bg }}>
+              <Label>Scanned barcode</Label>
+              <Body>{params.barcode}</Body>
+            </Card>
+          )}
           <Field
             label="Food name"
             value={name}
@@ -240,6 +249,7 @@ export default function MyFoodsSheet() {
                     protein,
                     carbs,
                     fat,
+                    barcode: params.barcode,
                   }),
                 });
                 await Promise.all([

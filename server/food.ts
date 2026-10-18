@@ -11,6 +11,7 @@ type CommunityFoodRow = {
   nutrition: string;
   created_at: number;
   updated_at: number;
+  barcode: string | null;
 };
 
 export type CommunityFoodInput = {
@@ -22,6 +23,7 @@ export type CommunityFoodInput = {
   protein?: unknown;
   carbs?: unknown;
   fat?: unknown;
+  barcode?: unknown;
 };
 
 type OpenFoodFactsProduct = {
@@ -245,12 +247,21 @@ export async function createCommunityFood(
     carbs: requiredNumber(input.carbs, 'carbohydrates', 10_000),
     fat: requiredNumber(input.fat, 'fat', 10_000),
   };
+  const barcode = cleanText(input.barcode ?? '', 'barcode', 14, false);
+  if (barcode && !/^\d{8,14}$/.test(barcode))
+    throw new ServiceError('Enter a valid 8 to 14 digit barcode.');
+  if (barcode) {
+    const existing = await env.DB.prepare('SELECT id FROM community_foods WHERE barcode=?')
+      .bind(barcode)
+      .first();
+    if (existing) throw new ServiceError('A Growth food already uses this barcode.', 409);
+  }
   const id = crypto.randomUUID();
   const timestamp = now();
   await env.DB.prepare(
     `INSERT INTO community_foods
-      (id,creator_account_id,name,brand,serving_label,serving_grams,nutrition,search_text,created_at,updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      (id,creator_account_id,name,brand,serving_label,serving_grams,nutrition,search_text,created_at,updated_at,barcode)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
   )
     .bind(
       id,
@@ -263,6 +274,7 @@ export async function createCommunityFood(
       `${name} ${brand}`.toLocaleLowerCase(),
       timestamp,
       timestamp,
+      barcode || null,
     )
     .run();
   return communityFood({
@@ -275,6 +287,7 @@ export async function createCommunityFood(
     nutrition: JSON.stringify(nutrition),
     created_at: timestamp,
     updated_at: timestamp,
+    barcode: barcode || null,
   });
 }
 
@@ -489,6 +502,10 @@ async function fatSecretFoodDetail(id: string, env: Env) {
 async function openFoodFactsBarcodeDetail(id: string, env: Env) {
   const code = id.slice('off:'.length);
   if (!/^\d+$/.test(code)) throw new ServiceError('No food was found for that barcode.', 404);
+  const contributed = await env.DB.prepare('SELECT * FROM community_foods WHERE barcode=?')
+    .bind(code)
+    .first<CommunityFoodRow>();
+  if (contributed) return communityFood(contributed);
   return cached(`food-detail:off:v4:${code}`, env, async () => {
     const url = new URL(
       `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`,

@@ -142,13 +142,21 @@ function FoodForm() {
   const selectScannedFood = async (rawBarcode: string) => {
     const barcode = rawBarcode.replace(/\D/g, '');
     if (!barcode) throw new Error('That scan did not contain a supported food barcode.');
-    choose(
-      await queryClient.fetchQuery({
+    try {
+      choose(
+        await queryClient.fetchQuery({
         queryKey: ['food', `off:${barcode}`],
         queryFn: ({ signal }) => api<Food>(`/api/foods/off:${barcode}`, { signal }),
         retry: false,
-      }),
-    );
+        }),
+      );
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 404) throw error;
+      router.replace({
+        pathname: '/my-foods',
+        params: { meal, date, addToRecipeId: params.addToRecipeId, create: '1', barcode },
+      } as unknown as Href);
+    }
   };
   const scanBarcode = async () => {
     if (process.env.EXPO_OS === 'web' && !(await CameraView.isAvailableAsync()))

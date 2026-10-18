@@ -87,6 +87,7 @@ test('community foods are shared while the creator receives matching foods first
     protein: 34,
     carbs: 40,
     fat: 13,
+    barcode: '012345678905',
   };
   expect((await worker.fetch(request('/api/foods/community', input), env)).status).toBe(401);
   const created = await worker.fetch(
@@ -100,10 +101,16 @@ test('community foods are shared while the creator receives matching foods first
     defaultPortionId: 'serving',
     portions: [{ id: 'grams' }, { id: 'serving', label: '1 bowl', grams: 300 }],
   });
+  const barcodeDetail = await worker.fetch(request('/api/foods/off:012345678905'), env);
+  expect(barcodeDetail.status).toBe(200);
+  expect((await barcodeDetail.json()) as any).toMatchObject({
+    id: food.id,
+    name: 'Family turkey chili',
+  });
   await worker.fetch(
     request(
       '/api/foods/community',
-      { ...input, name: 'Community beef chili' },
+      { ...input, name: 'Community beef chili', barcode: '' },
       `growth_account=${otherToken}`,
     ),
     env,

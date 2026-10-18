@@ -24,6 +24,8 @@ export default function SignInSheet() {
     meal?: string;
     date?: string;
     addToRecipeId?: string;
+    create?: string;
+    barcode?: string;
   }>();
   const { journal } = useJournal();
   const [mode, setMode] = useState<Mode>('login');
@@ -44,6 +46,8 @@ export default function SignInSheet() {
           meal: params.meal,
           date: params.date,
           addToRecipeId: params.addToRecipeId,
+          create: params.create,
+          barcode: params.barcode,
         },
       } as never);
       return;
