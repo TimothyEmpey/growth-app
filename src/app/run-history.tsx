@@ -11,7 +11,7 @@ import { useColors } from '@/providers/appearance';
 import { getAppleHealthRuns } from '@/services/apple-health';
 import { useJournal } from '@/data/journal-store';
 import { getAllStravaRuns } from '@/services/connected-runs';
-import { mergeConnectedRuns } from '@/domain/runs';
+import { activityLabel, filterActivities, mergeConnectedRuns } from '@/domain/runs';
 
 const PERIODS: Period[] = ['Week', 'Month', 'Year', 'All'];
 
@@ -23,9 +23,18 @@ export default function RunHistorySheet() {
     ? (params.period as Period)
     : defaultPeriod;
   const { units } = usePreferences();
-  const activity: ActivityFilter = ['run', 'hike', 'all'].includes(params.activity ?? '')
+  const activity: ActivityFilter = [
+    'all',
+    'run',
+    'walk',
+    'hike',
+    'ride',
+    'swim',
+    'strength',
+    'other',
+  ].includes(params.activity ?? '')
     ? (params.activity as ActivityFilter)
-    : 'run';
+    : 'all';
   const { journal } = useJournal();
   const connection = useQuery({
     queryKey: ['strava'],
@@ -33,8 +42,7 @@ export default function RunHistorySheet() {
     retry: false,
   });
   const stravaEnabled = !!connection.data?.connected;
-  const healthEnabled =
-    Platform.OS === 'ios' && journal.preferences.appleHealthConnected && activity !== 'hike';
+  const healthEnabled = Platform.OS === 'ios' && journal.preferences.appleHealthConnected;
   const runs = useQuery({
     queryKey: ['connected-runs', 'strava', period, activity],
     queryFn: ({ signal }) => getAllStravaRuns(periodStart(period), today(), activity, signal),
@@ -45,24 +53,31 @@ export default function RunHistorySheet() {
     queryFn: () => getAppleHealthRuns(periodStart(period), today()),
     enabled: healthEnabled,
   });
-  const items = mergeConnectedRuns(runs.data ?? [], healthRuns.data ?? []);
+  const items = filterActivities(
+    mergeConnectedRuns(runs.data ?? [], healthRuns.data ?? []),
+    activity,
+  );
   const connected = stravaEnabled || journal.preferences.appleHealthConnected;
   const loading = (stravaEnabled && runs.isPending) || (healthEnabled && healthRuns.isPending);
   const error = runs.error ?? healthRuns.error;
 
   return (
     <Sheet
-      title={`${activity === 'run' ? 'Run' : activity === 'hike' ? 'Hike' : 'Activity'} history`}
-      subtitle={`${period} · newest ${activity === 'all' ? 'activities' : `${activity}s`} first`}
+      title={`${activityLabel(activity)} history`}
+      subtitle={`${period} · newest ${activityLabel(activity, true).toLowerCase()} first`}
     >
       {connection.isPending || loading ? (
         <ActivityIndicator color={C.blue} />
       ) : connection.error || error ? (
-        <Notice message={(connection.error ?? error)?.message ?? 'Run history is unavailable.'} />
+        <Notice
+          message={(connection.error ?? error)?.message ?? 'Activity history is unavailable.'}
+        />
       ) : !connected ? (
-        <Body>Connect a supported service from Account → Connections to see your run history.</Body>
+        <Body>
+          Connect a supported service from Account → Connections to see your activity history.
+        </Body>
       ) : items.length === 0 ? (
-        <Body>No {activity === 'all' ? 'activities' : `${activity}s`} in this period.</Body>
+        <Body>No {activityLabel(activity, true).toLowerCase()} in this period.</Body>
       ) : (
         <View>
           {items.map((run) => (

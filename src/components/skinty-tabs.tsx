@@ -72,7 +72,7 @@ export default function SkintyTabs() {
             <SkintyTabButton icon="lift">Lifting</SkintyTabButton>
           </TabTrigger>
           <TabTrigger name="running" href="/running" asChild>
-            <SkintyTabButton icon="run">Running</SkintyTabButton>
+            <SkintyTabButton icon="run">Activity</SkintyTabButton>
           </TabTrigger>
           <TabTrigger name="diet" href="/diet" asChild>
             <SkintyTabButton icon="food">Diet</SkintyTabButton>

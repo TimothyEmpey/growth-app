@@ -12,6 +12,7 @@ export function RunHistoryRow({ run, units }: { run: Run; units: Units }) {
   const C = useColors();
   const distanceUnit = units === 'metric' ? 'km' : 'mi';
   const hiking = run.sport === 'Hike';
+  const hasDistance = run.distanceMeters > 0;
 
   return (
     <Pressable
@@ -57,13 +58,18 @@ export function RunHistoryRow({ run, units }: { run: Run; units: Units }) {
           <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{run.title}</Text>
           <Body>{formatDate(run.localDate)}</Body>
           <Row style={{ flexWrap: 'wrap', gap: 18 }}>
-            <Text style={{ color: C.text, fontSize: 14 }}>
-              {distanceValue(run.distanceMeters, units).toFixed(2)} {distanceUnit}
-            </Text>
+            <Text style={{ color: C.text, fontSize: 14 }}>{run.sport}</Text>
+            {hasDistance && (
+              <Text style={{ color: C.text, fontSize: 14 }}>
+                {distanceValue(run.distanceMeters, units).toFixed(2)} {distanceUnit}
+              </Text>
+            )}
             <Text style={{ color: C.muted, fontSize: 14 }}>{duration(run.movingSeconds)}</Text>
-            <Text style={{ color: C.blue, fontSize: 14 }}>
-              {pace(run.movingSeconds, run.distanceMeters, units)} / {distanceUnit}
-            </Text>
+            {hasDistance && (
+              <Text style={{ color: C.blue, fontSize: 14 }}>
+                {pace(run.movingSeconds, run.distanceMeters, units)} / {distanceUnit}
+              </Text>
+            )}
           </Row>
         </View>
         <Icon name="right" size={18} />

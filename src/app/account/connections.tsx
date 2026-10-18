@@ -42,7 +42,7 @@ export default function ConnectionsSheet() {
               title="Apple Health"
               detail={
                 journal.preferences.appleHealthConnected
-                  ? 'Connected · runs and weight import'
+                  ? 'Connected · activities and weight import'
                   : 'Not connected'
               }
               onPress={() => router.push('/health')}
@@ -65,9 +65,9 @@ export default function ConnectionsSheet() {
       {strava.isPending && <ActivityIndicator color={C.blue} />}
       {strava.error && <Notice message={strava.error.message} />}
       <View style={{ gap: 8 }}>
-        <Label>How connected runs work</Label>
+        <Label>How connected activities work</Label>
         <Body>
-          Growth combines activities from every connected service. Duplicate runs keep the Strava
+          Growth combines activities from every connected service. Duplicates keep the Strava
           version first, then Nike Run Club, then generic Apple Health data.
         </Body>
       </View>

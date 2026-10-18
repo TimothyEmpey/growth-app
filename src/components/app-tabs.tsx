@@ -20,7 +20,7 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf="dumbbell.fill" md="fitness_center" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="running">
-        <NativeTabs.Trigger.Label>Running</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Activity</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="figure.run" md="directions_run" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="diet">

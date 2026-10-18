@@ -84,7 +84,7 @@ export default function AppTabs() {
     path === '/account'
       ? 'Account'
       : path === '/running'
-        ? 'Running'
+        ? 'Activity'
         : path === '/diet'
           ? 'Diet'
           : 'Lifting';
@@ -191,7 +191,7 @@ export default function AppTabs() {
           </TabTrigger>
           <TabTrigger name="running" href="/running" asChild>
             <TabButton compact={compact} icon="run" skinty={skinty}>
-              Running
+              Activity
             </TabButton>
           </TabTrigger>
           <TabTrigger name="diet" href="/diet" asChild>

@@ -215,8 +215,8 @@ function ProfileForm({ account, unavailable }: { account: Account | null; unavai
           <Card style={{ gap: 16 }}>
             <Label>Delete Growth account</Label>
             <Body>
-              This permanently deletes your profile, synced journal, imported Strava runs, and every
-              Growth session. This cannot be undone.
+              This permanently deletes your profile, synced journal, imported Strava activities, and
+              every Growth session. This cannot be undone.
             </Body>
             <Field
               label="Current password"

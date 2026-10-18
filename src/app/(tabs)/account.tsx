@@ -162,8 +162,8 @@ export default function AccountPage() {
         {connection.data?.connected && (runs.isPending || !runs.data?.complete || runs.error) && (
           <Body>
             {runs.error
-              ? 'Run history is unavailable. Your streak currently includes the meal and run data we could load.'
-              : 'Your run history is loading. This streak may increase as runs arrive.'}
+              ? 'Activity history is unavailable. Your streak currently includes the meal and activity data we could load.'
+              : 'Your activity history is loading. This streak may increase as activities arrive.'}
           </Body>
         )}
       </Card>

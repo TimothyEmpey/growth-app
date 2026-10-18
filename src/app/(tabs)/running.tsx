@@ -6,7 +6,7 @@ import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
-import { pace, periodStart, today } from '@/domain/journal';
+import { duration, pace, periodStart, today } from '@/domain/journal';
 import type { ActivityFilter, Connection } from '@/domain/types';
 import {
   Body,
@@ -25,12 +25,17 @@ import { Dropdown } from '@/components/dropdown';
 import { useJournal } from '@/data/journal-store';
 import { getAppleHealthRuns } from '@/services/apple-health';
 import { getAllStravaRuns } from '@/services/connected-runs';
-import { mergeConnectedRuns, summarizeRuns } from '@/domain/runs';
+import { activityLabel, filterActivities, mergeConnectedRuns, summarizeRuns } from '@/domain/runs';
 
 const activityOptions: { value: ActivityFilter; label: string }[] = [
-  { value: 'run', label: 'Running' },
-  { value: 'hike', label: 'Hiking' },
   { value: 'all', label: 'All activities' },
+  { value: 'run', label: 'Running' },
+  { value: 'walk', label: 'Walking' },
+  { value: 'hike', label: 'Hiking' },
+  { value: 'ride', label: 'Cycling' },
+  { value: 'swim', label: 'Swimming' },
+  { value: 'strength', label: 'Strength' },
+  { value: 'other', label: 'Other' },
 ];
 
 export default function RunningPage() {
@@ -57,8 +62,7 @@ export default function RunningPage() {
     }
   }, [params.strava, client]);
   const stravaEnabled = !!connection.data?.connected;
-  const healthEnabled =
-    Platform.OS === 'ios' && journal.preferences.appleHealthConnected && activity !== 'hike';
+  const healthEnabled = Platform.OS === 'ios' && journal.preferences.appleHealthConnected;
   const stravaRuns = useQuery({
     queryKey: ['connected-runs', 'strava', period, activity],
     queryFn: ({ signal }) => getAllStravaRuns(periodStart(period), today(), activity, signal),
@@ -71,16 +75,25 @@ export default function RunningPage() {
     enabled: healthEnabled,
   });
   const connected = !!connection.data?.connected || journal.preferences.appleHealthConnected;
-  const items = mergeConnectedRuns(stravaRuns.data ?? [], healthRuns.data ?? []);
+  const items = filterActivities(
+    mergeConnectedRuns(stravaRuns.data ?? [], healthRuns.data ?? []),
+    activity,
+  );
   const loadingRuns =
     (stravaEnabled && stravaRuns.isPending) || (healthEnabled && healthRuns.isPending);
   const summary = connected && !loadingRuns ? summarizeRuns(items) : undefined;
   const averagePace = summary ? pace(summary.movingSeconds, summary.distanceMeters, units) : '—';
-  const activityNoun = activity === 'run' ? 'runs' : activity === 'hike' ? 'hikes' : 'activities';
-  const activityTitle =
-    activity === 'run' ? 'running' : activity === 'hike' ? 'hiking' : 'activity';
+  const activityNoun = activityLabel(activity, true).toLowerCase();
+  const distance = summary ? distanceValue(summary.distanceMeters, units) : 0;
+  const hours = summary ? summary.movingSeconds / 3600 : 0;
+  const averageSpeed = hours > 0 && distance > 0 ? (distance / hours).toFixed(1) : '—';
+  const averageDuration = summary?.count
+    ? duration(Math.round(summary.movingSeconds / summary.count))
+    : '—';
+  const distanceFocused = ['run', 'walk', 'hike'].includes(activity);
+  const speedFocused = ['ride', 'swim'].includes(activity);
   return (
-    <Page title="Running" eyebrow="Every mile counts">
+    <Page title="Activity" eyebrow="Every movement counts">
       <Row
         style={{
           justifyContent: 'space-between',
@@ -88,7 +101,7 @@ export default function RunningPage() {
           flexWrap: 'wrap',
         }}
       >
-        <Title size={18}>Your {activityTitle} overview</Title>
+        <Title size={18}>Your {activity === 'all' ? 'activity' : activityNoun} overview</Title>
         <Row style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <Dropdown
             label="Activity type"
@@ -108,24 +121,52 @@ export default function RunningPage() {
             color: C.blue,
             accent: C.blue,
           },
-          {
-            label: units === 'metric' ? 'Total kilometers' : 'Total miles',
-            value: summary
-              ? distanceValue(summary.distanceMeters, units).toFixed(2)
-              : connected
-                ? '—'
-                : '0.00',
-            unit: distanceUnit,
-            color: C.green,
-            accent: C.green,
-          },
-          {
-            label: units === 'metric' ? 'Average kilometer pace' : 'Average mile pace',
-            value: averagePace,
-            unit: `/ ${distanceUnit}`,
-            color: averagePace === '—' ? C.text : C.purple,
-            accent: C.purple,
-          },
+          activity === 'all' || (!distanceFocused && !speedFocused)
+            ? {
+                label: 'Total active time',
+                value: summary ? duration(summary.movingSeconds) : connected ? '—' : '0m',
+                unit: '',
+                color: C.green,
+                accent: C.green,
+              }
+            : {
+                label: units === 'metric' ? 'Total kilometers' : 'Total miles',
+                value: summary ? distance.toFixed(2) : connected ? '—' : '0.00',
+                unit: distanceUnit,
+                color: C.green,
+                accent: C.green,
+              },
+          distanceFocused
+            ? {
+                label: units === 'metric' ? 'Average kilometer pace' : 'Average mile pace',
+                value: averagePace,
+                unit: `/ ${distanceUnit}`,
+                color: averagePace === '—' ? C.text : C.purple,
+                accent: C.purple,
+              }
+            : speedFocused
+              ? {
+                  label: 'Average speed',
+                  value: averageSpeed,
+                  unit: `${distanceUnit}/h`,
+                  color: averageSpeed === '—' ? C.text : C.purple,
+                  accent: C.purple,
+                }
+              : activity === 'all'
+                ? {
+                    label: units === 'metric' ? 'Total kilometers' : 'Total miles',
+                    value: summary ? distance.toFixed(2) : connected ? '—' : '0.00',
+                    unit: distanceUnit,
+                    color: C.purple,
+                    accent: C.purple,
+                  }
+                : {
+                    label: 'Average duration',
+                    value: averageDuration,
+                    unit: '',
+                    color: averageDuration === '—' ? C.text : C.purple,
+                    accent: C.purple,
+                  },
         ].map((metric) => (
           <Card key={metric.label} style={{ flex: 1, minWidth: 170, gap: 23 }}>
             <Label>{metric.label}</Label>
@@ -175,9 +216,7 @@ export default function RunningPage() {
       )}
       <Card>
         <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <Title size={20}>
-            {activity === 'run' ? 'Run' : activity === 'hike' ? 'Hike' : 'Activity'} history
-          </Title>
+          <Title size={20}>{activityLabel(activity)} history</Title>
           <Label>{connected ? 'From your connections' : 'Your miles, in one place'}</Label>
         </Row>
         {!connected ? (
@@ -197,7 +236,7 @@ export default function RunningPage() {
         ) : stravaRuns.error || healthRuns.error ? (
           <>
             <Notice
-              message={(stravaRuns.error ?? healthRuns.error)?.message ?? 'Runs unavailable.'}
+              message={(stravaRuns.error ?? healthRuns.error)?.message ?? 'Activities unavailable.'}
             />
             <Button
               quiet
@@ -211,8 +250,8 @@ export default function RunningPage() {
             icon={activity === 'hike' ? 'hike' : 'run'}
             title={`No ${activityNoun} in this period`}
           >
-            Your next {activity === 'all' ? 'activity' : activity.slice(0, -1)} will appear here
-            after it syncs from a connection.
+            Your next {activityLabel(activity).toLowerCase()} will appear here after it syncs from a
+            connection.
           </Empty>
         ) : (
           <View>

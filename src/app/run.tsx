@@ -22,7 +22,7 @@ export default function RunSheet() {
     queryFn: ({ signal }) =>
       healthRun
         ? getAppleHealthRun(id).then((run) => {
-            if (!run) throw new Error('This run is no longer available in Apple Health.');
+            if (!run) throw new Error('This activity is no longer available in Apple Health.');
             return run;
           })
         : api<Run>(`/api/runs/${id}`, { signal }),
@@ -32,10 +32,11 @@ export default function RunSheet() {
   const metric = units === 'metric';
   const unit = metric ? 'km' : 'mi';
   const run = query.data;
+  const hasDistance = !!run?.distanceMeters;
   const splits = metric ? run?.metricSplits : run?.splits;
   return (
     <Sheet
-      title={run?.title ?? 'Run details'}
+      title={run?.title ?? 'Activity details'}
       subtitle={run ? formatDate(run.localDate) : `From ${provider}`}
     >
       {query.isPending && <ActivityIndicator color={C.blue} />}
@@ -61,15 +62,23 @@ export default function RunSheet() {
           <Card style={{ backgroundColor: C.bg }}>
             <Row style={{ flexWrap: 'wrap', justifyContent: 'space-between', gap: 24 }}>
               {[
-                {
-                  label: 'Distance',
-                  value: `${distanceValue(run.distanceMeters, units).toFixed(2)} ${unit}`,
-                },
+                ...(hasDistance
+                  ? [
+                      {
+                        label: 'Distance',
+                        value: `${distanceValue(run.distanceMeters, units).toFixed(2)} ${unit}`,
+                      },
+                    ]
+                  : []),
                 { label: 'Moving time', value: duration(run.movingSeconds) },
-                {
-                  label: metric ? 'Kilometer pace' : 'Mile pace',
-                  value: `${pace(run.movingSeconds, run.distanceMeters, units)} /${unit}`,
-                },
+                ...(hasDistance
+                  ? [
+                      {
+                        label: metric ? 'Kilometer pace' : 'Mile pace',
+                        value: `${pace(run.movingSeconds, run.distanceMeters, units)} /${unit}`,
+                      },
+                    ]
+                  : []),
                 {
                   label: 'Elevation',
                   value: `${Math.round(run.elevationMeters * (metric ? 1 : 3.28084))} ${metric ? 'm' : 'ft'}`,
@@ -89,8 +98,8 @@ export default function RunSheet() {
               ))}
             </Row>
           </Card>
-          <Title size={18}>{metric ? 'Kilometer splits' : 'Mile splits'}</Title>
-          {splits?.length ? (
+          {hasDistance && <Title size={18}>{metric ? 'Kilometer splits' : 'Mile splits'}</Title>}
+          {hasDistance && splits?.length ? (
             splits.map((split, i) => (
               <Row
                 key={i}
@@ -111,11 +120,11 @@ export default function RunSheet() {
                 </Text>
               </Row>
             ))
-          ) : (
+          ) : hasDistance ? (
             <Body>
-              {provider} hasn’t provided {metric ? 'kilometer' : 'mile'} splits for this run.
+              {provider} hasn’t provided {metric ? 'kilometer' : 'mile'} splits for this activity.
             </Body>
-          )}
+          ) : null}
           {!healthRun && (
             <Button
               quiet

@@ -6,7 +6,7 @@ import { Text, View, useWindowDimensions } from 'react-native';
 
 function tabTitle(path: string) {
   if (path === '/account') return 'Account';
-  if (path === '/running') return 'Running';
+  if (path === '/running') return 'Activity';
   if (path === '/diet') return 'Diet';
   if (path === '/') return 'Lifting';
   return null;

@@ -186,14 +186,25 @@ async function route(request: Request, env: Env): Promise<Response> {
       activity = url.searchParams.get('activity') ?? 'run';
     if (![start, end].every((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)) || start > end)
       throw new ServiceError('Invalid date range.');
-    if (!['run', 'hike', 'all'].includes(activity))
+    if (!['run', 'walk', 'hike', 'ride', 'swim', 'strength', 'other', 'all'].includes(activity))
       throw new ServiceError('Invalid activity filter.');
+    const sport = "json_extract(data,'$.sport')";
     const activitySql =
       activity === 'run'
-        ? "AND json_extract(data,'$.sport') IN ('Run','TrailRun','VirtualRun')"
-        : activity === 'hike'
-          ? "AND json_extract(data,'$.sport') = 'Hike'"
-          : '';
+        ? `AND ${sport} IN ('Run','TrailRun','VirtualRun')`
+        : activity === 'walk'
+          ? `AND ${sport} IN ('Walk')`
+          : activity === 'hike'
+            ? `AND ${sport} IN ('Hike')`
+            : activity === 'ride'
+              ? `AND ${sport} IN ('Ride','VirtualRide','MountainBikeRide','GravelRide','EBikeRide','EMountainBikeRide','Handcycle','Velomobile')`
+              : activity === 'swim'
+                ? `AND ${sport} IN ('Swim')`
+                : activity === 'strength'
+                  ? `AND ${sport} IN ('WeightTraining','Workout','Crossfit','HighIntensityIntervalTraining')`
+                  : activity === 'other'
+                    ? `AND ${sport} NOT IN ('Run','TrailRun','VirtualRun','Walk','Hike','Ride','VirtualRide','MountainBikeRide','GravelRide','EBikeRide','EMountainBikeRide','Handcycle','Velomobile','Swim','WeightTraining','Workout','Crossfit','HighIntensityIntervalTraining')`
+                    : '';
     let cursorDate = '9999-12-31',
       cursorId = '~';
     if (url.searchParams.has('cursor')) {
@@ -253,7 +264,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       await env.DB.prepare('DELETE FROM runs WHERE athlete_id=? AND id=?')
         .bind(athleteId, id)
         .run();
-      throw new ServiceError('This activity is no longer a supported run or hike.', 404);
+      throw new ServiceError('This activity is no longer available.', 404);
     }
     await storeRun(env, athleteId, connection.generation, run, true);
     return json(run);
@@ -295,7 +306,10 @@ async function route(request: Request, env: Env): Promise<Response> {
   if (path === '/api/foods/community' && method === 'POST') {
     const accountId = await requireAccountId(request, env);
     await rateLimit(request, env, `community-food:${accountId}`, 20);
-    return json(await createCommunityFood((await request.json()) as Record<string, unknown>, accountId, env), 201);
+    return json(
+      await createCommunityFood((await request.json()) as Record<string, unknown>, accountId, env),
+      201,
+    );
   }
   if (/^\/api\/foods\/(?:fs|off):\d+$/.test(path) && method === 'GET') {
     await rateLimit(request, env, 'food', 60);

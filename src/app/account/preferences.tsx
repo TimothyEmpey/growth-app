@@ -44,14 +44,14 @@ export default function PreferencesSheet() {
             onSelect={(defaultPeriod) => save({ defaultPeriod })}
           />
         ))}
-        <Body>Sets the starting view for your lifting and running summaries.</Body>
+        <Body>Sets the starting view for your lifting and activity summaries.</Body>
       </View>
       <View style={{ gap: 12 }}>
         <Label>Open Growth to</Label>
         {(
           [
             ['/', 'Lifting'],
-            ['/running', 'Running'],
+            ['/running', 'Activity'],
             ['/diet', 'Diet'],
             ['/account', 'Account'],
           ] as [Preferences['startPage'], string][]

@@ -14,7 +14,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta
           name="description"
-          content="Your personal journal for lifting, running, and nutrition."
+          content="Your personal journal for lifting, activity, and nutrition."
         />
         <title>Growth · Fitness journal</title>
         <link rel="icon" href="/icons/icon-192.png?v=2" type="image/png" />

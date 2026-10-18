@@ -29,13 +29,13 @@ export default function StravaSheet() {
   return (
     <Sheet
       title={connection.data?.connected ? 'Your Strava connection' : 'Connect with Strava'}
-      subtitle="Your runs and hikes, automatically in your journal."
+      subtitle="Your fitness activities, automatically in your journal."
     >
       <View style={{ gap: 14 }}>
         <ServiceLogo service="strava" size={56} />
         <Body>
-          Growth reads your running and hiking activities, including private activities, to
-          calculate distance and pace. Your activities stay in Strava.
+          Growth reads your fitness activities, including private activities, to calculate the
+          relevant totals for each activity type. Your activities stay in Strava.
         </Body>
       </View>
       {connection.isPending && <ActivityIndicator color={C.blue} />}
@@ -59,7 +59,7 @@ export default function StravaSheet() {
             <Body>
               {connection.data.complete
                 ? `${connection.data.importedCount ?? 0} activities in your history`
-                : 'Importing your complete running and hiking history…'}
+                : 'Importing your complete activity history…'}
             </Body>
           </Card>
           {connection.data.connected ? (
@@ -88,12 +88,12 @@ export default function StravaSheet() {
               Reconnect with Strava
             </Button>
           )}
-          {synced && <Body>Sync requested. Your runs will update shortly.</Body>}
+          {synced && <Body>Sync requested. Your activities will update shortly.</Body>}
           {confirm ? (
             <>
               <Body>
-                Disconnect Strava and permanently delete its imported runs and connection tokens
-                from Growth? Your lifting and food journals remain unchanged.
+                Disconnect Strava and permanently delete its imported activities and connection
+                tokens from Growth? Your lifting and food journals remain unchanged.
               </Body>
               <Button
                 quiet
@@ -154,7 +154,7 @@ export default function StravaSheet() {
       {action.error && <Notice message={action.error} />}
       <Body>
         This connection follows your Growth account across devices and remains linked when you sign
-        out. Only you can view its runs, and you can disconnect at any time.
+        out. Only you can view its activities, and you can disconnect at any time.
       </Body>
     </Sheet>
   );

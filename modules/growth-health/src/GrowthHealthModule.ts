@@ -6,6 +6,7 @@ export type HealthRun = {
   sourceName: string;
   sourceBundleIdentifier: string;
   date: string;
+  sport: string;
   distanceMeters: number;
   movingSeconds: number;
   elapsedSeconds: number;

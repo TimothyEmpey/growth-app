@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { mergeConnectedRuns } from '../src/domain/runs';
+import { activityCategory, filterActivities, mergeConnectedRuns } from '../src/domain/runs';
 import type { Run } from '../src/domain/types';
 
 const run = (id: string, source: Run['source'], minutes = 0): Run => ({
@@ -30,4 +30,15 @@ test('Nike Run Club wins when it duplicates a generic Apple Health workout', () 
   const nike = run('nike', 'nikeRunClub');
   const appleCopy = run('apple-copy', 'appleHealth', 1);
   expect(mergeConnectedRuns([], [appleCopy, nike]).map((item) => item.id)).toEqual(['nike']);
+});
+
+test('activity categories retain all provider sports and filter related variants together', () => {
+  const trail = { ...run('trail', 'strava'), sport: 'TrailRun' };
+  const ride = { ...run('ride', 'strava'), sport: 'MountainBikeRide' };
+  const yoga = { ...run('yoga', 'appleHealth'), sport: 'Yoga', distanceMeters: 0 };
+  expect(activityCategory(trail.sport)).toBe('run');
+  expect(activityCategory(ride.sport)).toBe('ride');
+  expect(activityCategory(yoga.sport)).toBe('other');
+  expect(filterActivities([trail, ride, yoga], 'ride').map((item) => item.id)).toEqual(['ride']);
+  expect(filterActivities([trail, ride, yoga], 'all')).toHaveLength(3);
 });

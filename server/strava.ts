@@ -19,7 +19,7 @@ export interface StravaActivity {
 }
 export function normalizeRun(activity: StravaActivity): Run | null {
   const sport = activity.sport_type ?? activity.type ?? '';
-  if (!['Run', 'TrailRun', 'VirtualRun', 'Hike'].includes(sport)) return null;
+  if (!sport) return null;
   return {
     id: String(activity.id),
     title: activity.name,

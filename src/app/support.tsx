@@ -18,7 +18,7 @@ const sections: LegalSection[] = [
   {
     title: 'Delete an account',
     paragraphs: [
-      'Open Account → Edit profile → Delete account. Confirm with the current password to permanently remove the Growth account, synchronized journal, sessions, Strava connection, and imported runs.',
+      'Open Account → Edit profile → Delete account. Confirm with the current password to permanently remove the Growth account, synchronized journal, sessions, Strava connection, and imported activities.',
       'If you cannot access the in-app deletion control, contact support from the account email address for assistance.',
     ],
   },
@@ -26,14 +26,14 @@ const sections: LegalSection[] = [
     title: 'Strava help',
     paragraphs: [
       'Open Account → Connections → Strava to connect, refresh, or disconnect. An initial import can take time because Growth retrieves activity history in pages and respects Strava rate limits.',
-      'Growth imports running, trail-running, virtual-running, and hiking activities. Other activity types are not included. Disconnecting removes imported Strava activities from Growth without changing activities in Strava.',
+      'Growth imports fitness activities available through your Strava account. Disconnecting removes imported Strava activities from Growth without changing activities in Strava.',
     ],
   },
   {
     title: 'Apple Health help',
     paragraphs: [
-      'On iPhone, open Account → Connections → Apple Health to include runs or import body-weight history. Approve the requested read access when iOS presents the Health sheet.',
-      'If expected data is missing, open the Health app and review Sharing → Apps → Growth. Growth reads running workouts only and keeps existing manually logged weight when an imported measurement has the same calendar date.',
+      'On iPhone, open Account → Connections → Apple Health to include fitness activities or import body-weight history. Approve the requested read access when iOS presents the Health sheet.',
+      'If expected data is missing, open the Health app and review Sharing → Apps → Growth. Growth reads fitness workouts and keeps existing manually logged weight when an imported measurement has the same calendar date.',
     ],
   },
   {

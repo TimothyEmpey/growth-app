@@ -4,7 +4,7 @@ const sections: LegalSection[] = [
   {
     title: 'Overview',
     paragraphs: [
-      'Growth is a personal fitness journal for lifting, running, nutrition, and body-weight records. You can use the local journal without creating an account. This policy explains what Growth handles when you use local features, create an account, synchronize a journal, search for foods, or connect Strava.',
+      'Growth is a personal fitness journal for lifting, activity, nutrition, and body-weight records. You can use the local journal without creating an account. This policy explains what Growth handles when you use local features, create an account, synchronize a journal, search for foods, or connect Strava.',
       'Growth does not sell personal information, show advertising, or use your journal for cross-app tracking.',
     ],
   },
@@ -28,14 +28,14 @@ const sections: LegalSection[] = [
   {
     title: 'Strava',
     paragraphs: [
-      'Connecting Strava is optional. If you connect it, Growth receives your Strava athlete identifier, athlete name, authorization scopes, access credentials, and running or hiking activities. Imported activity information may include titles, dates, distance, time, elevation, heart rate, and splits when Strava provides them.',
+      'Connecting Strava is optional. If you connect it, Growth receives your Strava athlete identifier, athlete name, authorization scopes, access credentials, and fitness activities. Imported activity information may include activity type, titles, dates, distance, time, elevation, heart rate, and splits when Strava provides them.',
       'Growth uses this information to display your activity history, summaries, details, and activity streak. Provider credentials are encrypted at rest. Disconnecting Strava revokes the connection and removes its cached activities from Growth. Deleting your Growth account also revokes the Strava connection.',
     ],
   },
   {
     title: 'Apple Health',
     paragraphs: [
-      'Connecting Apple Health is optional and available only in the iPhone app. Growth can read running workouts, walking and running distance, heart rate, and body-weight measurements after you approve access in Apple Health. Growth does not write data to Apple Health.',
+      'Connecting Apple Health is optional and available only in the iPhone app. Growth can read fitness workouts, workout distance, heart rate, and body-weight measurements after you approve access in Apple Health. Growth does not write data to Apple Health.',
       'Apple Health workouts are read directly on your iPhone and are not uploaded to the Growth service. When you choose to import body-weight history, the latest measurement for each day is copied into your Growth weight journal. Imported weights follow the same storage and optional account-sync behavior as weights you enter manually.',
       'Nike Run Club workouts reach Growth through Apple Health when you enable sharing in Nike Run Club and Apple Health. Growth uses the HealthKit source identifier to label these workouts and avoid duplicate entries; Growth does not receive Nike account credentials.',
       'Apple does not tell apps whether access to an individual Health category was denied. An empty result can therefore mean either that no matching records exist or that the category was not shared. You can review or revoke access in the Health app at any time.',
@@ -52,9 +52,9 @@ const sections: LegalSection[] = [
     title: 'How information is used',
     paragraphs: ['Growth uses information only to operate and protect the service, including to:'],
     items: [
-      'Provide journal, nutrition, running, account, synchronization, and preference features.',
+      'Provide journal, nutrition, activity, account, synchronization, and preference features.',
       'Authenticate accounts, verify email addresses, recover passwords, and prevent abuse.',
-      'Import and update runs after you authorize Strava.',
+      'Import and update activities after you authorize Strava.',
       'Respond to support requests and diagnose service failures.',
       'Comply with legal obligations and enforce service security.',
     ],
@@ -63,14 +63,14 @@ const sections: LegalSection[] = [
     title: 'Service providers',
     paragraphs: [
       'Foods you add to the Growth community, including their names, brands, servings, calories, macros, and an associated barcode when provided, are stored with your account and become searchable by other Growth users. Your identity and email are not shown with a contributed food. Your own matching contributions are ranked first for you. If you delete your account, the foods may remain available without a link to your account.',
-      'Growth relies on Cloudflare for application hosting, API processing, queues, and database storage; Strava for connected running information; FatSecret for typed food search and nutrition information; Open Food Facts for barcode information; and Resend for account email delivery. These providers process only the information needed for their role and operate under their own terms and privacy practices.',
+      'Growth relies on Cloudflare for application hosting, API processing, queues, and database storage; Strava for connected activity information; FatSecret for typed food search and nutrition information; Open Food Facts for barcode information; and Resend for account email delivery. These providers process only the information needed for their role and operate under their own terms and privacy practices.',
     ],
   },
   {
     title: 'Retention, deletion, and choices',
     paragraphs: [
       'Growth keeps account and synchronized journal information while your account is active. Short-lived verification, OAuth, and session records expire automatically. Food lookup caches and operational records may be retained temporarily for reliability, security, and rate-limit protection.',
-      'You can disconnect Strava from Account → Connections. You can permanently delete your Growth account from Account → Edit profile → Delete account. Account deletion removes the active account, synchronized journal, sessions, verification records, Strava connection, and cached runs. Infrastructure providers may retain limited residual records for their normal security, backup, or legal-retention periods.',
+      'You can disconnect Strava from Account → Connections. You can permanently delete your Growth account from Account → Edit profile → Delete account. Account deletion removes the active account, synchronized journal, sessions, verification records, Strava connection, and cached activities. Infrastructure providers may retain limited residual records for their normal security, backup, or legal-retention periods.',
       'You can remove a local-only journal by deleting the app or clearing its browser storage. Contact Growth if you need help exercising a privacy choice.',
     ],
   },

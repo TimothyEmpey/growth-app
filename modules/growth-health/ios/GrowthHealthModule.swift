@@ -11,7 +11,7 @@ public class GrowthHealthModule: Module {
 
     AsyncFunction("requestRunningAuthorization") { () async throws -> Bool in
       guard HKHealthStore.isHealthDataAvailable() else { return false }
-      try await store.requestAuthorization(toShare: [], read: runningTypes())
+      try await store.requestAuthorization(toShare: [], read: activityTypes())
       return true
     }
 
@@ -27,10 +27,11 @@ public class GrowthHealthModule: Module {
             let end = parseDate(endDate) else {
         throw Exception(name: "InvalidDate", description: "Growth could not read the selected date range.")
       }
-      let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-        HKQuery.predicateForWorkouts(with: .running),
-        HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate),
-      ])
+      let predicate = HKQuery.predicateForSamples(
+        withStart: start,
+        end: end,
+        options: .strictStartDate
+      )
       return try await workouts(predicate: predicate).map { serializeWorkout($0) }
     }
 
@@ -53,9 +54,14 @@ public class GrowthHealthModule: Module {
     }
   }
 
-  private func runningTypes() -> Set<HKObjectType> {
+  private func activityTypes() -> Set<HKObjectType> {
     var types: Set<HKObjectType> = [HKObjectType.workoutType()]
-    for identifier in [HKQuantityTypeIdentifier.heartRate, .distanceWalkingRunning] {
+    for identifier in [
+      HKQuantityTypeIdentifier.heartRate,
+      .distanceWalkingRunning,
+      .distanceCycling,
+      .distanceSwimming,
+    ] {
       if let type = HKQuantityType.quantityType(forIdentifier: identifier) { types.insert(type) }
     }
     return types
@@ -98,6 +104,7 @@ public class GrowthHealthModule: Module {
   }
 
   private func serializeWorkout(_ workout: HKWorkout) -> [String: Any] {
+    let activity = workoutIdentity(workout.workoutActivityType)
     let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate)
     let heartRate = heartRateType.flatMap { type in
       workout.statistics(for: type)?.averageQuantity()?.doubleValue(
@@ -111,15 +118,38 @@ public class GrowthHealthModule: Module {
       .doubleValue(for: .meter()) ?? 0
     return [
       "id": workout.uuid.uuidString,
-      "title": workout.sourceRevision.source.name + " Run",
+      "title": workout.sourceRevision.source.name + " " + activity.label,
       "sourceName": workout.sourceRevision.source.name,
       "sourceBundleIdentifier": workout.sourceRevision.source.bundleIdentifier,
       "date": ISO8601DateFormatter().string(from: workout.startDate),
+      "sport": activity.sport,
       "distanceMeters": workout.totalDistance?.doubleValue(for: .meter()) ?? 0,
       "movingSeconds": workout.duration,
       "elapsedSeconds": workout.endDate.timeIntervalSince(workout.startDate),
       "elevationMeters": elevation,
       "averageHeartRate": serializedHeartRate,
     ]
+  }
+
+  // Known workout types get stable names; every other HealthKit workout is still imported.
+  private func workoutIdentity(_ type: HKWorkoutActivityType) -> (sport: String, label: String) {
+    switch type {
+    case .running: return ("Run", "Run")
+    case .walking: return ("Walk", "Walk")
+    case .hiking: return ("Hike", "Hike")
+    case .cycling: return ("Cycling", "Ride")
+    case .swimming: return ("Swimming", "Swim")
+    case .traditionalStrengthTraining, .functionalStrengthTraining:
+      return ("StrengthTraining", "Strength Workout")
+    case .highIntensityIntervalTraining: return ("HighIntensityIntervalTraining", "HIIT Workout")
+    case .crossTraining: return ("Crossfit", "Cross Training")
+    case .rowing: return ("Rowing", "Rowing")
+    case .elliptical: return ("Elliptical", "Elliptical")
+    case .yoga: return ("Yoga", "Yoga")
+    case .pilates: return ("Pilates", "Pilates")
+    case .dance: return ("Dance", "Dance")
+    case .coreTraining: return ("CoreTraining", "Core Training")
+    default: return ("Workout", "Workout")
+    }
   }
 }

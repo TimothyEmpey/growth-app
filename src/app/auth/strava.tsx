@@ -27,7 +27,7 @@ export default function StravaCallback() {
       {message || !code ? (
         <>
           <Notice message={message ?? 'This connection link has expired. Please try again.'} />
-          <Button onPress={() => router.replace('/running')}>Back to running</Button>
+          <Button onPress={() => router.replace('/running')}>Back to activity</Button>
         </>
       ) : (
         <>

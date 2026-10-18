@@ -51,10 +51,10 @@ export default function AppleHealthSheet() {
         <>
           <ServiceLogo service="appleHealth" size={56} />
           <Card>
-            <Title size={18}>Running workouts</Title>
+            <Title size={18}>Fitness activities</Title>
             <Body>
-              Include running workouts recorded by Apple Watch, iPhone, or another app that saves
-              workouts to Health.
+              Include workouts recorded by Apple Watch, iPhone, or another app that saves workouts
+              to Health.
             </Body>
             <Button loading={action.busy} onPress={() => void connect()}>
               {journal.preferences.appleHealthConnected

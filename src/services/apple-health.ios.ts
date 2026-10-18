@@ -21,7 +21,7 @@ function normalizeRun(run: HealthRun): Run {
     ...run,
     id: `apple-health:${run.id}`,
     localDate: today(new Date(run.date)),
-    sport: 'Run',
+    sport: run.sport,
     source: nikeRunClub ? 'nikeRunClub' : 'appleHealth',
   };
 }
@@ -31,7 +31,9 @@ export async function getAppleHealthRuns(start: string, end: string): Promise<Ru
   try {
     return (await GrowthHealth.getRunningWorkouts(from, through)).map(normalizeRun);
   } catch {
-    throw new Error('Apple Health runs could not be loaded. Review Health access and try again.');
+    throw new Error(
+      'Apple Health activities could not be loaded. Review Health access and try again.',
+    );
   }
 }
 
@@ -40,7 +42,7 @@ export async function getAppleHealthRun(id: string): Promise<Run | null> {
     const run = await GrowthHealth.getRunningWorkout(id.replace(/^apple-health:/, ''));
     return run ? normalizeRun(run) : null;
   } catch {
-    throw new Error('This run could not be loaded from Apple Health.');
+    throw new Error('This activity could not be loaded from Apple Health.');
   }
 }
 

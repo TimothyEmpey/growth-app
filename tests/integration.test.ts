@@ -197,7 +197,14 @@ test('community foods are shared while the creator receives matching foods first
     ).status,
   ).toBe(200);
   expect(
-    ((await (await worker.fetch(request('/api/foods/mine', undefined, `growth_account=${creatorToken}`), env)).json()) as any).foods,
+    (
+      (await (
+        await worker.fetch(
+          request('/api/foods/mine', undefined, `growth_account=${creatorToken}`),
+          env,
+        )
+      ).json()) as any
+    ).foods,
   ).toEqual([]);
   const detail = await worker.fetch(request(`/api/foods/${food.id}`), env);
   expect(detail.status).toBe(404);
@@ -401,8 +408,8 @@ describe('OAuth and session security', () => {
       expect(sqlite.query(`SELECT * FROM ${table}`).all(), table).toHaveLength(0);
   });
 });
-describe('running synchronization', () => {
-  test('imports multiple pages, filters sports, resumes and deduplicates deliveries', async () => {
+describe('activity synchronization', () => {
+  test('imports every sport across pages, resumes and deduplicates deliveries', async () => {
     const { env, jobs, sqlite, queries } = environment();
     await connection(env);
     let calls = 0;
@@ -429,7 +436,7 @@ describe('running synchronization', () => {
     queries.count = 0;
     await processJob(first, env);
     expect(queries.count).toBeLessThanOrEqual(50);
-    expect(sqlite.query('SELECT * FROM runs').all()).toHaveLength(24);
+    expect(sqlite.query('SELECT * FROM runs').all()).toHaveLength(25);
     expect(jobs).toHaveLength(1);
     expect((await getConnection(env, '42'))?.sync_complete).toBe(0);
     await processJob(first, env);
@@ -473,7 +480,7 @@ describe('running synchronization', () => {
       ),
       env,
     );
-    expect((await all.json()).summary.count).toBe(39);
+    expect((await all.json()).summary.count).toBe(40);
   });
   test('a refresh preserves queued updates and rejects imports from an earlier connection', async () => {
     const { env, jobs, sqlite } = environment();
