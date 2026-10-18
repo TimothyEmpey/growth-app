@@ -2,7 +2,7 @@
   "expo": {
     "name": "Growth",
     "slug": "Growth",
-    "version": "1.4.2",
+    "version": "1.4.3",
     "orientation": "portrait",
     "icon": "./public/icons/icon-512.png",
     "scheme": "growth",
