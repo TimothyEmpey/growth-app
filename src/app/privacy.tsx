@@ -44,7 +44,7 @@ const sections: LegalSection[] = [
   {
     title: 'Food search and email delivery',
     paragraphs: [
-      'Typed food searches are sent through the Growth service to FatSecret and are also matched against foods contributed to Growth. Barcode lookups are sent to Open Food Facts. Search terms and requested food or barcode identifiers are provided to the applicable food provider, but Growth does not send your Growth password or Strava credentials with those requests. Selected nutrition values are saved with journal entries so historical entries do not change when database results change.',
+      'Typed food and restaurant-menu searches are sent through the Growth service to FatSecret and are also matched against foods contributed to Growth where applicable. Barcode lookups are sent to Open Food Facts. Search terms, restaurant names, and requested food or barcode identifiers are provided to the applicable food provider, but Growth does not send your Growth password or Strava credentials with those requests. Selected nutrition values are saved with journal entries so historical entries do not change when database results change.',
       'Growth uses Resend to deliver account-verification, password-recovery, and email-change messages. Resend receives the destination email address and message content needed to deliver those messages.',
     ],
   },

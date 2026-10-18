@@ -483,6 +483,49 @@ export async function searchFoods(query: string, page: number, env: Env, account
   return { foods: mergeFoodSearch(community, provider.foods, query), hasMore: provider.hasMore };
 }
 
+export async function restaurantMenu(name: string, query: string, page: number, env: Env) {
+  const expression = [name, query].filter(Boolean).join(' ');
+  const provider = await cached(`restaurant:v1:${page}:${expression}`, env, async () => {
+    const result = await fatSecretGet<{
+      foods?: {
+        food?: FatSecretSearchFood | FatSecretSearchFood[];
+        max_results?: string | number;
+        total_results?: string | number;
+        page_number?: string | number;
+      };
+    }>(
+      '/rest/foods/search/v1',
+      { search_expression: expression, page_number: String(page - 1), max_results: '50' },
+      env,
+    );
+    const foods = asArray(result.foods?.food);
+    const normalizeBrand = (value: string) =>
+      value
+        .normalize('NFKD')
+        .toLocaleLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+    const exactBrand = normalizeBrand(name);
+    const matches = foods.filter(
+      (food) => {
+        const candidate = normalizeBrand(food.brand_name ?? '');
+        return (
+          candidate === exactBrand ||
+          (candidate.length >= 4 &&
+            (candidate.startsWith(exactBrand) || exactBrand.startsWith(candidate)))
+        );
+      },
+    );
+    const total = Number(result.foods?.total_results ?? foods.length);
+    const maxResults = Number(result.foods?.max_results ?? 50);
+    const pageNumber = Number(result.foods?.page_number ?? page - 1);
+    return {
+      foods: mapFatSecretSearchFoods(matches),
+      hasMore: (pageNumber + 1) * maxResults < total,
+    };
+  });
+  return provider;
+}
+
 async function fatSecretFoodDetail(id: string, env: Env) {
   const foodId = id.slice('fs:'.length);
   if (!/^\d+$/.test(foodId))

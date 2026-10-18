@@ -98,6 +98,7 @@ function AppNavigation() {
           'lift',
           'food',
           'my-foods',
+          'restaurants',
           'recipe',
           'recipes',
           'goals',

@@ -486,7 +486,10 @@ export function Sheet({
     ? '/account'
     : pathname === '/privacy' || pathname === '/support'
       ? '/account'
-      : pathname === '/food' || pathname === '/my-foods' || pathname === '/goals'
+      : pathname === '/food' ||
+          pathname === '/my-foods' ||
+          pathname === '/restaurants' ||
+          pathname === '/goals'
         ? '/diet'
         : pathname === '/run' || pathname === '/run-history' || pathname === '/strava'
           ? '/running'

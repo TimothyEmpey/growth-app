@@ -63,6 +63,33 @@ test('food search retries a transient provider failure before returning an error
   expect(calls).toBe(2);
 });
 
+test('restaurant menus keep only the selected FatSecret restaurant and paginate', async () => {
+  const { env } = environment();
+  env.FATSECRET_PROXY_URL = 'https://foods.example.invalid';
+  env.FATSECRET_PROXY_SECRET = 'proxy-secret';
+  globalThis.fetch = (async () =>
+    Response.json({
+      foods: {
+        food: [
+          { food_id: '11', food_name: 'Chicken Bowl', brand_name: 'Chipotle' },
+          { food_id: '12', food_name: 'Chicken Bowl', brand_name: 'Another Restaurant' },
+        ],
+        max_results: '50',
+        total_results: '75',
+        page_number: '0',
+      },
+    })) as typeof fetch;
+  const response = await worker.fetch(
+    request('/api/restaurants/menu?name=Chipotle%20Mexican%20Grill&q=chicken&page=1'),
+    env,
+  );
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({
+    foods: [{ id: 'fs:11', name: 'Chicken Bowl', brand: 'Chipotle' }],
+    hasMore: true,
+  });
+});
+
 test('community foods are shared while the creator receives matching foods first', async () => {
   const { env } = environment();
   env.FATSECRET_PROXY_URL = 'https://foods.example.invalid';

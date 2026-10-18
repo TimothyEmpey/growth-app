@@ -63,6 +63,7 @@ function FoodForm() {
     recipeId?: string;
     addToRecipeId?: string;
     communityFoodId?: string;
+    foodId?: string;
   }>();
   const { journal } = useJournal();
   const existing = journal.meals.find((e) => e.id === params.id);
@@ -84,11 +85,13 @@ function FoodForm() {
   const [communityDismissed, setCommunityDismissed] = useState(false);
   const queryClient = useQueryClient();
   const [portionId, setPortionId] = useState(
-    existing?.portionId ?? (selectedRecipe || params.communityFoodId ? 'serving' : 'grams'),
+    existing?.portionId ??
+      (selectedRecipe || params.communityFoodId ? 'serving' : params.foodId ? '' : 'grams'),
   );
   const [portionMenuOpen, setPortionMenuOpen] = useState(false);
   const [quantity, setQuantity] = useState(
-    existing?.quantity.toString() ?? (selectedRecipe || params.communityFoodId ? '1' : '100'),
+    existing?.quantity.toString() ??
+      (selectedRecipe || params.communityFoodId || params.foodId ? '1' : '100'),
   );
   const [scanning, setScanning] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -108,7 +111,7 @@ function FoodForm() {
         `/api/foods/search?q=${encodeURIComponent(debounced)}&page=${page}`,
         { signal },
       ),
-    enabled: debounced.length >= 2 && !selectedFood && !params.communityFoodId,
+    enabled: debounced.length >= 2 && !selectedFood && !params.communityFoodId && !params.foodId,
     // Typed searches may cross a waking provider proxy; retry only temporary failures.
     retry: (failureCount, error) =>
       failureCount < 2 && error instanceof ApiError && error.status >= 500,
@@ -121,12 +124,24 @@ function FoodForm() {
     enabled: !!params.communityFoodId && !selectedFood && !communityDismissed,
     retry: false,
   });
+  const restaurantSelection = useQuery({
+    queryKey: ['food', params.foodId],
+    queryFn: ({ signal }) => api<Food>(`/api/foods/${params.foodId}`, { signal }),
+    enabled: !!params.foodId && !selectedFood,
+    retry: false,
+  });
   const selected =
-    selectedFood ?? (!communityDismissed ? (communitySelection.data ?? null) : null);
-  const currentPortion = selected?.portions.find((portion) => portion.id === portionId);
+    selectedFood ??
+    (!communityDismissed ? (communitySelection.data ?? restaurantSelection.data ?? null) : null);
+  const effectivePortionId =
+    portionId ||
+    selected?.defaultPortionId ||
+    selected?.portions.find((portion) => portion.id !== 'grams')?.id ||
+    'grams';
+  const currentPortion = selected?.portions.find((portion) => portion.id === effectivePortionId);
   let nutrition = selected?.per100g;
   if (selected && Number(quantity) > 0 && Number.isFinite(Number(quantity)))
-    nutrition = nutritionFor(selected, portionId, Number(quantity));
+    nutrition = nutritionFor(selected, effectivePortionId, Number(quantity));
   const recents = journal.foods;
   const choose = (food: Food) => {
     setCommunityDismissed(false);
@@ -234,7 +249,7 @@ function FoodForm() {
                   }}
                 >
                   {selected.portions.map((portion, index) => {
-                    const active = portionId === portion.id;
+                    const active = effectivePortionId === portion.id;
                     return (
                       <Pressable
                         accessibilityRole="menuitem"
@@ -264,10 +279,14 @@ function FoodForm() {
               )}
             </View>
             <NumericField
-              label={portionId === 'grams' ? 'Grams' : 'Number of servings'}
+              label={effectivePortionId === 'grams' ? 'Grams' : 'Number of servings'}
               value={quantity}
               onChangeText={setQuantity}
-              max={portionId === 'grams' ? INPUT_LIMITS.foodGrams : INPUT_LIMITS.foodServings}
+              max={
+                effectivePortionId === 'grams'
+                  ? INPUT_LIMITS.foodGrams
+                  : INPUT_LIMITS.foodServings
+              }
               decimals={2}
               placeholder="1"
             />
@@ -283,12 +302,14 @@ function FoodForm() {
                 void action.run(async () => {
                   const count = positiveAtMost(
                     quantity,
-                    portionId === 'grams' ? INPUT_LIMITS.foodGrams : INPUT_LIMITS.foodServings,
+                    effectivePortionId === 'grams'
+                      ? INPUT_LIMITS.foodGrams
+                      : INPUT_LIMITS.foodServings,
                     'quantity',
                   );
                   if (!MEALS.includes(meal) || !validDate(date))
                     throw new Error('Choose a valid meal and date.');
-                  const snapshot = nutritionFor(selected, portionId, count);
+                  const snapshot = nutritionFor(selected, effectivePortionId, count);
                   if (params.addToRecipeId) {
                     await updateJournal((j) => {
                       const recipe = j.recipes.find((item) => item.id === params.addToRecipeId);
@@ -296,7 +317,7 @@ function FoodForm() {
                       recipe.ingredients.push({
                         id: newId(),
                         food: selected,
-                        portionId,
+                        portionId: effectivePortionId,
                         quantity: count,
                         nutrition: snapshot,
                       });
@@ -314,7 +335,7 @@ function FoodForm() {
                       date,
                       meal,
                       food: selected,
-                      portionId,
+                      portionId: effectivePortionId,
                       quantity: count,
                       nutrition: snapshot,
                     };
@@ -400,6 +421,17 @@ function FoodForm() {
               <Row style={{ flexWrap: 'wrap' }}>
                 <Button
                   quiet
+                  onPress={() =>
+                    router.replace({
+                      pathname: '/restaurants',
+                      params: { meal, date },
+                    } as unknown as Href)
+                  }
+                >
+                  Restaurants
+                </Button>
+                <Button
+                  quiet
                   onPress={() => router.push({ pathname: '/recipes', params: { meal, date } })}
                 >
                   View Recipes
@@ -420,23 +452,37 @@ function FoodForm() {
               </Row>
             )}
             {params.addToRecipeId && (
-              <Button
-                quiet
-                onPress={() =>
-                  router.replace(
-                    {
-                      pathname: '/my-foods',
+              <Row style={{ flexWrap: 'wrap' }}>
+                <Button
+                  quiet
+                  onPress={() =>
+                    router.replace({
+                      pathname: '/restaurants',
                       params: { meal, date, addToRecipeId: params.addToRecipeId },
-                    } as unknown as Href,
-                  )
-                }
-              >
-                My Foods
-              </Button>
+                    } as unknown as Href)
+                  }
+                >
+                  Restaurants
+                </Button>
+                <Button
+                  quiet
+                  onPress={() =>
+                    router.replace(
+                      {
+                        pathname: '/my-foods',
+                        params: { meal, date, addToRecipeId: params.addToRecipeId },
+                      } as unknown as Href,
+                    )
+                  }
+                >
+                  My Foods
+                </Button>
+              </Row>
             )}
             {action.busy && <ActivityIndicator color={C.blue} />}
             {action.error && <Notice message={action.error} />}
             {communitySelection.error && <Notice message={communitySelection.error.message} />}
+            {restaurantSelection.error && <Notice message={restaurantSelection.error.message} />}
             {!query && recents.length > 0 && (
               <View style={{ gap: 8 }}>
                 <Label>Recent foods · available offline</Label>

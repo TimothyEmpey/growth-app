@@ -10,6 +10,7 @@ import {
   deleteCommunityFood,
   fatSecretConfigured,
   foodDetail,
+  restaurantMenu,
   searchFoods,
 } from './food';
 import { authorize, nativeExchange, oauthCallback } from './oauth';
@@ -274,6 +275,22 @@ async function route(request: Request, env: Env): Promise<Response> {
   if (path === '/api/foods/mine' && method === 'GET') {
     const accountId = await requireAccountId(request, env);
     return json({ foods: await communityFoodsForAccount(accountId, env) });
+  }
+  if (path === '/api/restaurants/menu' && method === 'GET') {
+    const name = url.searchParams.get('name')?.trim() ?? '';
+    const query = url.searchParams.get('q')?.trim() ?? '';
+    const page = Number(url.searchParams.get('page') ?? 1);
+    if (
+      name.length < 2 ||
+      name.length > 120 ||
+      query.length > 120 ||
+      !Number.isInteger(page) ||
+      page < 1 ||
+      page > 1000
+    )
+      throw new ServiceError('Choose a valid restaurant.');
+    await rateLimit(request, env, 'restaurant-food', 60);
+    return json(await restaurantMenu(name, query, page, env));
   }
   if (path === '/api/foods/community' && method === 'POST') {
     const accountId = await requireAccountId(request, env);
