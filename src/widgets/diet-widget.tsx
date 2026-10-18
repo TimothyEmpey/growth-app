@@ -45,20 +45,20 @@ function DietView(props: DietWidgetSnapshot, environment: WidgetEnvironment) {
   if (environment.widgetFamily === 'accessoryCircular') {
     const goal = Math.max(props.calorieGoal, props.calories, 1);
     return (
-      <Gauge
-        value={Math.min(props.calories, goal)}
-        min={0}
-        max={goal}
-        currentValueLabel={
-          <VStack spacing={0}>
-            <Text modifiers={[font({ size: 17, weight: 'semibold' }), lineLimit(1), minimumScaleFactor(0.58)]}>{props.calories.toLocaleString()}</Text>
-            <Text modifiers={[font({ size: 8, weight: 'medium' })]}>CAL</Text>
-          </VStack>
-        }
-        modifiers={[gaugeStyle('circularCapacity'), tint(blue), frame({ width: 62, height: 62 })]}
-      >
-        <Text>Calories</Text>
-      </Gauge>
+      <ZStack modifiers={[frame({ width: 62, height: 62 })]}>
+        <Gauge
+          value={Math.min(props.calories, goal)}
+          min={0}
+          max={goal}
+          modifiers={[gaugeStyle('circularCapacity'), tint(blue), frame({ width: 62, height: 62 })]}
+        >
+          <Text>Calories</Text>
+        </Gauge>
+        <VStack spacing={0}>
+          <Text modifiers={[font({ size: 17, weight: 'semibold' }), lineLimit(1), minimumScaleFactor(0.58)]}>{props.calories.toLocaleString()}</Text>
+          <Text modifiers={[font({ size: 8, weight: 'medium' })]}>CAL</Text>
+        </VStack>
+      </ZStack>
     );
   }
 
