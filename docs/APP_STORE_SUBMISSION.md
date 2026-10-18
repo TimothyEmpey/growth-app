@@ -6,7 +6,7 @@ This document prepares the information that can be completed before Apple Develo
 
 - App name: Growth
 - App Store version: 1.0
-- Release binary: 1.3.1
+- Release binary: 1.4.1
 - Bundle ID: `com.timempey.growth`
 - Expo owner: `empey`
 - EAS project ID: `f13d7bc4-9adc-41c6-a747-9028cc143770`
