@@ -1,5 +1,6 @@
 import { displayWeight, distanceValue } from './account';
 import { exerciseRepFilter, liftsForRep, shiftDay, sumNutrition, today } from './journal';
+import { activityCategory } from './runs';
 import type { Journal, Run } from './types';
 
 export type WeightWidgetSnapshot = {
@@ -34,6 +35,7 @@ export type ActivityWidgetSnapshot = {
   running: string;
   hiking: string;
   walking: string;
+  monthlyRunning: string;
   runningHistory: number[];
   hikingHistory: number[];
   walkingHistory: number[];
@@ -117,6 +119,7 @@ export function activityWidgetSnapshot(
   const end = today();
   const start = shiftDay(end, -29);
   const recent = runs.filter((run) => run.localDate >= start && run.localDate <= end);
+  const currentMonth = end.slice(0, 7);
   const distanceUnit = units === 'metric' ? 'km' : 'mi';
   const kind = (sport: string) => {
     const normalized = sport.toLowerCase();
@@ -138,6 +141,9 @@ export function activityWidgetSnapshot(
     buckets[activity][Math.min(3, 3 - Math.floor(daysAgo / 8))] += value;
   }
   const total = totals.running + totals.hiking + totals.walking;
+  const monthlyRunning = runs
+    .filter((run) => run.localDate.startsWith(currentMonth) && activityCategory(run.sport) === 'run')
+    .reduce((sum, run) => sum + distanceValue(run.distanceMeters, units), 0);
   return {
     count: recent.length,
     distance: Math.round(total).toString(),
@@ -145,6 +151,7 @@ export function activityWidgetSnapshot(
     running: Math.round(totals.running).toString(),
     hiking: Math.round(totals.hiking).toString(),
     walking: Math.round(totals.walking).toString(),
+    monthlyRunning: monthlyRunning.toFixed(1).replace(/\.0$/, ''),
     runningHistory: buckets.running,
     hikingHistory: buckets.hiking,
     walkingHistory: buckets.walking,

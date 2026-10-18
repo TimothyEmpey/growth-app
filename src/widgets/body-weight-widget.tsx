@@ -1,4 +1,4 @@
-import { Chart, HStack, Image, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { AccessoryWidgetBackground, Chart, HStack, Image, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   containerBackground,
   font,
@@ -47,6 +47,20 @@ function BodyWeightView(props: WeightWidgetSnapshot, environment: WidgetEnvironm
       </Text>
     </HStack>
   );
+
+  if (environment.widgetFamily === 'accessoryCircular') {
+    return (
+      <ZStack modifiers={[frame({ width: 62, height: 62 })]}>
+        <AccessoryWidgetBackground modifiers={[frame({ width: 62, height: 62 })]} />
+        <VStack spacing={0}>
+          <HStack alignment="lastTextBaseline" spacing={1}>
+            <Text modifiers={[font({ size: 17, weight: 'semibold' }), lineLimit(1), minimumScaleFactor(0.65)]}>{props.value}</Text>
+            <Text modifiers={[font({ size: 8, weight: 'medium' })]}>{props.unit}</Text>
+          </HStack>
+        </VStack>
+      </ZStack>
+    );
+  }
 
   if (environment.widgetFamily === 'systemSmall') {
     return (

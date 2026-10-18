@@ -18,8 +18,10 @@ export function syncJournalWidgets(journal: Journal) {
 }
 
 export async function syncActivityWidget(journal: Journal) {
-  const start = shiftDay(today(), -29);
   const end = today();
+  const rollingStart = shiftDay(end, -29);
+  const calendarMonthStart = `${end.slice(0, 7)}-01`;
+  const start = rollingStart < calendarMonthStart ? rollingStart : calendarMonthStart;
   let stravaRuns: Run[] = [];
   let healthRuns: Run[] = [];
   try {

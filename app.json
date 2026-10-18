@@ -2,7 +2,7 @@
   "expo": {
     "name": "Growth",
     "slug": "Growth",
-    "version": "1.4.3",
+    "version": "1.4.4",
     "orientation": "portrait",
     "icon": "./public/icons/icon-512.png",
     "scheme": "growth",
@@ -65,19 +65,19 @@
               "name": "BodyWeightWidget",
               "displayName": "Body Weight",
               "description": "See your latest body weight and recent trend.",
-              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"] }
+              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge", "accessoryCircular"] }
             },
             {
               "name": "DietWidget",
               "displayName": "Diet",
               "description": "Track today's calories and macros.",
-              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"] }
+              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge", "accessoryCircular"] }
             },
             {
               "name": "ActivityWidget",
               "displayName": "Activity",
               "description": "See your activity over the last 30 days.",
-              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"] }
+              "ios": { "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge", "accessoryCircular"] }
             },
             {
               "name": "MaxesWidget",

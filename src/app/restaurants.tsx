@@ -150,6 +150,9 @@ export default function RestaurantsSheet() {
                   delayLongPress={450}
                   style={({ pressed }) => ({
                     paddingVertical: 16,
+                    paddingHorizontal: multiFoods.some((item) => item.id === food.id) ? 10 : 0,
+                    marginHorizontal: multiFoods.some((item) => item.id === food.id) ? -10 : 0,
+                    borderRadius: multiFoods.some((item) => item.id === food.id) ? 10 : 0,
                     borderBottomWidth: 1,
                     borderColor: C.border,
                     opacity: pressed ? 0.65 : 1,

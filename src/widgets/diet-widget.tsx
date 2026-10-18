@@ -1,5 +1,5 @@
-import { Chart, HStack, Image, ProgressView, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
-import { containerBackground, font, foregroundStyle, frame, lineLimit, minimumScaleFactor, padding, progressViewStyle, tint } from '@expo/ui/swift-ui/modifiers';
+import { Chart, Gauge, HStack, Image, ProgressView, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { containerBackground, font, foregroundStyle, frame, gaugeStyle, lineLimit, minimumScaleFactor, padding, progressViewStyle, tint } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { DietWidgetSnapshot } from '@/domain/widget-snapshots';
 
@@ -41,6 +41,26 @@ function DietView(props: DietWidgetSnapshot, environment: WidgetEnvironment) {
     { name: 'Carbs', value: props.carbs, goal: props.carbsGoal, color: gold },
     { name: 'Fat', value: props.fat, goal: props.fatGoal, color: purple },
   ];
+
+  if (environment.widgetFamily === 'accessoryCircular') {
+    const goal = Math.max(props.calorieGoal, props.calories, 1);
+    return (
+      <Gauge
+        value={Math.min(props.calories, goal)}
+        min={0}
+        max={goal}
+        currentValueLabel={
+          <VStack spacing={0}>
+            <Text modifiers={[font({ size: 17, weight: 'semibold' }), lineLimit(1), minimumScaleFactor(0.58)]}>{props.calories.toLocaleString()}</Text>
+            <Text modifiers={[font({ size: 8, weight: 'medium' })]}>CAL</Text>
+          </VStack>
+        }
+        modifiers={[gaugeStyle('circularCapacity'), tint(blue), frame({ width: 62, height: 62 })]}
+      >
+        <Text>Calories</Text>
+      </Gauge>
+    );
+  }
 
   if (environment.widgetFamily === 'systemSmall') {
     return (

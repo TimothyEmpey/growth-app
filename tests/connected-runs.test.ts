@@ -1,5 +1,7 @@
 import { expect, test } from 'bun:test';
 import { activityCategory, filterActivities, mergeConnectedRuns } from '../src/domain/runs';
+import { activityWidgetSnapshot } from '../src/domain/widget-snapshots';
+import { shiftDay, today } from '../src/domain/journal';
 import type { Run } from '../src/domain/types';
 
 const run = (id: string, source: Run['source'], minutes = 0): Run => ({
@@ -41,4 +43,12 @@ test('activity categories retain all provider sports and filter related variants
   expect(activityCategory(yoga.sport)).toBe('other');
   expect(filterActivities([trail, ride, yoga], 'ride').map((item) => item.id)).toEqual(['ride']);
   expect(filterActivities([trail, ride, yoga], 'all')).toHaveLength(3);
+});
+
+test('the activity widget reports running distance from the current calendar month', () => {
+  const month = today().slice(0, 7);
+  const previousMonth = shiftDay(`${month}-01`, -1);
+  const current = { ...run('current', 'strava'), localDate: `${month}-02`, distanceMeters: 8046.72 };
+  const old = { ...run('old', 'strava'), localDate: previousMonth, distanceMeters: 1609.344 };
+  expect(activityWidgetSnapshot([current, old], 'us').monthlyRunning).toBe('5');
 });

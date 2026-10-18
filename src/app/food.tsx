@@ -875,6 +875,9 @@ function FoodResult({
       delayLongPress={450}
       style={{
         paddingVertical: 15,
+        paddingHorizontal: selected ? 10 : 0,
+        marginHorizontal: selected ? -10 : 0,
+        borderRadius: selected ? 10 : 0,
         borderBottomWidth: 1,
         borderColor: C.border,
         backgroundColor: selected ? C.elevated : 'transparent',

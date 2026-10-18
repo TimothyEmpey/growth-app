@@ -1,4 +1,4 @@
-import { Chart, HStack, Image, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { AccessoryWidgetBackground, Chart, HStack, Image, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import { containerBackground, font, foregroundStyle, frame, lineLimit, minimumScaleFactor, padding } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { ActivityWidgetSnapshot } from '@/domain/widget-snapshots';
@@ -43,6 +43,21 @@ function ActivityView(props: ActivityWidgetSnapshot, environment: WidgetEnvironm
       </VStack>
     </HStack>
   );
+
+  if (environment.widgetFamily === 'accessoryCircular') {
+    return (
+      <ZStack modifiers={[frame({ width: 62, height: 62 })]}>
+        <AccessoryWidgetBackground modifiers={[frame({ width: 62, height: 62 })]} />
+        <VStack spacing={0}>
+          <HStack alignment="lastTextBaseline" spacing={1}>
+            <Text modifiers={[font({ size: 17, weight: 'semibold' }), lineLimit(1), minimumScaleFactor(0.6)]}>{props.monthlyRunning}</Text>
+            <Text modifiers={[font({ size: 8, weight: 'medium' })]}>{props.distanceUnit}</Text>
+          </HStack>
+          <Text modifiers={[font({ size: 7, weight: 'medium' })]}>THIS MONTH</Text>
+        </VStack>
+      </ZStack>
+    );
+  }
 
   if (environment.widgetFamily === 'systemSmall') {
     return (
