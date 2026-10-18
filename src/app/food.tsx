@@ -14,6 +14,7 @@ import {
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useJournal, updateJournal } from '@/data/journal-store';
+import { addDefaultFoods } from '@/data/food-log';
 import {
   formatFoodLabel,
   newId,
@@ -95,6 +96,8 @@ function FoodForm() {
   );
   const [scanning, setScanning] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [multiAdd, setMultiAdd] = useState(false);
+  const [multiFoods, setMultiFoods] = useState<FoodSearchItem[]>([]);
   const barcodeHandled = useRef(false);
   const action = useAction();
   useEffect(() => {
@@ -182,6 +185,33 @@ function FoodForm() {
     setScanning(true);
     setScannerOpen(true);
   };
+  const toggleMultiFood = (food: FoodSearchItem) => {
+    setMultiAdd(true);
+    setMultiFoods((selected) =>
+      selected.some((item) => item.id === food.id)
+        ? selected.filter((item) => item.id !== food.id)
+        : [...selected, food],
+    );
+  };
+  const finishMultiAdd = () =>
+    void action.run(async () => {
+      const foods = await Promise.all(
+        multiFoods.map(async (item) => {
+          const saved = journal.foods.find((food) => food.id === item.id);
+          return (
+            saved ??
+            queryClient.fetchQuery({
+              queryKey: ['food', item.id],
+              queryFn: ({ signal }) => api<Food>(`/api/foods/${item.id}`, { signal }),
+              retry: false,
+            })
+          );
+        }),
+      );
+      await addDefaultFoods(foods, meal, date, params.addToRecipeId);
+      if (params.addToRecipeId) router.back();
+      else dismissSheet('/diet');
+    });
   return (
     <>
       <Sheet
@@ -417,6 +447,25 @@ function FoodForm() {
                 </Pressable>
               </View>
             </View>
+            <Row style={{ flexWrap: 'wrap' }}>
+              <Button
+                quiet
+                icon={multiAdd ? 'close' : 'check'}
+                onPress={() => {
+                  setMultiAdd((active) => !active);
+                  setMultiFoods([]);
+                }}
+              >
+                {multiAdd ? 'Cancel multi add' : 'Multi add'}
+              </Button>
+              {multiAdd && (
+                <Button disabled={!multiFoods.length || action.busy} onPress={finishMultiAdd}>
+                  {multiFoods.length
+                    ? `Add ${multiFoods.length} ${multiFoods.length === 1 ? 'food' : 'foods'}`
+                    : 'Add selected foods'}
+                </Button>
+              )}
+            </Row>
             {!params.addToRecipeId && (
               <Row style={{ flexWrap: 'wrap' }}>
                 <Button
@@ -487,7 +536,14 @@ function FoodForm() {
               <View style={{ gap: 8 }}>
                 <Label>Recent foods · available offline</Label>
                 {recents.slice(0, 8).map((food) => (
-                  <FoodResult key={food.id} food={food} onPress={() => choose(food)} />
+                  <FoodResult
+                    key={food.id}
+                    food={food}
+                    multiAdd={multiAdd}
+                    selected={multiFoods.some((item) => item.id === food.id)}
+                    onLongPress={() => toggleMultiFood(food)}
+                    onPress={() => (multiAdd ? toggleMultiFood(food) : choose(food))}
+                  />
                 ))}
               </View>
             )}
@@ -508,7 +564,14 @@ function FoodForm() {
                     <FoodResult
                       key={food.id}
                       food={food}
+                      multiAdd={multiAdd}
+                      selected={multiFoods.some((item) => item.id === food.id)}
+                      onLongPress={() => toggleMultiFood(food)}
                       onPress={() => {
+                        if (multiAdd) {
+                          toggleMultiFood(food);
+                          return;
+                        }
                         if (action.busy) return;
                         void action.run(async () => {
                           choose(
@@ -789,13 +852,33 @@ function BarcodeScannerOverlay({
   );
 }
 
-function FoodResult({ food, onPress }: { food: FoodSearchItem; onPress: () => void }) {
+function FoodResult({
+  food,
+  onPress,
+  onLongPress,
+  multiAdd = false,
+  selected = false,
+}: {
+  food: FoodSearchItem;
+  onPress: () => void;
+  onLongPress?: () => void;
+  multiAdd?: boolean;
+  selected?: boolean;
+}) {
   const C = useColors();
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ selected }}
       onPress={onPress}
-      style={{ paddingVertical: 15, borderBottomWidth: 1, borderColor: C.border }}
+      onLongPress={onLongPress}
+      delayLongPress={450}
+      style={{
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderColor: C.border,
+        backgroundColor: selected ? C.elevated : 'transparent',
+      }}
     >
       <Row>
         <View style={{ flex: 1, gap: 4 }}>
@@ -807,7 +890,7 @@ function FoodResult({ food, onPress }: { food: FoodSearchItem; onPress: () => vo
             </Label>
           )}
         </View>
-        <Icon name="right" size={18} />
+        <Icon name={multiAdd ? (selected ? 'check' : 'plus') : 'right'} size={18} />
       </Row>
     </Pressable>
   );

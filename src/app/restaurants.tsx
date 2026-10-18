@@ -2,14 +2,30 @@ import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Body, Button, Field, Icon, Label, Notice, Row, Sheet } from '@/components/ui';
+import {
+  Body,
+  Button,
+  dismissSheet,
+  Field,
+  Icon,
+  Label,
+  Notice,
+  Row,
+  Sheet,
+  useAction,
+} from '@/components/ui';
 import { useColors } from '@/providers/appearance';
 import { POPULAR_RESTAURANTS } from '@/domain/restaurants';
-import type { FoodSearchItem, Meal } from '@/domain/types';
+import type { Food, FoodSearchItem, Meal } from '@/domain/types';
 import { api } from '@/services/api';
+import { useJournal } from '@/data/journal-store';
+import { addDefaultFoods } from '@/data/food-log';
+import { today } from '@/domain/journal';
 
 export default function RestaurantsSheet() {
   const C = useColors();
+  const { journal } = useJournal();
+  const action = useAction();
   const params = useLocalSearchParams<{
     meal?: Meal;
     date?: string;
@@ -19,6 +35,8 @@ export default function RestaurantsSheet() {
   const [restaurant, setRestaurant] = useState('');
   const [menuQuery, setMenuQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [multiAdd, setMultiAdd] = useState(false);
+  const [multiFoods, setMultiFoods] = useState<FoodSearchItem[]>([]);
   const matchingRestaurants = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
     return POPULAR_RESTAURANTS.filter((name) => name.toLocaleLowerCase().includes(needle));
@@ -48,6 +66,31 @@ export default function RestaurantsSheet() {
         foodId: food.id,
       },
     } as Href);
+  const toggleMultiFood = (food: FoodSearchItem) => {
+    setMultiAdd(true);
+    setMultiFoods((selected) =>
+      selected.some((item) => item.id === food.id)
+        ? selected.filter((item) => item.id !== food.id)
+        : [...selected, food],
+    );
+  };
+  const finishMultiAdd = () =>
+    void action.run(async () => {
+      const foods = await Promise.all(
+        multiFoods.map(async (item) => {
+          const saved = journal.foods.find((food) => food.id === item.id);
+          return saved ?? api<Food>(`/api/foods/${item.id}`);
+        }),
+      );
+      await addDefaultFoods(
+        foods,
+        params.meal ?? 'breakfast',
+        params.date ?? today(),
+        params.addToRecipeId,
+      );
+      if (params.addToRecipeId) router.back();
+      else dismissSheet('/diet');
+    });
 
   return (
     <Sheet
@@ -73,6 +116,26 @@ export default function RestaurantsSheet() {
             placeholder={`Search ${restaurant}…`}
             autoCorrect={false}
           />
+          <Row style={{ flexWrap: 'wrap' }}>
+            <Button
+              quiet
+              icon={multiAdd ? 'close' : 'check'}
+              onPress={() => {
+                setMultiAdd((active) => !active);
+                setMultiFoods([]);
+              }}
+            >
+              {multiAdd ? 'Cancel multi add' : 'Multi add'}
+            </Button>
+            {multiAdd && (
+              <Button disabled={!multiFoods.length || action.busy} onPress={finishMultiAdd}>
+                {multiFoods.length
+                  ? `Add ${multiFoods.length} ${multiFoods.length === 1 ? 'food' : 'foods'}`
+                  : 'Add selected foods'}
+              </Button>
+            )}
+          </Row>
+          {action.error && <Notice message={action.error} />}
           {menu.isFetching && <Body>Loading menu…</Body>}
           {menu.error && <Notice message={menu.error.message} />}
           {menu.data?.foods.length ? (
@@ -81,12 +144,18 @@ export default function RestaurantsSheet() {
                 <Pressable
                   key={food.id}
                   accessibilityRole="button"
-                  onPress={() => selectFood(food)}
+                  accessibilityState={{ selected: multiFoods.some((item) => item.id === food.id) }}
+                  onPress={() => (multiAdd ? toggleMultiFood(food) : selectFood(food))}
+                  onLongPress={() => toggleMultiFood(food)}
+                  delayLongPress={450}
                   style={({ pressed }) => ({
                     paddingVertical: 16,
                     borderBottomWidth: 1,
                     borderColor: C.border,
                     opacity: pressed ? 0.65 : 1,
+                    backgroundColor: multiFoods.some((item) => item.id === food.id)
+                      ? C.elevated
+                      : 'transparent',
                   })}
                 >
                   <Row>
@@ -96,7 +165,16 @@ export default function RestaurantsSheet() {
                       </Text>
                       <Body>{food.brand}</Body>
                     </View>
-                    <Icon name="right" size={18} />
+                    <Icon
+                      name={
+                        multiAdd
+                          ? multiFoods.some((item) => item.id === food.id)
+                            ? 'check'
+                            : 'plus'
+                          : 'right'
+                      }
+                      size={18}
+                    />
                   </Row>
                 </Pressable>
               ))}
