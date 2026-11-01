@@ -8,16 +8,33 @@
   "compatibility_date": "2026-09-19",
   "routes": [{ "pattern": "growth-journal.com", "custom_domain": true }],
   "assets": { "directory": "../dist", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
-  "d1_databases": [{ "binding": "DB", "database_name": "growth-journal", "database_id": "04d5fa54-6124-47bf-bf23-0b65ec976e22", "migrations_dir": "migrations" }],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "growth-journal",
+      "database_id": "04d5fa54-6124-47bf-bf23-0b65ec976e22",
+      "migrations_dir": "migrations",
+    },
+  ],
   "queues": {
     "producers": [{ "binding": "SYNC_QUEUE", "queue": "growth-sync" }],
-    "consumers": [{ "queue": "growth-sync", "max_batch_size": 1, "max_concurrency": 1, "max_retries": 100, "retry_delay": 60, "dead_letter_queue": "growth-sync-failed" }]
+    "consumers": [
+      {
+        "queue": "growth-sync",
+        "max_batch_size": 1,
+        "max_concurrency": 1,
+        "max_retries": 100,
+        "retry_delay": 60,
+        "dead_letter_queue": "growth-sync-failed",
+      },
+    ],
   },
   "triggers": { "crons": ["17 3 * * *"] },
   "observability": { "enabled": true, "logs": { "invocation_logs": false } },
   "vars": {
     "APP_ORIGIN": "https://growth-journal.com",
     "LEGACY_APP_ORIGIN": "https://growth-journal.tlegeneral.workers.dev",
-    "DEV_CLIENT_ORIGIN": "http://localhost:8081"
-  }
+    "DEV_CLIENT_ORIGIN": "http://localhost:8081",
+    "FOOD_REPORT_EMAIL": "tlegeneral@proton.me",
+  },
 }

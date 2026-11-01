@@ -210,6 +210,89 @@ test('community foods are shared while the creator receives matching foods first
   expect(detail.status).toBe(404);
 });
 
+test('community food reports hide one food for the reporter and notify manual review', async () => {
+  const { env, sqlite } = environment();
+  env.RESEND_API_KEY = 'resend-test-key';
+  env.EMAIL_FROM = 'Growth <reports@example.invalid>';
+  env.FOOD_REPORT_EMAIL = 'tlegeneral@proton.me';
+  env.FATSECRET_PROXY_URL = 'https://foods.example.invalid';
+  env.FATSECRET_PROXY_SECRET = 'proxy-secret';
+  const emails: Record<string, unknown>[] = [];
+  globalThis.fetch = (async (input, init) => {
+    if (String(input) === 'https://api.resend.com/emails') {
+      emails.push(JSON.parse(String(init?.body)));
+      return Response.json({ id: 'email-1' });
+    }
+    return Response.json({ foods: { food: [], total_results: '0' } });
+  }) as typeof fetch;
+  const creatorToken = await accountSession(env, 'report-creator');
+  const reporterToken = await accountSession(env, 'reporter');
+  const created = await worker.fetch(
+    request(
+      '/api/foods/community',
+      {
+        name: 'Questionable oats',
+        brand: 'Growth Test',
+        servingLabel: '1 bowl',
+        servingGrams: 200,
+        calories: 300,
+        protein: 10,
+        carbs: 50,
+        fat: 7,
+      },
+      `growth_account=${creatorToken}`,
+    ),
+    env,
+  );
+  const food = (await created.json()) as any;
+  const foodId = food.id.slice('community:'.length);
+
+  const report = await worker.fetch(
+    request(`/api/foods/community:${foodId}/report`, {}, `growth_account=${reporterToken}`),
+    env,
+  );
+  expect(report.status).toBe(200);
+  expect(await report.json()).toEqual({ reported: true, notificationSent: true });
+  expect(emails).toHaveLength(1);
+  expect(emails[0]).toMatchObject({
+    to: ['tlegeneral@proton.me'],
+    subject: 'Growth community food report: Questionable oats',
+  });
+  expect(
+    sqlite.query('SELECT email_sent FROM community_food_reports').get() as { email_sent: number },
+  ).toEqual({ email_sent: 1 });
+
+  const reporterSearch = await worker.fetch(
+    request('/api/foods/search?q=oats&page=1', undefined, `growth_account=${reporterToken}`),
+    env,
+  );
+  expect(reporterSearch.status).toBe(200);
+  expect(((await reporterSearch.json()) as any).foods).toEqual([]);
+  expect(
+    (
+      await worker.fetch(
+        request(`/api/foods/community:${foodId}`, undefined, `growth_account=${reporterToken}`),
+        env,
+      )
+    ).status,
+  ).toBe(404);
+  const creatorSearch = await worker.fetch(
+    request('/api/foods/search?q=oats&page=1', undefined, `growth_account=${creatorToken}`),
+    env,
+  );
+  expect(((await creatorSearch.json()) as any).foods[0].name).toBe('Questionable oats');
+
+  const disabled = await worker.fetch(
+    request(
+      '/api/foods/search?q=oats&page=1&community=0',
+      undefined,
+      `growth_account=${creatorToken}`,
+    ),
+    env,
+  );
+  expect(((await disabled.json()) as any).foods).toEqual([]);
+});
+
 describe('OAuth and session security', () => {
   test('web state is browser-bound, single-use, and tied to a Growth account', async () => {
     const { env } = environment();

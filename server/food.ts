@@ -98,8 +98,7 @@ function servingGrams(serving: FatSecretServing) {
 
 export function normalizeFatSecretFood(raw: FatSecretFood): Food {
   const servings = asArray(raw.servings?.serving);
-  if (!servings.length)
-    throw new ServiceError('This food does not have serving information.', 404);
+  if (!servings.length) throw new ServiceError('This food does not have serving information.', 404);
   const portions: FoodPortion[] = servings.map((serving) => ({
     id: `fs-serving:${serving.serving_id}`,
     label: serving.serving_description,
@@ -112,7 +111,8 @@ export function normalizeFatSecretFood(raw: FatSecretFood): Food {
   const per100g = Object.fromEntries(
     Object.entries(nutrition).map(([key, value]) => [key, grams ? (value! / grams) * 100 : 0]),
   ) as Nutrition;
-  const defaultServing = servings.find((serving) => Number(serving.is_default) === 1) ?? servings[0];
+  const defaultServing =
+    servings.find((serving) => Number(serving.is_default) === 1) ?? servings[0];
   return {
     id: `fs:${raw.food_id}`,
     name: raw.food_name,
@@ -151,8 +151,7 @@ export function normalizeOpenFoodFacts(raw: OpenFoodFactsProduct): Food {
   };
 }
 
-const openFoodFactsFields =
-  'code,product_name,brands,nutriments,serving_size,serving_quantity';
+const openFoodFactsFields = 'code,product_name,brands,nutriments,serving_size,serving_quantity';
 const openFoodFactsUserAgent = (env: Env) =>
   env.OPEN_FOOD_FACTS_USER_AGENT || 'Growth/1.0 (https://growth-journal.com)';
 
@@ -167,8 +166,7 @@ async function openFoodFacts(url: URL, env: Env) {
       429,
       60,
     );
-  if (response.status === 404)
-    throw new ServiceError('No food was found for that barcode.', 404);
+  if (response.status === 404) throw new ServiceError('No food was found for that barcode.', 404);
   if (!response.ok)
     throw new ServiceError('Barcode lookup is temporarily unavailable. Please try again.', 502);
   return response.json();
@@ -206,7 +204,7 @@ const requiredNumber = (value: unknown, label: string, maximum: number, allowZer
   return parsed;
 };
 
-function communityFood(row: CommunityFoodRow): Food {
+function communityFood(row: CommunityFoodRow, accountId: string | null = null): Food {
   const servingNutrition = JSON.parse(row.nutrition) as Nutrition;
   const per100g = Object.fromEntries(
     Object.entries(servingNutrition).map(([key, value]) => [
@@ -229,14 +227,12 @@ function communityFood(row: CommunityFoodRow): Food {
       },
     ],
     defaultPortionId: 'serving',
+    source: 'community',
+    createdByYou: !!accountId && row.creator_account_id === accountId,
   };
 }
 
-export async function createCommunityFood(
-  input: CommunityFoodInput,
-  accountId: string,
-  env: Env,
-) {
+export async function createCommunityFood(input: CommunityFoodInput, accountId: string, env: Env) {
   const name = cleanText(input.name, 'food name', 120);
   const brand = cleanText(input.brand ?? '', 'brand', 80, false);
   const servingLabel = cleanText(input.servingLabel, 'serving description', 80);
@@ -297,7 +293,7 @@ export async function communityFoodsForAccount(accountId: string, env: Env) {
   )
     .bind(accountId)
     .all<CommunityFoodRow>();
-  return result.results.map(communityFood);
+  return result.results.map((row) => communityFood(row, accountId));
 }
 
 export async function deleteCommunityFood(id: string, accountId: string, env: Env) {
@@ -315,10 +311,14 @@ async function communitySearch(query: string, accountId: string | null, env: Env
     // Creator ownership affects ranking only; every matching contribution remains public.
     `SELECT * FROM community_foods
      WHERE search_text LIKE ? ESCAPE '\\'
+       AND (? = '' OR NOT EXISTS (
+         SELECT 1 FROM community_food_reports reports
+         WHERE reports.food_id=community_foods.id AND reports.reporter_account_id=?
+       ))
      ORDER BY CASE WHEN creator_account_id=? THEN 0 ELSE 1 END, updated_at DESC
      LIMIT 10`,
   )
-    .bind(pattern, accountId ?? '')
+    .bind(pattern, accountId ?? '', accountId ?? '', accountId ?? '')
     .all<CommunityFoodRow>();
   return result.results.map((row) => ({
     id: `community:${row.id}`,
@@ -340,11 +340,7 @@ function searchRelevance(food: FoodSearchItem, query: string) {
   return 4;
 }
 
-function mergeFoodSearch(
-  community: FoodSearchItem[],
-  provider: FoodSearchItem[],
-  query: string,
-) {
+function mergeFoodSearch(community: FoodSearchItem[], provider: FoodSearchItem[], query: string) {
   const createdByYou = community.filter((food) => food.createdByYou);
   const publicMatches = [...provider, ...community.filter((food) => !food.createdByYou)];
   // Stable relevance sorting keeps provider order and prevents another user's food from being promoted.
@@ -384,7 +380,10 @@ async function accessToken(env: Env, force = false) {
 async function fatSecretGet<T>(path: string, params: Record<string, string>, env: Env): Promise<T> {
   const request = async (forceToken = false) => {
     const viaProxy = !!(env.FATSECRET_PROXY_URL && env.FATSECRET_PROXY_SECRET);
-    const url = new URL(path, viaProxy ? env.FATSECRET_PROXY_URL : 'https://platform.fatsecret.com');
+    const url = new URL(
+      path,
+      viaProxy ? env.FATSECRET_PROXY_URL : 'https://platform.fatsecret.com',
+    );
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
     url.searchParams.set('format', 'json');
     return fetch(url, {
@@ -454,9 +453,16 @@ async function cached<T>(key: string, env: Env, load: () => Promise<T>): Promise
   return data;
 }
 
-export async function searchFoods(query: string, page: number, env: Env, accountId: string | null) {
+export async function searchFoods(
+  query: string,
+  page: number,
+  env: Env,
+  accountId: string | null,
+  includeCommunity = true,
+) {
   // Community matches augment FatSecret instead of changing its cached data or result order.
-  const community = page === 1 ? await communitySearch(query, accountId, env) : [];
+  const community =
+    includeCommunity && page === 1 ? await communitySearch(query, accountId, env) : [];
   const provider = await cached(`search:fatsecret:v1:${page}:${query}`, env, async () => {
     const result = await fatSecretGet<{
       foods?: {
@@ -505,16 +511,14 @@ export async function restaurantMenu(name: string, query: string, page: number, 
         .toLocaleLowerCase()
         .replace(/[^a-z0-9]/g, '');
     const exactBrand = normalizeBrand(name);
-    const matches = foods.filter(
-      (food) => {
-        const candidate = normalizeBrand(food.brand_name ?? '');
-        return (
-          candidate === exactBrand ||
-          (candidate.length >= 4 &&
-            (candidate.startsWith(exactBrand) || exactBrand.startsWith(candidate)))
-        );
-      },
-    );
+    const matches = foods.filter((food) => {
+      const candidate = normalizeBrand(food.brand_name ?? '');
+      return (
+        candidate === exactBrand ||
+        (candidate.length >= 4 &&
+          (candidate.startsWith(exactBrand) || exactBrand.startsWith(candidate)))
+      );
+    });
     const total = Number(result.foods?.total_results ?? foods.length);
     const maxResults = Number(result.foods?.max_results ?? 50);
     const pageNumber = Number(result.foods?.page_number ?? page - 1);
@@ -542,13 +546,26 @@ async function fatSecretFoodDetail(id: string, env: Env) {
   });
 }
 
-async function openFoodFactsBarcodeDetail(id: string, env: Env) {
+async function openFoodFactsBarcodeDetail(
+  id: string,
+  env: Env,
+  accountId: string | null,
+  includeCommunity: boolean,
+) {
   const code = id.slice('off:'.length);
   if (!/^\d+$/.test(code)) throw new ServiceError('No food was found for that barcode.', 404);
-  const contributed = await env.DB.prepare('SELECT * FROM community_foods WHERE barcode=?')
-    .bind(code)
-    .first<CommunityFoodRow>();
-  if (contributed) return communityFood(contributed);
+  const contributed = includeCommunity
+    ? await env.DB.prepare(
+        `SELECT * FROM community_foods WHERE barcode=?
+         AND (? = '' OR NOT EXISTS (
+           SELECT 1 FROM community_food_reports reports
+           WHERE reports.food_id=community_foods.id AND reports.reporter_account_id=?
+         ))`,
+      )
+        .bind(code, accountId ?? '', accountId ?? '')
+        .first<CommunityFoodRow>()
+    : null;
+  if (contributed) return communityFood(contributed, accountId);
   return cached(`food-detail:off:v4:${code}`, env, async () => {
     const url = new URL(
       `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`,
@@ -564,20 +581,95 @@ async function openFoodFactsBarcodeDetail(id: string, env: Env) {
   });
 }
 
-export function foodDetail(id: string, env: Env) {
+export function foodDetail(
+  id: string,
+  env: Env,
+  accountId: string | null = null,
+  includeCommunity = true,
+) {
   if (id.startsWith('fs:')) return fatSecretFoodDetail(id, env);
-  if (id.startsWith('off:')) return openFoodFactsBarcodeDetail(id, env);
+  if (id.startsWith('off:'))
+    return openFoodFactsBarcodeDetail(id, env, accountId, includeCommunity);
   if (id.startsWith('community:')) {
     const communityId = id.slice('community:'.length);
     if (!/^[0-9a-f-]{36}$/i.test(communityId))
       throw new ServiceError('This community food is no longer available.', 404);
-    return env.DB.prepare('SELECT * FROM community_foods WHERE id=?')
-      .bind(communityId)
+    return env.DB.prepare(
+      `SELECT * FROM community_foods WHERE id=?
+       AND (? = '' OR NOT EXISTS (
+         SELECT 1 FROM community_food_reports reports
+         WHERE reports.food_id=community_foods.id AND reports.reporter_account_id=?
+       ))`,
+    )
+      .bind(communityId, accountId ?? '', accountId ?? '')
       .first<CommunityFoodRow>()
       .then((row) => {
         if (!row) throw new ServiceError('This community food is no longer available.', 404);
-        return communityFood(row);
+        return communityFood(row, accountId);
       });
   }
   throw new ServiceError('This food is no longer available. Please search again.', 404);
+}
+
+export async function reportCommunityFood(id: string, accountId: string, env: Env) {
+  const food = await env.DB.prepare(
+    `SELECT foods.*, accounts.email AS reporter_email
+     FROM community_foods foods
+     JOIN accounts ON accounts.id=?
+     WHERE foods.id=?`,
+  )
+    .bind(accountId, id)
+    .first<CommunityFoodRow & { reporter_email: string }>();
+  if (!food) throw new ServiceError('This community food is no longer available.', 404);
+  if (food.creator_account_id === accountId)
+    throw new ServiceError('You can delete a food you created from My Foods instead.');
+
+  const reportId = crypto.randomUUID();
+  const createdAt = now();
+  const inserted = await env.DB.prepare(
+    `INSERT OR IGNORE INTO community_food_reports
+      (id,food_id,reporter_account_id,reason,status,email_sent,created_at)
+     VALUES (?,?,?,'User requested manual review','pending',0,?)`,
+  )
+    .bind(reportId, id, accountId, createdAt)
+    .run();
+
+  let notificationSent = false;
+  if (inserted.meta.changes && env.RESEND_API_KEY && env.EMAIL_FROM && env.FOOD_REPORT_EMAIL) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: env.EMAIL_FROM,
+          to: [env.FOOD_REPORT_EMAIL],
+          subject: `Growth community food report: ${food.name}`,
+          text: [
+            'A Growth member reported a community food for manual review.',
+            '',
+            `Food: ${food.name}`,
+            `Brand: ${food.brand || 'None'}`,
+            `Community food ID: ${id}`,
+            `Report ID: ${reportId}`,
+            `Reporter: ${food.reporter_email}`,
+            `Reported at: ${new Date(createdAt * 1000).toISOString()}`,
+            '',
+            'The food was immediately hidden from this reporter. Review the record before deciding whether to remove it for everyone.',
+          ].join('\n'),
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      notificationSent = response.ok;
+      if (notificationSent)
+        await env.DB.prepare('UPDATE community_food_reports SET email_sent=1 WHERE id=?')
+          .bind(reportId)
+          .run();
+    } catch {
+      // The report remains pending in D1 even when notification delivery is interrupted.
+    }
+  }
+  return { reported: true, notificationSent };
 }

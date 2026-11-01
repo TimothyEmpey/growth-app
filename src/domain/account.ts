@@ -9,6 +9,7 @@ export type Preferences = {
   defaultPeriod: Period;
   startPage: '/' | '/running' | '/diet' | '/account';
   appleHealthConnected: boolean;
+  communityFoodsEnabled: boolean;
 };
 export type Profile = {
   name: string;
@@ -24,6 +25,7 @@ export const defaultPreferences: Preferences = {
   defaultPeriod: 'Month',
   startPage: '/',
   appleHealthConnected: false,
+  communityFoodsEnabled: true,
 };
 export const emptyProfile = (): Profile => ({
   name: '',
@@ -47,6 +49,7 @@ export function normalizePreferences(value: Partial<Preferences> = {}): Preferen
       ? value.startPage!
       : '/',
     appleHealthConnected: value.appleHealthConnected === true,
+    communityFoodsEnabled: value.communityFoodsEnabled !== false,
   };
 }
 export function validateProfile(value: unknown): Profile {

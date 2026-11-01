@@ -93,6 +93,7 @@ test('profile validation, unit conversion and old journal migration preserve rea
     defaultPeriod: 'Week',
     startPage: '/account',
     appleHealthConnected: false,
+    communityFoodsEnabled: true,
   };
   journal.profile = { name: 'Alex', gender: '', age: 30, heightCm: 180, weightKg: 80 };
   await saveJournal(journal);

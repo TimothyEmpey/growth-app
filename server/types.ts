@@ -19,6 +19,7 @@ export interface Env {
   OPEN_FOOD_FACTS_USER_AGENT?: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
+  FOOD_REPORT_EMAIL?: string;
 }
 export interface ConnectionRow {
   athlete_id: string;

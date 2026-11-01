@@ -3,6 +3,7 @@ import { Camera, CameraView } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Easing,
   Modal,
@@ -84,6 +85,7 @@ function FoodForm() {
         : null,
   );
   const [communityDismissed, setCommunityDismissed] = useState(false);
+  const [reportMessage, setReportMessage] = useState<string>();
   const queryClient = useQueryClient();
   const [portionId, setPortionId] = useState(
     existing?.portionId ??
@@ -107,11 +109,12 @@ function FoodForm() {
     }, 350);
     return () => clearTimeout(timer);
   }, [query]);
+  const communityFoodsEnabled = journal.preferences.communityFoodsEnabled;
   const search = useQuery({
-    queryKey: ['foods', debounced, page],
+    queryKey: ['foods', debounced, page, communityFoodsEnabled],
     queryFn: ({ signal }) =>
       api<{ foods: FoodSearchItem[]; hasMore: boolean }>(
-        `/api/foods/search?q=${encodeURIComponent(debounced)}&page=${page}`,
+        `/api/foods/search?q=${encodeURIComponent(debounced)}&page=${page}&community=${communityFoodsEnabled ? '1' : '0'}`,
         { signal },
       ),
     enabled: debounced.length >= 2 && !selectedFood && !params.communityFoodId && !params.foodId,
@@ -124,7 +127,8 @@ function FoodForm() {
     queryKey: ['food', params.communityFoodId],
     queryFn: ({ signal }) =>
       api<Food>(`/api/foods/community:${params.communityFoodId}`, { signal }),
-    enabled: !!params.communityFoodId && !selectedFood && !communityDismissed,
+    enabled:
+      communityFoodsEnabled && !!params.communityFoodId && !selectedFood && !communityDismissed,
     retry: false,
   });
   const restaurantSelection = useQuery({
@@ -145,7 +149,9 @@ function FoodForm() {
   let nutrition = selected?.per100g;
   if (selected && Number(quantity) > 0 && Number.isFinite(Number(quantity)))
     nutrition = nutritionFor(selected, effectivePortionId, Number(quantity));
-  const recents = journal.foods;
+  const recents = journal.foods.filter(
+    (food) => communityFoodsEnabled || !food.id.startsWith('community:'),
+  );
   const choose = (food: Food) => {
     setCommunityDismissed(false);
     setSelected(withOunceFallback(food));
@@ -163,9 +169,12 @@ function FoodForm() {
     try {
       choose(
         await queryClient.fetchQuery({
-        queryKey: ['food', `off:${barcode}`],
-        queryFn: ({ signal }) => api<Food>(`/api/foods/off:${barcode}`, { signal }),
-        retry: false,
+          queryKey: ['food', `off:${barcode}`, communityFoodsEnabled],
+          queryFn: ({ signal }) =>
+            api<Food>(`/api/foods/off:${barcode}?community=${communityFoodsEnabled ? '1' : '0'}`, {
+              signal,
+            }),
+          retry: false,
         }),
       );
     } catch (error) {
@@ -212,6 +221,35 @@ function FoodForm() {
       if (params.addToRecipeId) router.back();
       else dismissSheet('/diet');
     });
+  const reportFood = (food: Food) => {
+    Alert.alert(
+      'Report this community food?',
+      'It will stop appearing for you immediately and will be sent to Growth for manual review.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Report food',
+          style: 'destructive',
+          onPress: () =>
+            void action.run(async () => {
+              await api(`/api/foods/${food.id}/report`, {
+                method: 'POST',
+                body: JSON.stringify({}),
+              });
+              await updateJournal((next) => {
+                // Existing meal snapshots remain intact; only future discovery is suppressed.
+                next.foods = next.foods.filter((recent) => recent.id !== food.id);
+              });
+              queryClient.removeQueries({ queryKey: ['food', food.id] });
+              await queryClient.invalidateQueries({ queryKey: ['foods'] });
+              setSelected(null);
+              setCommunityDismissed(true);
+              setReportMessage('Food reported and removed from your results. Thank you.');
+            }),
+        },
+      ],
+    );
+  };
   return (
     <>
       <Sheet
@@ -313,9 +351,7 @@ function FoodForm() {
               value={quantity}
               onChangeText={setQuantity}
               max={
-                effectivePortionId === 'grams'
-                  ? INPUT_LIMITS.foodGrams
-                  : INPUT_LIMITS.foodServings
+                effectivePortionId === 'grams' ? INPUT_LIMITS.foodGrams : INPUT_LIMITS.foodServings
               }
               decimals={2}
               placeholder="1"
@@ -324,6 +360,11 @@ function FoodForm() {
               <Card style={{ backgroundColor: C.bg }}>
                 <NutritionStrip nutrition={nutrition} />
               </Card>
+            )}
+            {selected.source === 'community' && !selected.createdByYou && !existing && (
+              <Button quiet danger loading={action.busy} onPress={() => reportFood(selected)}>
+                Report community food
+              </Button>
             )}
             {action.error && <Notice message={action.error} />}
             <Button
@@ -488,12 +529,10 @@ function FoodForm() {
                 <Button
                   quiet
                   onPress={() =>
-                    router.replace(
-                      {
-                        pathname: '/my-foods',
-                        params: { meal, date, addToRecipeId: params.addToRecipeId },
-                      } as unknown as Href,
-                    )
+                    router.replace({
+                      pathname: '/my-foods',
+                      params: { meal, date, addToRecipeId: params.addToRecipeId },
+                    } as unknown as Href)
                   }
                 >
                   My Foods
@@ -516,12 +555,10 @@ function FoodForm() {
                 <Button
                   quiet
                   onPress={() =>
-                    router.replace(
-                      {
-                        pathname: '/my-foods',
-                        params: { meal, date, addToRecipeId: params.addToRecipeId },
-                      } as unknown as Href,
-                    )
+                    router.replace({
+                      pathname: '/my-foods',
+                      params: { meal, date, addToRecipeId: params.addToRecipeId },
+                    } as unknown as Href)
                   }
                 >
                   My Foods
@@ -529,6 +566,7 @@ function FoodForm() {
               </Row>
             )}
             {action.busy && <ActivityIndicator color={C.blue} />}
+            {reportMessage && <Notice message={reportMessage} />}
             {action.error && <Notice message={action.error} />}
             {communitySelection.error && <Notice message={communitySelection.error.message} />}
             {restaurantSelection.error && <Notice message={restaurantSelection.error.message} />}
@@ -606,12 +644,10 @@ function FoodForm() {
                     quiet
                     icon="plus"
                     onPress={() =>
-                      router.replace(
-                        {
-                          pathname: '/my-foods',
-                          params: { meal, date, create: '1' },
-                        } as unknown as Href,
-                      )
+                      router.replace({
+                        pathname: '/my-foods',
+                        params: { meal, date, create: '1' },
+                      } as unknown as Href)
                     }
                   >
                     Add a missing food

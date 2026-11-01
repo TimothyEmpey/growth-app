@@ -11,6 +11,7 @@ import {
   fatSecretConfigured,
   foodDetail,
   restaurantMenu,
+  reportCommunityFood,
   searchFoods,
 } from './food';
 import { authorize, nativeExchange, oauthCallback } from './oauth';
@@ -281,7 +282,15 @@ async function route(request: Request, env: Env): Promise<Response> {
     )
       throw new ServiceError('Enter a food name between 2 and 120 characters.');
     await rateLimit(request, env, 'food', 60);
-    return json(await searchFoods(query, page, env, await accountIdForRequest(request, env)));
+    return json(
+      await searchFoods(
+        query,
+        page,
+        env,
+        await accountIdForRequest(request, env),
+        url.searchParams.get('community') !== '0',
+      ),
+    );
   }
   if (path === '/api/foods/mine' && method === 'GET') {
     const accountId = await requireAccountId(request, env);
@@ -313,11 +322,26 @@ async function route(request: Request, env: Env): Promise<Response> {
   }
   if (/^\/api\/foods\/(?:fs|off):\d+$/.test(path) && method === 'GET') {
     await rateLimit(request, env, 'food', 60);
-    return json(await foodDetail(path.split('/').at(-1)!, env));
+    return json(
+      await foodDetail(
+        path.split('/').at(-1)!,
+        env,
+        await accountIdForRequest(request, env),
+        url.searchParams.get('community') !== '0',
+      ),
+    );
   }
   if (/^\/api\/foods\/community:[0-9a-f-]{36}$/i.test(path) && method === 'GET') {
     await rateLimit(request, env, 'food', 60);
-    return json(await foodDetail(path.split('/').at(-1)!, env));
+    return json(
+      await foodDetail(path.split('/').at(-1)!, env, await accountIdForRequest(request, env)),
+    );
+  }
+  if (/^\/api\/foods\/community:[0-9a-f-]{36}\/report$/i.test(path) && method === 'POST') {
+    const accountId = await requireAccountId(request, env);
+    await rateLimit(request, env, `community-report:${accountId}`, 10);
+    const id = path.split('/').at(-2)!.split(':').at(-1)!;
+    return json(await reportCommunityFood(id, accountId, env));
   }
   if (/^\/api\/foods\/community:[0-9a-f-]{36}$/i.test(path) && method === 'DELETE') {
     const accountId = await requireAccountId(request, env);

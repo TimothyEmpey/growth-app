@@ -1,15 +1,49 @@
-import { View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 import { Body, Label, Notice, Sheet, useAction } from '@/components/ui';
 import { Choice } from '@/components/settings';
 import { usePreferences, savePreferences } from '@/hooks/use-preferences';
 import type { Preferences, Units } from '@/domain/account';
 import type { Period } from '@/domain/types';
+import { useColors } from '@/providers/appearance';
 export default function PreferencesSheet() {
+  const C = useColors();
   const preferences = usePreferences();
   const action = useAction();
   const save = (change: Partial<Preferences>) => void action.run(() => savePreferences(change));
   return (
     <Sheet title="Preferences" subtitle="A few small changes. A better fit.">
+      <View style={{ gap: 12 }}>
+        <Label>Food search</Label>
+        <View
+          style={{
+            minHeight: 78,
+            padding: 17,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: C.border,
+            backgroundColor: C.bg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 16,
+          }}
+        >
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
+              Growth community foods
+            </Text>
+            <Body>Include foods contributed by Growth members in search results.</Body>
+          </View>
+          <Switch
+            accessibilityLabel="Growth community foods"
+            disabled={action.busy}
+            value={preferences.communityFoodsEnabled}
+            onValueChange={(communityFoodsEnabled) => save({ communityFoodsEnabled })}
+            trackColor={{ false: C.border, true: C.blue }}
+            thumbColor="#fff"
+          />
+        </View>
+        <Body>Your own foods remain available from My Foods when this is turned off.</Body>
+      </View>
       <View style={{ gap: 12 }}>
         <Label>Measurement system</Label>
         {(

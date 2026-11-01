@@ -34,6 +34,8 @@ export type Food = {
   per100g: Nutrition;
   portions: FoodPortion[];
   defaultPortionId?: string;
+  source?: 'community';
+  createdByYou?: boolean;
 };
 export type FoodSearchItem = {
   id: string;
