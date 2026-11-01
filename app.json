@@ -2,7 +2,7 @@
   "expo": {
     "name": "Growth",
     "slug": "Growth",
-    "version": "1.4.5",
+    "version": "1.5.0",
     "orientation": "portrait",
     "icon": "./public/icons/icon-512.png",
     "scheme": "growth",
@@ -39,9 +39,14 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#121c31",
-          "image": "./public/icons/icon-512.png",
-          "imageWidth": 430
+          "backgroundColor": "#031128",
+          "image": "./assets/launch/launch.png",
+          "resizeMode": "cover",
+          "ios": {
+            "image": "./assets/launch/launch.png",
+            "resizeMode": "cover",
+            "enableFullScreenImage_legacy": true
+          }
         }
       ],
       "expo-sqlite",

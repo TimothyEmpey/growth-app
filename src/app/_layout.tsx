@@ -16,6 +16,7 @@ import { JournalSyncProvider } from '@/providers/journal-sync';
 import { WidgetSyncProvider } from '@/providers/widget-sync';
 import { useJournal } from '@/data/journal-store';
 import { ApiError } from '@/services/api';
+import { LaunchAnimation } from '@/components/launch-animation';
 import '@/services/reminders';
 import '@/global.css';
 
@@ -47,7 +48,7 @@ export default function RootLayout() {
 function AppNavigation() {
   const { colors: C, scheme } = useAppearance();
   const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
-  const { ready, journal } = useJournal();
+  const { ready, journal, error } = useJournal();
   const path = usePathname();
   const navigation = useRootNavigationState();
   const started = useRef(false);
@@ -122,6 +123,7 @@ function AppNavigation() {
         ))}
         <Stack.Screen name="auth/strava" options={{ title: 'Connecting Strava' }} />
       </Stack>
+      <LaunchAnimation ready={(ready || !!error) && !!navigation?.key} />
     </ThemeProvider>
   );
 }
