@@ -28,25 +28,15 @@ const AnimatedGroup = Animated.createAnimatedComponent(G);
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const artwork = require('../../assets/launch/launch.png');
 const background = require('../../assets/launch/background.png');
-const letters = [
-  { source: require('../../assets/launch/letter-0.png'), x: 264, width: 90 },
-  { source: require('../../assets/launch/letter-1.png'), x: 354, width: 39 },
-  { source: require('../../assets/launch/letter-2.png'), x: 393, width: 64 },
-  { source: require('../../assets/launch/letter-3.png'), x: 457, width: 94 },
-  { source: require('../../assets/launch/letter-4.png'), x: 551, width: 44 },
-  { source: require('../../assets/launch/letter-5.png'), x: 595, width: 64 },
-  { source: require('../../assets/launch/letter-6.png'), x: 659, width: 31 },
-];
+// Vector contours stay smooth throughout the 91× camera zoom.
+const letters = require('../../assets/launch/letter-paths.json') as {
+  x: number;
+  width: number;
+  d: string;
+  fill: string;
+}[];
 
-function Letter({
-  index,
-  time,
-  onLoad,
-}: {
-  index: number;
-  time: SharedValue<number>;
-  onLoad: () => void;
-}) {
+function Letter({ index, time }: { index: number; time: SharedValue<number> }) {
   const letter = letters[index];
   const animatedProps = useAnimatedProps(() => ({
     matrix: launchLetterMatrix(launchFrame(time.value).p, index),
@@ -55,14 +45,9 @@ function Letter({
   return (
     <G translateX={letter.x + letter.width / 2} translateY={804}>
       <AnimatedGroup animatedProps={animatedProps}>
-        <Image
-          href={letter.source}
-          x={-letter.width / 2}
-          y={-53}
-          width={letter.width}
-          height={106}
-          onLoad={onLoad}
-        />
+        <G translateX={-letter.width / 2} translateY={-53}>
+          <Path d={letter.d} fill={letter.fill} fillRule="evenodd" />
+        </G>
       </AnimatedGroup>
     </G>
   );
@@ -80,7 +65,7 @@ export function LaunchAnimation({ ready }: { ready: boolean }) {
   }, []);
   const imageLoaded = (index: number) => {
     loaded.current.add(index);
-    if (loaded.current.size === 9) setImagesReady(true);
+    if (loaded.current.size === 2) setImagesReady(true);
   };
 
   useEffect(() => {
@@ -165,7 +150,7 @@ export function LaunchAnimation({ ready }: { ready: boolean }) {
           <AnimatedGroup animatedProps={camera}>
             <Image href={background} width={941} height={1672} onLoad={() => imageLoaded(1)} />
             {letters.map((_, index) => (
-              <Letter key={index} index={index} time={time} onLoad={() => imageLoaded(index + 2)} />
+              <Letter key={index} index={index} time={time} />
             ))}
           </AnimatedGroup>
           <AnimatedGroup animatedProps={staticFrame}>
