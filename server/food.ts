@@ -611,7 +611,23 @@ export function foodDetail(
   throw new ServiceError('This food is no longer available. Please search again.', 404);
 }
 
-export async function reportCommunityFood(id: string, accountId: string, env: Env) {
+const communityReportReasons = new Set([
+  'Incorrect nutrition information',
+  'Incorrect name or brand',
+  'Duplicate food',
+  'Spam or misleading content',
+  'Inappropriate content',
+  'Other',
+]);
+
+export async function reportCommunityFood(
+  id: string,
+  accountId: string,
+  reason: unknown,
+  env: Env,
+) {
+  if (typeof reason !== 'string' || !communityReportReasons.has(reason))
+    throw new ServiceError('Choose a reason for reporting this food.');
   const food = await env.DB.prepare(
     `SELECT foods.*, accounts.email AS reporter_email
      FROM community_foods foods
@@ -629,9 +645,9 @@ export async function reportCommunityFood(id: string, accountId: string, env: En
   const inserted = await env.DB.prepare(
     `INSERT OR IGNORE INTO community_food_reports
       (id,food_id,reporter_account_id,reason,status,email_sent,created_at)
-     VALUES (?,?,?,'User requested manual review','pending',0,?)`,
+     VALUES (?,?,?,?,'pending',0,?)`,
   )
-    .bind(reportId, id, accountId, createdAt)
+    .bind(reportId, id, accountId, reason, createdAt)
     .run();
 
   let notificationSent = false;
@@ -655,6 +671,7 @@ export async function reportCommunityFood(id: string, accountId: string, env: En
             `Community food ID: ${id}`,
             `Report ID: ${reportId}`,
             `Reporter: ${food.reporter_email}`,
+            `Reason: ${reason}`,
             `Reported at: ${new Date(createdAt * 1000).toISOString()}`,
             '',
             'The food was immediately hidden from this reporter. Review the record before deciding whether to remove it for everyone.',

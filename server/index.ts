@@ -341,7 +341,8 @@ async function route(request: Request, env: Env): Promise<Response> {
     const accountId = await requireAccountId(request, env);
     await rateLimit(request, env, `community-report:${accountId}`, 10);
     const id = path.split('/').at(-2)!.split(':').at(-1)!;
-    return json(await reportCommunityFood(id, accountId, env));
+    const input = (await request.json()) as { reason?: unknown };
+    return json(await reportCommunityFood(id, accountId, input.reason, env));
   }
   if (/^\/api\/foods\/community:[0-9a-f-]{36}$/i.test(path) && method === 'DELETE') {
     const accountId = await requireAccountId(request, env);

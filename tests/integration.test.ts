@@ -248,7 +248,11 @@ test('community food reports hide one food for the reporter and notify manual re
   const foodId = food.id.slice('community:'.length);
 
   const report = await worker.fetch(
-    request(`/api/foods/community:${foodId}/report`, {}, `growth_account=${reporterToken}`),
+    request(
+      `/api/foods/community:${foodId}/report`,
+      { reason: 'Incorrect nutrition information' },
+      `growth_account=${reporterToken}`,
+    ),
     env,
   );
   expect(report.status).toBe(200);
@@ -258,9 +262,13 @@ test('community food reports hide one food for the reporter and notify manual re
     to: ['tlegeneral@proton.me'],
     subject: 'Growth community food report: Questionable oats',
   });
+  expect(String(emails[0].text)).toContain('Reason: Incorrect nutrition information');
   expect(
-    sqlite.query('SELECT email_sent FROM community_food_reports').get() as { email_sent: number },
-  ).toEqual({ email_sent: 1 });
+    sqlite.query('SELECT email_sent,reason FROM community_food_reports').get() as {
+      email_sent: number;
+      reason: string;
+    },
+  ).toEqual({ email_sent: 1, reason: 'Incorrect nutrition information' });
 
   const reporterSearch = await worker.fetch(
     request('/api/foods/search?q=oats&page=1', undefined, `growth_account=${reporterToken}`),

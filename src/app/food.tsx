@@ -3,7 +3,6 @@ import { Camera, CameraView } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Easing,
   Modal,
@@ -86,6 +85,7 @@ function FoodForm() {
   );
   const [communityDismissed, setCommunityDismissed] = useState(false);
   const [reportMessage, setReportMessage] = useState<string>();
+  const [reportTarget, setReportTarget] = useState<Food | null>(null);
   const queryClient = useQueryClient();
   const [portionId, setPortionId] = useState(
     existing?.portionId ??
@@ -221,34 +221,20 @@ function FoodForm() {
       if (params.addToRecipeId) router.back();
       else dismissSheet('/diet');
     });
-  const reportFood = (food: Food) => {
-    Alert.alert(
-      'Report this community food?',
-      'It will stop appearing for you immediately and will be sent to Growth for manual review.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Report food',
-          style: 'destructive',
-          onPress: () =>
-            void action.run(async () => {
-              await api(`/api/foods/${food.id}/report`, {
-                method: 'POST',
-                body: JSON.stringify({}),
-              });
-              await updateJournal((next) => {
-                // Existing meal snapshots remain intact; only future discovery is suppressed.
-                next.foods = next.foods.filter((recent) => recent.id !== food.id);
-              });
-              queryClient.removeQueries({ queryKey: ['food', food.id] });
-              await queryClient.invalidateQueries({ queryKey: ['foods'] });
-              setSelected(null);
-              setCommunityDismissed(true);
-              setReportMessage('Food reported and removed from your results. Thank you.');
-            }),
-        },
-      ],
-    );
+  const submitReport = async (food: Food, reason: string) => {
+    await api(`/api/foods/${food.id}/report`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    await updateJournal((next) => {
+      // Existing meal snapshots remain intact; only future discovery is suppressed.
+      next.foods = next.foods.filter((recent) => recent.id !== food.id);
+    });
+    queryClient.removeQueries({ queryKey: ['food', food.id] });
+    await queryClient.invalidateQueries({ queryKey: ['foods'] });
+    setSelected(null);
+    setCommunityDismissed(true);
+    setReportMessage('Food reported and removed from your results. Thank you.');
   };
   return (
     <>
@@ -362,7 +348,7 @@ function FoodForm() {
               </Card>
             )}
             {selected.source === 'community' && !selected.createdByYou && !existing && (
-              <Button quiet danger loading={action.busy} onPress={() => reportFood(selected)}>
+              <Button quiet danger onPress={() => setReportTarget(selected)}>
                 Report community food
               </Button>
             )}
@@ -697,7 +683,164 @@ function FoodForm() {
           });
         }}
       />
+      {reportTarget && (
+        <ReportFoodModal
+          food={reportTarget}
+          onCancel={() => setReportTarget(null)}
+          onSubmit={submitReport}
+        />
+      )}
     </>
+  );
+}
+
+const reportReasons = [
+  'Incorrect nutrition information',
+  'Incorrect name or brand',
+  'Duplicate food',
+  'Spam or misleading content',
+  'Inappropriate content',
+  'Other',
+] as const;
+
+function ReportFoodModal({
+  food,
+  onCancel,
+  onSubmit,
+}: {
+  food: Food;
+  onCancel: () => void;
+  onSubmit: (food: Food, reason: string) => Promise<void>;
+}) {
+  const C = useColors();
+  const [reason, setReason] = useState<string>();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const close = () => {
+    if (!submitting) onCancel();
+  };
+  return (
+    <Modal transparent animationType="fade" visible onRequestClose={close}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close report menu"
+        onPress={close}
+        style={{
+          flex: 1,
+          padding: 20,
+          justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.64)',
+        }}
+      >
+        <Pressable
+          accessibilityRole="none"
+          onPress={(event) => event.stopPropagation()}
+          style={{
+            width: '100%',
+            maxWidth: 500,
+            alignSelf: 'center',
+            padding: 22,
+            gap: 16,
+            borderRadius: 24,
+            borderCurve: 'continuous',
+            borderWidth: 1,
+            borderColor: C.border,
+            backgroundColor: C.surface,
+          }}
+        >
+          {submitted ? (
+            <>
+              <View style={{ gap: 7 }}>
+                <Title size={23}>Report submitted</Title>
+                <Body>
+                  This food has been removed from your results and sent to Growth for manual review.
+                  Thank you for helping keep the community accurate.
+                </Body>
+              </View>
+              <Button onPress={onCancel}>Done</Button>
+            </>
+          ) : (
+            <>
+              <View style={{ gap: 7 }}>
+                <Title size={23}>Why are you reporting this food?</Title>
+                <Body>{formatFoodLabel(food.name)}</Body>
+              </View>
+              <View style={{ gap: 9 }} accessibilityRole="radiogroup">
+                {reportReasons.map((option) => {
+                  const active = reason === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: active, disabled: submitting }}
+                      disabled={submitting}
+                      onPress={() => setReason(option)}
+                      style={({ pressed }) => ({
+                        minHeight: 50,
+                        paddingHorizontal: 15,
+                        paddingVertical: 12,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: active ? C.blue : C.border,
+                        backgroundColor: active ? `${C.blue}12` : C.bg,
+                        opacity: pressed ? 0.7 : 1,
+                      })}
+                    >
+                      <View
+                        style={{
+                          width: 21,
+                          height: 21,
+                          borderRadius: 11,
+                          borderWidth: 1.5,
+                          borderColor: active ? C.blue : C.muted,
+                          backgroundColor: active ? C.blue : 'transparent',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {active && <Icon name="check" size={14} color={C.surface} />}
+                      </View>
+                      <Text style={{ flex: 1, color: C.text, fontSize: 15 }}>{option}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {error && <Notice message={error} />}
+              <Row>
+                <Button quiet disabled={submitting} onPress={onCancel}>
+                  Cancel
+                </Button>
+                <Button
+                  danger
+                  disabled={!reason || submitting}
+                  loading={submitting}
+                  onPress={() => {
+                    if (!reason) return;
+                    setSubmitting(true);
+                    setError(undefined);
+                    void onSubmit(food, reason)
+                      .then(() => setSubmitted(true))
+                      .catch((cause) =>
+                        setError(
+                          cause instanceof Error ? cause.message : 'Could not submit report.',
+                        ),
+                      )
+                      .finally(() => setSubmitting(false));
+                  }}
+                >
+                  Submit report
+                </Button>
+              </Row>
+            </>
+          )}
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
