@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import Svg, { ClipPath, Defs, G, Image, Path } from 'react-native-svg';
-import Animated, {
+import { Canvas, Group, Image, Path, Skia, useImage } from '@shopify/react-native-skia';
+import {
   cancelAnimation,
   Easing,
   runOnJS,
-  useAnimatedProps,
+  useDerivedValue,
   useReducedMotion,
   useSharedValue,
   withTiming,
@@ -24,32 +24,47 @@ import {
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ fade: false, duration: 0 });
 
-const AnimatedGroup = Animated.createAnimatedComponent(G);
-const AnimatedPath = Animated.createAnimatedComponent(Path);
 const artwork = require('../../assets/launch/launch.png');
 const background = require('../../assets/launch/background.png');
 // Vector contours stay smooth throughout the 91× camera zoom.
-const letters = require('../../assets/launch/letter-paths.json') as {
+const contours = require('../../assets/launch/letter-paths.json') as {
   x: number;
   width: number;
   d: string;
   fill: string;
 }[];
 
-function Letter({ index, time }: { index: number; time: SharedValue<number> }) {
+// Parse each contour once. Frame updates change only GPU drawing transforms.
+const letters = contours.map((letter) => ({
+  ...letter,
+  path: Skia.Path.MakeFromSVGString(letter.d)!,
+}));
+const openingShape = Skia.Path.Make();
+openingShape.addOval({ x: -14.4, y: -19, width: 28.8, height: 38 });
+
+function Letter({
+  index,
+  frame,
+}: {
+  index: number;
+  frame: SharedValue<ReturnType<typeof launchFrame>>;
+}) {
   const letter = letters[index];
-  const animatedProps = useAnimatedProps(() => ({
-    matrix: launchLetterMatrix(launchFrame(time.value).p, index),
-    opacity: 1,
-  }));
+  const matrix = useDerivedValue(() => {
+    const [a, b, c, d, tx, ty] = launchLetterMatrix(frame.value.p, index);
+    return Skia.Matrix([a, c, tx, b, d, ty, 0, 0, 1]);
+  });
   return (
-    <G translateX={letter.x + letter.width / 2} translateY={804}>
-      <AnimatedGroup animatedProps={animatedProps}>
-        <G translateX={-letter.width / 2} translateY={-53}>
-          <Path d={letter.d} fill={letter.fill} fillRule="evenodd" />
-        </G>
-      </AnimatedGroup>
-    </G>
+    <Group transform={[{ translateX: letter.x + letter.width / 2 }, { translateY: 804 }]}>
+      <Group matrix={matrix}>
+        <Path
+          path={letter.path}
+          color={letter.fill}
+          fillType="evenOdd"
+          transform={[{ translateX: -letter.width / 2 }, { translateY: -53 }]}
+        />
+      </Group>
+    </Group>
   );
 }
 
@@ -57,16 +72,16 @@ export function LaunchAnimation({ ready }: { ready: boolean }) {
   const time = useSharedValue(0);
   const reducedMotion = useReducedMotion();
   const [complete, setComplete] = useState(false);
-  const [imagesReady, setImagesReady] = useState(false);
-  const loaded = useRef(new Set<number>());
+  const staticImage = useImage(artwork);
+  const backgroundImage = useImage(background);
+  const imagesReady = !!staticImage && !!backgroundImage;
+  const { width, height } = useWindowDimensions();
+  const cover = Math.max(width / LAUNCH_WIDTH, height / LAUNCH_HEIGHT);
+  const frame = useDerivedValue(() => launchFrame(time.value));
   const finish = useCallback(() => {
     SplashScreen.hide();
     setComplete(true);
   }, []);
-  const imageLoaded = (index: number) => {
-    loaded.current.add(index);
-    if (loaded.current.size === 2) setImagesReady(true);
-  };
 
   useEffect(() => {
     // A corrupt asset or failed local storage must never leave the app behind a splash.
@@ -104,28 +119,17 @@ export function LaunchAnimation({ ready }: { ready: boolean }) {
     };
   }, [ready, imagesReady, complete, reducedMotion, finish, time]);
 
-  const camera = useAnimatedProps(() => {
-    const { zoom, cx, cy } = launchFrame(time.value);
-    return {
-      matrix: [zoom, 0, 0, zoom, cx - 425 * zoom, cy - 820 * zoom] as [
-        number,
-        number,
-        number,
-        number,
-        number,
-        number,
-      ],
-      opacity: time.value > 380 ? 1 : 0,
-    };
+  const camera = useDerivedValue(() => {
+    const { zoom, cx, cy } = frame.value;
+    return Skia.Matrix([zoom, 0, cx - 425 * zoom, 0, zoom, cy - 820 * zoom, 0, 0, 1]);
   });
-  const staticFrame = useAnimatedProps(() => ({ opacity: time.value <= 380 ? 1 : 0 }));
-  const aperture = useAnimatedProps(() => {
-    const { zoom, cx, cy, aperture: opening } = launchFrame(time.value);
-    const rx = Math.max(0.001, 14.4 * zoom * opening);
-    const ry = Math.max(0.001, 19 * zoom * opening);
-    return {
-      d: `M0 0H941V1672H0Z M${cx - rx} ${cy}a${rx} ${ry} 0 1 0 ${rx * 2} 0a${rx} ${ry} 0 1 0 ${-rx * 2} 0Z`,
-    };
+  const movingOpacity = useDerivedValue(() => (time.value > 380 ? 1 : 0));
+  const staticOpacity = useDerivedValue(() => (time.value <= 380 ? 1 : 0));
+  const aperture = useDerivedValue(() => {
+    const { zoom, cx, cy, aperture: opening } = frame.value;
+    const scale = Math.max(0.00001, zoom * opening);
+    // Transform a cached ellipse instead of parsing a new SVG clipping path every frame.
+    return openingShape.copy().transform(Skia.Matrix([scale, 0, cx, 0, scale, cy, 0, 0, 1]));
   });
 
   if (complete) return null;
@@ -135,29 +139,41 @@ export function LaunchAnimation({ ready }: { ready: boolean }) {
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${LAUNCH_WIDTH} ${LAUNCH_HEIGHT}`}
-        preserveAspectRatio="xMidYMid slice"
-      >
-        <Defs>
-          <ClipPath id="launch-opening">
-            <AnimatedPath animatedProps={aperture} clipRule="evenodd" fillRule="evenodd" />
-          </ClipPath>
-        </Defs>
-        <G clipPath="url(#launch-opening)">
-          <AnimatedGroup animatedProps={camera}>
-            <Image href={background} width={941} height={1672} onLoad={() => imageLoaded(1)} />
-            {letters.map((_, index) => (
-              <Letter key={index} index={index} time={time} />
-            ))}
-          </AnimatedGroup>
-          <AnimatedGroup animatedProps={staticFrame}>
-            <Image href={artwork} width={941} height={1672} onLoad={() => imageLoaded(0)} />
-          </AnimatedGroup>
-        </G>
-      </Svg>
+      <Canvas style={StyleSheet.absoluteFill} colorSpace="srgb">
+        <Group
+          transform={[
+            { translateX: (width - LAUNCH_WIDTH * cover) / 2 },
+            { translateY: (height - LAUNCH_HEIGHT * cover) / 2 },
+            { scale: cover },
+          ]}
+        >
+          <Group clip={aperture} invertClip>
+            <Group matrix={camera} opacity={movingOpacity}>
+              <Image
+                image={backgroundImage}
+                x={0}
+                y={0}
+                width={LAUNCH_WIDTH}
+                height={LAUNCH_HEIGHT}
+                fit="fill"
+              />
+              {letters.map((_, index) => (
+                <Letter key={index} index={index} frame={frame} />
+              ))}
+            </Group>
+            <Group opacity={staticOpacity}>
+              <Image
+                image={staticImage}
+                x={0}
+                y={0}
+                width={LAUNCH_WIDTH}
+                height={LAUNCH_HEIGHT}
+                fit="fill"
+              />
+            </Group>
+          </Group>
+        </Group>
+      </Canvas>
     </View>
   );
 }
